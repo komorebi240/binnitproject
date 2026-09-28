@@ -1,0 +1,275 @@
+package com.company.project.modules.tasks.service.impl;
+
+import com.company.project.common.AssigneeType;
+import com.company.project.common.AuthorityLevel;
+import com.company.project.common.TaskPriority;
+import com.company.project.common.TaskStatus;
+import com.company.project.common.exception.BusinessException;
+import com.company.project.common.exception.ResourceNotFoundException;
+import com.company.project.modules.identity.domain.DepartmentEntity;
+import com.company.project.modules.identity.domain.PositionEntity;
+import com.company.project.modules.identity.domain.UserEntity;
+import com.company.project.modules.identity.repository.DepartmentRepository;
+import com.company.project.modules.identity.repository.PositionRepository;
+import com.company.project.modules.identity.repository.UserRepository;
+import com.company.project.modules.tasks.domain.TaskEntity;
+import com.company.project.modules.tasks.dto.request.CreateTaskRequest;
+import com.company.project.modules.tasks.dto.response.TaskResponse;
+import com.company.project.modules.tasks.repository.TaskRepository;
+import com.company.project.modules.tasks.service.TaskService;
+import com.company.project.security.UserPrincipal;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * Who can assign to whom mirrors UserManagementServiceImpl's hierarchy rules (Phase 2 plan):
+ * EXECUTIVE anywhere in their company, DEPARTMENT_HEAD only within their own department,
+ * TEAM_LEAD only to users in their own team. The same check also gates cancelling someone
+ * else's task, since "could assign here" and "has authority over this scope" are the same
+ * question. Every check re-derives scope from the caller's UserPrincipal, never from an id the
+ * client sent for that purpose (CLAUDE.md section 9/10).
+ */
+@Service
+public class TaskServiceImpl implements TaskService {
+
+    private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
+    private final DepartmentRepository departmentRepository;
+    private final PositionRepository positionRepository;
+
+    public TaskServiceImpl(
+            TaskRepository taskRepository,
+            UserRepository userRepository,
+            DepartmentRepository departmentRepository,
+            PositionRepository positionRepository
+    ) {
+        this.taskRepository = taskRepository;
+        this.userRepository = userRepository;
+        this.departmentRepository = departmentRepository;
+        this.positionRepository = positionRepository;
+    }
+
+    @Override
+    @Transactional
+    public TaskResponse createTask(CreateTaskRequest request, UserPrincipal caller) {
+        Long assigneeUserId = null;
+        Long assigneeDepartmentId = null;
+
+        if (request.assigneeType() == AssigneeType.USER) {
+            if (request.assigneeUserId() == null) {
+                throw new BusinessException("ASSIGNEE_REQUIRED", "assigneeUserId is required for a USER task", HttpStatus.UNPROCESSABLE_ENTITY);
+            }
+            UserEntity targetUser = userRepository.findActiveById(request.assigneeUserId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User", request.assigneeUserId()));
+            if (!targetUser.getCompanyId().equals(caller.getCompanyId())) {
+                throw new ResourceNotFoundException("User", request.assigneeUserId());
+            }
+            assigneeUserId = targetUser.getId();
+        } else {
+            if (request.assigneeDepartmentId() == null) {
+                throw new BusinessException("ASSIGNEE_REQUIRED", "assigneeDepartmentId is required for a DEPARTMENT task", HttpStatus.UNPROCESSABLE_ENTITY);
+            }
+            DepartmentEntity department = departmentRepository.findActiveById(request.assigneeDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department", request.assigneeDepartmentId()));
+            if (!department.getCompanyId().equals(caller.getCompanyId())) {
+                throw new ResourceNotFoundException("Department", request.assigneeDepartmentId());
+            }
+            assigneeDepartmentId = department.getId();
+        }
+
+        assertCallerCanActOnAssignment(caller, request.assigneeType(), assigneeUserId, assigneeDepartmentId);
+
+        TaskPriority priority = request.priority() != null ? request.priority() : TaskPriority.MEDIUM;
+        TaskEntity saved = taskRepository.save(new TaskEntity(
+                caller.getCompanyId(), request.title(), request.description(), request.assigneeType(),
+                assigneeUserId, assigneeDepartmentId, caller.getUserId(), priority, request.dueDate()));
+
+        return toResponses(List.of(saved)).get(0);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskResponse> listTasks(UserPrincipal caller) {
+        List<TaskEntity> tasks = switch (caller.getAuthorityLevel()) {
+            case EXECUTIVE -> taskRepository.findAllActiveByCompanyId(caller.getCompanyId());
+            case DEPARTMENT_HEAD -> {
+                List<Long> memberIds = positionRepository.findAllActiveByDepartmentId(caller.getDepartmentId())
+                        .stream().map(PositionEntity::getUserId).toList();
+                yield taskRepository.findAllActiveForDepartmentScope(caller.getDepartmentId(), memberIds, caller.getUserId());
+            }
+            case TEAM_LEAD -> {
+                List<Long> memberIds = positionRepository.findAllActiveByTeamId(caller.getTeamId())
+                        .stream().map(PositionEntity::getUserId).toList();
+                yield taskRepository.findAllActiveForTeamScope(memberIds, caller.getUserId());
+            }
+            case EMPLOYEE -> taskRepository.findAllActiveForEmployee(caller.getUserId(), caller.getDepartmentId());
+        };
+
+        return toResponses(tasks);
+    }
+
+    @Override
+    @Transactional
+    public TaskResponse acceptTask(Long taskId, UserPrincipal caller) {
+        TaskEntity task = requireOwnCompanyTask(taskId, caller);
+        assertCallerCanActOnTask(task, caller);
+        requireStatus(task, TaskStatus.ASSIGNED, "accept");
+        task.accept();
+        return toResponses(List.of(task)).get(0);
+    }
+
+    @Override
+    @Transactional
+    public TaskResponse declineTask(Long taskId, UserPrincipal caller) {
+        TaskEntity task = requireOwnCompanyTask(taskId, caller);
+        assertCallerCanActOnTask(task, caller);
+        requireStatus(task, TaskStatus.ASSIGNED, "decline");
+        task.decline();
+        return toResponses(List.of(task)).get(0);
+    }
+
+    @Override
+    @Transactional
+    public TaskResponse completeTask(Long taskId, UserPrincipal caller) {
+        TaskEntity task = requireOwnCompanyTask(taskId, caller);
+        assertCallerCanActOnTask(task, caller);
+        requireStatus(task, TaskStatus.ACCEPTED, "complete");
+        task.complete();
+        return toResponses(List.of(task)).get(0);
+    }
+
+    @Override
+    @Transactional
+    public TaskResponse cancelTask(Long taskId, UserPrincipal caller) {
+        TaskEntity task = requireOwnCompanyTask(taskId, caller);
+        boolean isAssigner = task.getAssignedByUserId().equals(caller.getUserId());
+        if (!isAssigner) {
+            assertCallerCanActOnAssignment(caller, task.getAssigneeType(), task.getAssigneeUserId(), task.getAssigneeDepartmentId());
+        }
+        if (task.getStatus() == TaskStatus.DONE || task.getStatus() == TaskStatus.CANCELLED) {
+            throw new BusinessException("INVALID_TASK_STATUS", "Task is already " + task.getStatus(), HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        task.cancel();
+        return toResponses(List.of(task)).get(0);
+    }
+
+    /** Same question as "could this caller assign a task here" — reused for cancel authority too. */
+    private void assertCallerCanActOnAssignment(
+            UserPrincipal caller, AssigneeType type, Long assigneeUserId, Long assigneeDepartmentId) {
+        switch (caller.getAuthorityLevel()) {
+            case EXECUTIVE -> {
+                // Any target within their own company (already verified by the caller).
+            }
+            case DEPARTMENT_HEAD -> {
+                if (type == AssigneeType.DEPARTMENT) {
+                    if (!assigneeDepartmentId.equals(caller.getDepartmentId())) {
+                        throw new AccessDeniedException("You can only assign to your own department");
+                    }
+                } else {
+                    // Fetch the whole position, then compare fields directly — Optional.map()
+                    // on a field getter collapses to empty when that field is null (e.g. an
+                    // EMPLOYEE with no team), which would wrongly turn "wrong scope" (403)
+                    // into "user not found" (404). Found by actually running TC-14, not by
+                    // reading the code.
+                    PositionEntity targetPosition = positionRepository.findActiveByUserId(assigneeUserId)
+                            .orElseThrow(() -> new ResourceNotFoundException("User", assigneeUserId));
+                    if (!caller.getDepartmentId().equals(targetPosition.getDepartmentId())) {
+                        throw new AccessDeniedException("You can only assign to members of your own department");
+                    }
+                }
+            }
+            case TEAM_LEAD -> {
+                if (type == AssigneeType.DEPARTMENT) {
+                    throw new AccessDeniedException("Team leads cannot assign a task to a whole department");
+                }
+                PositionEntity targetPosition = positionRepository.findActiveByUserId(assigneeUserId)
+                        .orElseThrow(() -> new ResourceNotFoundException("User", assigneeUserId));
+                if (!caller.getTeamId().equals(targetPosition.getTeamId())) {
+                    throw new AccessDeniedException("You can only assign to members of your own team");
+                }
+            }
+            case EMPLOYEE -> throw new AccessDeniedException("Employees cannot assign tasks");
+        }
+    }
+
+    /** Who may accept/decline/complete: the exact assignee (USER), or a manager of the assignee department (DEPARTMENT). */
+    private void assertCallerCanActOnTask(TaskEntity task, UserPrincipal caller) {
+        if (task.getAssigneeType() == AssigneeType.USER) {
+            if (!task.getAssigneeUserId().equals(caller.getUserId())) {
+                throw new AccessDeniedException("You are not the assignee of this task");
+            }
+            return;
+        }
+        boolean allowed = caller.getAuthorityLevel() == AuthorityLevel.EXECUTIVE
+                || (caller.getAuthorityLevel() == AuthorityLevel.DEPARTMENT_HEAD
+                        && task.getAssigneeDepartmentId().equals(caller.getDepartmentId()));
+        if (!allowed) {
+            throw new AccessDeniedException("Only that department's head or an executive can act on this task");
+        }
+    }
+
+    private void requireStatus(TaskEntity task, TaskStatus required, String action) {
+        if (task.getStatus() != required) {
+            throw new BusinessException(
+                    "INVALID_TASK_STATUS",
+                    "Cannot " + action + " a task in status " + task.getStatus(),
+                    HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+    }
+
+    private TaskEntity requireOwnCompanyTask(Long taskId, UserPrincipal caller) {
+        TaskEntity task = taskRepository.findActiveById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task", taskId));
+        if (!task.getCompanyId().equals(caller.getCompanyId())) {
+            throw new ResourceNotFoundException("Task", taskId);
+        }
+        return task;
+    }
+
+    private List<TaskResponse> toResponses(List<TaskEntity> tasks) {
+        Set<Long> userIds = new HashSet<>();
+        Set<Long> departmentIds = new HashSet<>();
+        for (TaskEntity task : tasks) {
+            userIds.add(task.getAssignedByUserId());
+            if (task.getAssigneeUserId() != null) {
+                userIds.add(task.getAssigneeUserId());
+            }
+            if (task.getAssigneeDepartmentId() != null) {
+                departmentIds.add(task.getAssigneeDepartmentId());
+            }
+        }
+
+        Map<Long, String> userNames = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(UserEntity::getId, UserEntity::getFullName));
+        Map<Long, String> departmentNames = departmentRepository.findAllById(departmentIds).stream()
+                .collect(Collectors.toMap(DepartmentEntity::getId, DepartmentEntity::getName));
+
+        return tasks.stream()
+                .map(task -> new TaskResponse(
+                        task.getId(),
+                        task.getTitle(),
+                        task.getDescription(),
+                        task.getAssigneeType(),
+                        task.getAssigneeUserId(),
+                        task.getAssigneeUserId() != null ? userNames.get(task.getAssigneeUserId()) : null,
+                        task.getAssigneeDepartmentId(),
+                        task.getAssigneeDepartmentId() != null ? departmentNames.get(task.getAssigneeDepartmentId()) : null,
+                        task.getAssignedByUserId(),
+                        userNames.get(task.getAssignedByUserId()),
+                        task.getStatus(),
+                        task.getPriority(),
+                        task.getDueDate(),
+                        task.getCreatedAt(),
+                        task.getDecidedAt(),
+                        task.getCompletedAt()))
+                .toList();
+    }
+}

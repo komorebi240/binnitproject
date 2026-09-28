@@ -1,0 +1,142 @@
+package com.company.project.modules.identity.service.impl;
+
+import com.company.project.common.AuthorityLevel;
+import com.company.project.common.exception.BusinessException;
+import com.company.project.common.exception.ResourceNotFoundException;
+import com.company.project.modules.identity.domain.DepartmentEntity;
+import com.company.project.modules.identity.domain.TeamEntity;
+import com.company.project.modules.identity.dto.request.CreateDepartmentRequest;
+import com.company.project.modules.identity.dto.request.CreateTeamRequest;
+import com.company.project.modules.identity.dto.response.DepartmentResponse;
+import com.company.project.modules.identity.dto.response.TeamResponse;
+import com.company.project.modules.identity.repository.DepartmentRepository;
+import com.company.project.modules.identity.repository.PositionRepository;
+import com.company.project.modules.identity.repository.TeamRepository;
+import com.company.project.modules.identity.service.OrganizationService;
+import com.company.project.security.UserPrincipal;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+/**
+ * Every method here re-derives scope from the caller's UserPrincipal (built from their JWT),
+ * never from an id the client passed for that purpose — see CLAUDE.md section 9/10 and the
+ * Phase 1 plan. Cross-company access is reported as 404 (hide existence of other tenants'
+ * data); same-company-wrong-scope is reported as 403 (the caller can legitimately see the
+ * resource exists via listDepartments, just can't act on it).
+ */
+@Service
+public class OrganizationServiceImpl implements OrganizationService {
+
+    private final DepartmentRepository departmentRepository;
+    private final TeamRepository teamRepository;
+    private final PositionRepository positionRepository;
+
+    public OrganizationServiceImpl(
+            DepartmentRepository departmentRepository,
+            TeamRepository teamRepository,
+            PositionRepository positionRepository
+    ) {
+        this.departmentRepository = departmentRepository;
+        this.teamRepository = teamRepository;
+        this.positionRepository = positionRepository;
+    }
+
+    @Override
+    @Transactional
+    public DepartmentResponse createDepartment(CreateDepartmentRequest request, UserPrincipal caller) {
+        DepartmentEntity entity = new DepartmentEntity(caller.getCompanyId(), request.name());
+        DepartmentEntity saved = departmentRepository.save(entity);
+        return toResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DepartmentResponse> listDepartments(UserPrincipal caller) {
+        return departmentRepository.findAllActiveByCompanyId(caller.getCompanyId()).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void deleteDepartment(Long departmentId, UserPrincipal caller) {
+        DepartmentEntity department = requireOwnCompanyDepartment(departmentId, caller);
+
+        boolean hasActiveTeams = !teamRepository.findAllActiveByDepartmentId(departmentId).isEmpty();
+        boolean hasActiveMembers = !positionRepository.findAllActiveByDepartmentId(departmentId).isEmpty();
+        if (hasActiveTeams || hasActiveMembers) {
+            throw new BusinessException(
+                    "DEPARTMENT_NOT_EMPTY",
+                    "Cannot delete a department that still has teams or members",
+                    HttpStatus.CONFLICT);
+        }
+
+        department.markDeleted();
+    }
+
+    @Override
+    @Transactional
+    public TeamResponse createTeam(Long departmentId, CreateTeamRequest request, UserPrincipal caller) {
+        DepartmentEntity department = requireOwnCompanyDepartment(departmentId, caller);
+
+        if (caller.getAuthorityLevel() == AuthorityLevel.DEPARTMENT_HEAD
+                && !department.getId().equals(caller.getDepartmentId())) {
+            throw new AccessDeniedException("You can only create teams in your own department");
+        }
+
+        TeamEntity saved = teamRepository.save(new TeamEntity(department.getId(), request.name()));
+        return toResponse(saved);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TeamResponse> listTeams(Long departmentId, UserPrincipal caller) {
+        requireOwnCompanyDepartment(departmentId, caller);
+        return teamRepository.findAllActiveByDepartmentId(departmentId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void deleteTeam(Long teamId, UserPrincipal caller) {
+        TeamEntity team = teamRepository.findActiveById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team", teamId));
+        DepartmentEntity department = requireOwnCompanyDepartment(team.getDepartmentId(), caller);
+
+        if (caller.getAuthorityLevel() == AuthorityLevel.DEPARTMENT_HEAD
+                && !department.getId().equals(caller.getDepartmentId())) {
+            throw new AccessDeniedException("You can only delete teams in your own department");
+        }
+
+        boolean hasActiveMembers = !positionRepository.findAllActiveByTeamId(teamId).isEmpty();
+        if (hasActiveMembers) {
+            throw new BusinessException(
+                    "TEAM_NOT_EMPTY", "Cannot delete a team that still has members", HttpStatus.CONFLICT);
+        }
+
+        team.markDeleted();
+    }
+
+    /** Loads the department and enforces the tenant boundary — 404, not 403, across companies. */
+    private DepartmentEntity requireOwnCompanyDepartment(Long departmentId, UserPrincipal caller) {
+        DepartmentEntity department = departmentRepository.findActiveById(departmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Department", departmentId));
+        if (!department.getCompanyId().equals(caller.getCompanyId())) {
+            throw new ResourceNotFoundException("Department", departmentId);
+        }
+        return department;
+    }
+
+    private DepartmentResponse toResponse(DepartmentEntity entity) {
+        return new DepartmentResponse(entity.getId(), entity.getName(), entity.getCompanyId());
+    }
+
+    private TeamResponse toResponse(TeamEntity entity) {
+        return new TeamResponse(entity.getId(), entity.getName(), entity.getDepartmentId());
+    }
+}

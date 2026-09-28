@@ -1,0 +1,16 @@
+# Local development profile. Host/port/db-name have convenience defaults for a local SQL
+# Server instance; credentials never do — they must come from the environment.
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:sqlserver://${DB_HOST:localhost}:${DB_PORT:1433};databaseName=${DB_NAME:project_dev};encrypt=true;trustServerCertificate=true
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.company.project: DEBUG

@@ -1,0 +1,18 @@
+# Template only — copy to application-prod.yml (gitignored) for a real deployment.
+# Every value here is an environment variable reference; no real host, name, or credential
+# is ever committed (CLAUDE.md section 30).
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: jdbc:sqlserver://${DB_HOST}:${DB_PORT};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=false
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    root: INFO
+    com.company.project: INFO
