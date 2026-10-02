@@ -10,13 +10,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 /**
- * CORS is restricted to an explicit, configured origin list — never "*" once credentials
+ * CORS is restricted to an explicit, configured origin list - never "*" once credentials
  * (Authorization header / cookies) are involved (CLAUDE.md section 13, misconfigured CORS).
  *
  * This is exposed as a CorsConfigurationSource bean (not a WebMvcConfigurer mapping) so
  * SecurityConfig can apply it via HttpSecurity.cors(...). A WebMvcConfigurer-only mapping
  * runs inside DispatcherServlet, which is too late: Spring Security's filter chain sees the
- * browser's CORS preflight (OPTIONS) request first and — with no cors() config of its own —
+ * browser's CORS preflight (OPTIONS) request first and - with no cors() config of its own -
  * rejects it as an unauthenticated request, so the browser never sends the real request at all.
  */
 @Configuration

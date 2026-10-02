@@ -8,7 +8,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: "bg-primary text-primary-foreground hover:opacity-90",
+  // Every theme uses a real two-stop gradient (see app/globals.css) — `.gradient-surface` adds a
+  // crisp 1px edge so the shape reads clearly even against a similarly-toned page background.
+  primary:
+    "gradient-surface bg-gradient-to-r from-primary to-primaryEnd text-primary-foreground hover:shadow-lg hover:shadow-primary/30",
   secondary: "bg-surface-muted text-gray-900 hover:bg-gray-200",
   danger: "bg-danger text-danger-foreground hover:opacity-90",
 };

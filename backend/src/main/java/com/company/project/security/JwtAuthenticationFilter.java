@@ -14,7 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Reads the session cookie (matches the frontend's httpOnly-cookie convention — see
+ * Reads the session cookie (matches the frontend's httpOnly-cookie convention - see
  * frontend/src/lib/api/client.ts and its README), validates the JWT, and populates the
  * SecurityContext with a full UserPrincipal built from the token's claims. The backend never
  * trusts an identity claimed directly by the client outside this token (CLAUDE.md section 8).

@@ -8,8 +8,10 @@ import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import type { UserProfile } from "@/features/auth/types";
 import { useDepartments, useUsers } from "@/features/organization/hooks/useOrganization";
-import { useCreateTask } from "../hooks/useTasks";
+import { useCreateTask, useTasksList } from "../hooks/useTasks";
 import type { AssigneeType, CreateTaskInput, TaskPriority } from "../types";
+
+const OPEN_STATUSES = new Set(["ASSIGNED", "ACCEPTED"]);
 
 const PRIORITY_LABELS: Record<TaskPriority, string> = {
   LOW: "Thấp",
@@ -27,6 +29,7 @@ export function CreateTaskForm({ currentUser }: CreateTaskFormProps) {
   const canAssignToDepartment = currentUser.authorityLevel !== "TEAM_LEAD";
   const { data: departments } = useDepartments();
   const { data: users } = useUsers();
+  const { data: allTasks } = useTasksList();
   const createTask = useCreateTask();
   const { showToast } = useToast();
 
@@ -47,6 +50,13 @@ export function CreateTaskForm({ currentUser }: CreateTaskFormProps) {
     currentUser.authorityLevel === "DEPARTMENT_HEAD"
       ? (departments ?? []).filter((d) => d.id === currentUser.departmentId)
       : (departments ?? []);
+
+  // Shown right under the assignee picker so a manager sees what that person already has on
+  // their plate before adding more — avoids accidental duplicate assignments (Phase 7 plan).
+  const selectedAssigneeId = form.assigneeType === "USER" && form.assigneeUserId ? Number(form.assigneeUserId) : null;
+  const selectedAssigneeOpenTasks = selectedAssigneeId
+    ? (allTasks ?? []).filter((t) => t.assigneeUserId === selectedAssigneeId && OPEN_STATUSES.has(t.status))
+    : [];
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -98,16 +108,32 @@ export function CreateTaskForm({ currentUser }: CreateTaskFormProps) {
       />
 
       {form.assigneeType === "USER" ? (
-        <Select
-          label="Nhân viên"
-          value={form.assigneeUserId}
-          onChange={(e) => setForm({ ...form, assigneeUserId: e.target.value })}
-          options={[
-            { value: "", label: "-- Chọn nhân viên --" },
-            ...(users ?? []).map((u) => ({ value: String(u.id), label: `${u.fullName} (${u.username})` })),
-          ]}
-          required
-        />
+        <div className="flex flex-col gap-2">
+          <Select
+            label="Nhân viên"
+            value={form.assigneeUserId}
+            onChange={(e) => setForm({ ...form, assigneeUserId: e.target.value })}
+            options={[
+              { value: "", label: "-- Chọn nhân viên --" },
+              ...(users ?? []).map((u) => ({ value: String(u.id), label: `${u.fullName} (${u.username})` })),
+            ]}
+            required
+          />
+          {selectedAssigneeId && (
+            <div className="rounded border border-gray-200 bg-surface-muted p-2 text-xs text-gray-600">
+              <p className="mb-1 font-medium text-gray-700">Việc hiện tại của người này:</p>
+              {selectedAssigneeOpenTasks.length === 0 ? (
+                <p>Chưa có việc nào đang mở.</p>
+              ) : (
+                <ul className="list-disc pl-4">
+                  {selectedAssigneeOpenTasks.map((t) => (
+                    <li key={t.id}>{t.title}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
       ) : (
         <Select
           label="Phòng ban"

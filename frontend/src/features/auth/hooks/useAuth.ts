@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getCurrentUser, login, logout } from "../api/authApi";
-import type { LoginInput } from "../types";
+import { forgotPassword, getCurrentUser, login, logout, resetPassword, updatePresence, uploadAvatar } from "../api/authApi";
+import type { LoginInput, PresenceStatus, ResetPasswordInput } from "../types";
 
 export const AUTH_ME_QUERY_KEY = ["auth", "me"] as const;
 
@@ -32,5 +32,37 @@ export function useLogout() {
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: AUTH_ME_QUERY_KEY });
     },
+  });
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (username: string) => forgotPassword(username),
+  });
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: (input: ResetPasswordInput) => resetPassword(input),
+  });
+}
+
+export function useUploadAvatar() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => uploadAvatar(file),
+    // invalidateQueries (refetch), not setQueryData — matches every other mutation in this
+    // codebase (e.g. useNotifications); setQueryData here was observed to update the cache
+    // correctly (confirmed via a direct fetch) but NOT re-render an already-mounted useQuery
+    // consumer, only showing the new value after a full remount.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: AUTH_ME_QUERY_KEY }),
+  });
+}
+
+export function useUpdatePresence() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (status: PresenceStatus) => updatePresence(status),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: AUTH_ME_QUERY_KEY }),
   });
 }

@@ -9,9 +9,9 @@ import java.time.Instant;
 
 /**
  * Short-lived CSRF correlation for the OAuth redirect round trip: /drive/connect creates one,
- * /drive/oauth2/callback consumes it and deletes it. Not a business record — no audit columns,
+ * /drive/oauth2/callback consumes it and deletes it. Not a business record - no audit columns,
  * checked against a TTL in {@code DriveConnectionService} rather than relying on the caller
- * still being authenticated when Google redirects back (CLAUDE.md section 13 — OAuth CSRF).
+ * still being authenticated when Google redirects back (CLAUDE.md section 13 - OAuth CSRF).
  */
 @Entity
 @Table(name = "oauth_states")

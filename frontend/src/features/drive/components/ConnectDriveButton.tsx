@@ -31,8 +31,11 @@ export function ConnectDriveButton() {
   }
 
   return (
-    <Button variant="secondary" onClick={handleConnect}>
-      Kết nối Google Drive
-    </Button>
+    <div className="flex items-center gap-2">
+      <Badge tone="warning">Chưa kết nối</Badge>
+      <Button variant="secondary" onClick={handleConnect}>
+        Kết nối Google Drive
+      </Button>
+    </div>
   );
 }

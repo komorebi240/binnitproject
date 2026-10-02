@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * OAuth is a full-page browser redirect flow, not a JSON API — /connect and /oauth2/callback
+ * OAuth is a full-page browser redirect flow, not a JSON API - /connect and /oauth2/callback
  * both issue HTTP redirects rather than returning ApiResponse bodies. /oauth2/callback is
  * permitAll in SecurityConfig and resolves the user from the state row it looks up, not from
- * the caller's own auth — Google's redirect must succeed even if the session cookie had any
+ * the caller's own auth - Google's redirect must succeed even if the session cookie had any
  * hiccup during the round trip (CLAUDE.md section 13, OAuth CSRF handled via state instead).
  */
 @RestController

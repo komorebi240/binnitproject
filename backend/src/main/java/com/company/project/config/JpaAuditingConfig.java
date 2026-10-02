@@ -11,7 +11,7 @@ import java.util.Optional;
 
 /**
  * Without @EnableJpaAuditing, @CreatedDate/@CreatedBy on an entity are silently never
- * populated — Hibernate then inserts NULL into a NOT NULL audit column and the insert fails
+ * populated - Hibernate then inserts NULL into a NOT NULL audit column and the insert fails
  * at the database, not at the annotation. This was caught by actually running the reference
  * `sample` feature end to end, not by reading the entity code.
  */

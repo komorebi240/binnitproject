@@ -2,6 +2,7 @@ package com.company.project.modules.identity.controller;
 
 import com.company.project.common.ApiResponse;
 import com.company.project.modules.identity.dto.request.CreateTeamRequest;
+import com.company.project.modules.identity.dto.response.DepartmentMemberResponse;
 import com.company.project.modules.identity.dto.response.TeamResponse;
 import com.company.project.modules.identity.service.OrganizationService;
 import com.company.project.security.UserPrincipal;
@@ -44,6 +45,13 @@ public class TeamController {
     public ApiResponse<List<TeamResponse>> list(
             @PathVariable Long departmentId, @AuthenticationPrincipal UserPrincipal caller) {
         return ApiResponse.success(organizationService.listTeams(departmentId, caller));
+    }
+
+    /** Internal company directory, same visibility rule as DepartmentController.listMembers - anyone in the same company. */
+    @GetMapping("/api/v1/teams/{id}/members")
+    public ApiResponse<List<DepartmentMemberResponse>> listMembers(
+            @PathVariable Long id, @AuthenticationPrincipal UserPrincipal caller) {
+        return ApiResponse.success(organizationService.listTeamMembers(id, caller));
     }
 
     @DeleteMapping("/api/v1/teams/{id}")

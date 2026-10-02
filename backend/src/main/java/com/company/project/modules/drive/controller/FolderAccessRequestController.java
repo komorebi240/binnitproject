@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * EXECUTIVE is excluded from creating requests — they already have full rights, requesting
+ * EXECUTIVE is excluded from creating requests - they already have full rights, requesting
  * cross-department access doesn't fit their scope (Phase 3 plan simplification). Approve/reject
  * scope (owning department head or executive) is enforced in FolderAccessRequestServiceImpl,
  * not here.

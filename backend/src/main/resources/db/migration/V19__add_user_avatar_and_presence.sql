@@ -1,0 +1,2 @@
+ALTER TABLE users ADD avatar_path NVARCHAR(300) NULL;
+ALTER TABLE users ADD presence_status NVARCHAR(20) NOT NULL DEFAULT 'ONLINE';

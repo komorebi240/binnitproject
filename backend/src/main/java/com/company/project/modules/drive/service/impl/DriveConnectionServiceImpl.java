@@ -63,7 +63,7 @@ public class DriveConnectionServiceImpl implements DriveConnectionService {
         try {
             OAuthStateEntity stateEntity = state != null ? oauthStateRepository.findById(state).orElse(null) : null;
             if (state != null) {
-                // Always delete on first use, valid or not — a state token is single-use
+                // Always delete on first use, valid or not - a state token is single-use
                 // regardless (CLAUDE.md section 13, OAuth CSRF: replaying an old state must
                 // never succeed).
                 oauthStateRepository.deleteById(state);
@@ -82,7 +82,7 @@ public class DriveConnectionServiceImpl implements DriveConnectionService {
             GoogleTokenResponse tokenResponse = googleDriveClient.exchangeAuthorizationCode(code);
             if (tokenResponse.refreshToken() == null) {
                 // Google omits refresh_token when the user has already granted consent before
-                // and we didn't force prompt=consent — we always send prompt=consent, so this
+                // and we didn't force prompt=consent - we always send prompt=consent, so this
                 // should not normally happen, but fail loudly instead of storing an unusable connection.
                 return frontendUrl("error", "no_refresh_token");
             }

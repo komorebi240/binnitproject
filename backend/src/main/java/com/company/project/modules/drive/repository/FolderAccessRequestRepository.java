@@ -17,7 +17,7 @@ public interface FolderAccessRequestRepository extends JpaRepository<FolderAcces
     List<FolderAccessRequestEntity> findAllActiveByCompanyId(@Param("companyId") Long companyId);
 
     /** authorizedCatalogFolderIds = catalog folders the caller has decision authority over
-     * (their own department's folders, for a DEPARTMENT_HEAD) — see FolderAccessRequestServiceImpl. */
+     * (their own department's folders, for a DEPARTMENT_HEAD) - see FolderAccessRequestServiceImpl. */
     @Query("""
             select r from FolderAccessRequestEntity r where r.deleted = false and (
                 r.requesterUserId = :userId

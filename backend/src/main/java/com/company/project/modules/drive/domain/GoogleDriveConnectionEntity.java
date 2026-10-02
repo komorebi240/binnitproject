@@ -16,9 +16,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.Instant;
 
 /**
- * One user's own Google Drive connection (Phase 3 plan — per-user, not a shared company
+ * One user's own Google Drive connection (Phase 3 plan - per-user, not a shared company
  * account). {@code refreshTokenEncrypted} is AES-GCM ciphertext produced by
- * {@link com.company.project.security.TokenEncryptionService} — never store or log the
+ * {@link com.company.project.security.TokenEncryptionService} - never store or log the
  * plaintext refresh token (CLAUDE.md section 7).
  */
 @Entity

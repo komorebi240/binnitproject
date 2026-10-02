@@ -1,5 +1,5 @@
 # Local development profile. Host/port/db-name have convenience defaults for a local SQL
-# Server instance; credentials never do — they must come from the environment.
+# Server instance; credentials never do - they must come from the environment.
 spring:
   config:
     activate:

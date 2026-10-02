@@ -1,31 +1,59 @@
 spring:
   application:
     name: project
+  servlet:
+    multipart:
+      # Avatar uploads are the only multipart endpoint; capped well above the 2MB app-level
+      # check in AvatarStorageService so that check - not a generic Spring error - is what the
+      # client sees for an oversized file.
+      max-file-size: 5MB
+      max-request-size: 6MB
   jackson:
-    # Keeps the API envelope compact — e.g. a success response omits "error" and "pagination"
+    # Keeps the API envelope compact - e.g. a success response omits "error" and "pagination"
     # entirely instead of serializing them as null (CLAUDE.md section 46.4).
     default-property-inclusion: non_null
   jpa:
     hibernate:
-      # Schema is owned by Flyway migrations, not Hibernate — "validate" catches drift
+      # Schema is owned by Flyway migrations, not Hibernate - "validate" catches drift
       # instead of silently auto-altering the schema (CLAUDE.md section 36).
       ddl-auto: validate
     open-in-view: false
   flyway:
     enabled: true
     locations: classpath:db/migration
+  mail:
+    # Gmail SMTP for the "forgot password" OTP email (Phase 4 plan). Deliberately NOT
+    # required-with-no-default like JWT_SECRET: leaving these unset means Spring Boot never
+    # creates a JavaMailSender bean at all, and EmailServiceImpl degrades that one feature
+    # instead of crashing the whole app (CLAUDE.md section 35). Use a Gmail App Password, never
+    # the real account password - see backend/README.md for how to create one.
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 app:
+  # Base URL used in links inside emails (invitations). Must be the public frontend origin.
+  public-base-url: ${PUBLIC_BASE_URL:http://localhost:3000}
+  mail:
+    # Local development only: log OTPs/invite links instead of sending mail. Refused under the prod profile.
+    dev-log: ${MAIL_DEV_LOG:false}
   cors:
     # Comma-separated list, no wildcard once credentials are allowed (CLAUDE.md section 13).
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   jwt:
-    # Required, no default — startup fails loudly instead of running with a guessable secret.
+    # Required, no default - startup fails loudly instead of running with a guessable secret.
     secret: ${JWT_SECRET}
     access-token-ttl-minutes: 15
     refresh-token-ttl-days: 7
   google:
-    # Per-user "Connect Google Drive" OAuth client — see backend/README.md for the step-by-step
+    # Per-user "Connect Google Drive" OAuth client - see backend/README.md for the step-by-step
     # guide to create these in Google Cloud Console. No defaults: fail fast instead of running
     # with a missing/guessable secret.
     client-id: ${GOOGLE_CLIENT_ID}
@@ -36,6 +64,17 @@ app:
     # (CLAUDE.md section 7). Generate one with: openssl rand -base64 32
     token-encryption-key: ${DRIVE_TOKEN_ENCRYPTION_KEY}
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  uploads:
+    # Local disk storage for user avatars (CLAUDE.md section 31 - never trust the client's
+    # filename/MIME, generate a safe server-side name; see AvatarStorageService). Relative path
+    # is fine for a single-instance dev deployment; use an absolute path (and ideally a mounted
+    # volume, not the app's own working directory) once this runs anywhere that redeploys wipe
+    # the working directory.
+    avatar-dir: ${AVATAR_UPLOAD_DIR:./uploads/avatars}
+    # Chat attachments (see ChatAttachmentStorageService) - same single-instance-disk caveat as avatars.
+    chat-dir: ${CHAT_UPLOAD_DIR:./uploads/chat}
+    # Task attachments - same validated storage as chat, separate directory.
+    task-dir: ${TASK_UPLOAD_DIR:./uploads/tasks}
 
 management:
   endpoints:

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
@@ -11,7 +12,10 @@ import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import type { AuthorityLevel, UserProfile } from "@/features/auth/types";
 import { useDepartments, useTeams } from "../hooks/useOrganization";
-import { useCreateUser, useDeleteUser, useUsers } from "../hooks/useOrganization";
+import { useCreateUser, useDeleteUser, useSetUserActive, useUsers } from "../hooks/useOrganization";
+import { TransferPositionForm } from "./TransferPositionForm";
+import { UserKpiPanel } from "@/features/kpi/components/UserKpiPanel";
+import { AddEventForUserForm } from "@/features/calendar/components/AddEventForUserForm";
 import type { CreateUserInput, UserSummary } from "../types";
 
 const LEVEL_LABELS: Record<AuthorityLevel, string> = {
@@ -45,6 +49,7 @@ export function UserManager({ currentUser }: UserManagerProps) {
   const { data: departments } = useDepartments();
   const createUser = useCreateUser();
   const deleteUser = useDeleteUser();
+  const setUserActive = useSetUserActive();
   const { showToast } = useToast();
 
   const allowedLevels = allowedLevelsFor(currentUser.authorityLevel);
@@ -57,8 +62,14 @@ export function UserManager({ currentUser }: UserManagerProps) {
     title: "",
     departmentId: currentUser.departmentId ?? undefined,
     teamId: currentUser.teamId ?? undefined,
+    phone: "",
+    employeeCode: "",
+    startDate: "",
   });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [transferringUserId, setTransferringUserId] = useState<number | null>(null);
+  const [kpiUserId, setKpiUserId] = useState<number | null>(null);
+  const [schedulingUserId, setSchedulingUserId] = useState<number | null>(null);
 
   const isExecutive = currentUser.authorityLevel === "EXECUTIVE";
   const { data: teamsInChosenDepartment } = useTeams(form.departmentId ?? -1);
@@ -76,9 +87,22 @@ export function UserManager({ currentUser }: UserManagerProps) {
         title: form.title || undefined,
         departmentId: form.departmentId,
         teamId: form.teamId,
+        phone: form.phone || undefined,
+        employeeCode: form.employeeCode || undefined,
+        startDate: form.startDate || undefined,
       };
       await createUser.mutateAsync(input);
-      setForm((prev) => ({ ...prev, username: "", password: "", fullName: "", email: "", title: "" }));
+      setForm((prev) => ({
+        ...prev,
+        username: "",
+        password: "",
+        fullName: "",
+        email: "",
+        title: "",
+        phone: "",
+        employeeCode: "",
+        startDate: "",
+      }));
       showToast("success", "Đã thêm nhân sự");
     } catch (err) {
       setErrorMessage(err instanceof ApiRequestError ? err.message : "Không tạo được người dùng");
@@ -91,6 +115,17 @@ export function UserManager({ currentUser }: UserManagerProps) {
       onError: (err) =>
         showToast("error", err instanceof ApiRequestError ? err.message : "Không xoá được nhân sự"),
     });
+  }
+
+  function handleToggleActive(user: UserSummary) {
+    setUserActive.mutate(
+      { id: user.id, active: !user.active },
+      {
+        onSuccess: () => showToast("success", user.active ? "Đã khoá tài khoản" : "Đã mở khoá tài khoản"),
+        onError: (err) =>
+          showToast("error", err instanceof ApiRequestError ? err.message : "Không đổi được trạng thái"),
+      },
+    );
   }
 
   if (allowedLevels.length === 0) {
@@ -110,12 +145,49 @@ export function UserManager({ currentUser }: UserManagerProps) {
             { header: "Họ tên", cell: (u) => u.fullName },
             { header: "Vai trò", cell: (u) => LEVEL_LABELS[u.authorityLevel] },
             { header: "Chức danh", cell: (u) => u.title ?? "-" },
+            { header: "Mã NV", cell: (u) => u.employeeCode ?? "-" },
+            { header: "SĐT", cell: (u) => u.phone ?? "-" },
+            {
+              header: "Trạng thái",
+              cell: (u) => (
+                <Badge tone={u.active ? "success" : "danger"}>
+                  {u.active ? "Đang hoạt động" : "Đã khoá"}
+                </Badge>
+              ),
+            },
             {
               header: "",
               cell: (u) => (
-                <Button variant="danger" onClick={() => handleDelete(u.id)} loading={deleteUser.isPending}>
-                  Xoá
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setKpiUserId(kpiUserId === u.id ? null : u.id)}
+                  >
+                    Xem KPI
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setTransferringUserId(transferringUserId === u.id ? null : u.id)}
+                  >
+                    Chuyển vị trí
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setSchedulingUserId(schedulingUserId === u.id ? null : u.id)}
+                  >
+                    Thêm lịch
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleToggleActive(u)}
+                    loading={setUserActive.isPending}
+                  >
+                    {u.active ? "Khoá" : "Mở khoá"}
+                  </Button>
+                  <Button variant="danger" onClick={() => handleDelete(u.id)} loading={deleteUser.isPending}>
+                    Xoá
+                  </Button>
+                </div>
               ),
             },
           ]}
@@ -129,6 +201,25 @@ export function UserManager({ currentUser }: UserManagerProps) {
           }
         />
       )}
+
+      {kpiUserId != null && <UserKpiPanel userId={kpiUserId} />}
+
+      {schedulingUserId != null && (
+        <AddEventForUserForm userId={schedulingUserId} onDone={() => setSchedulingUserId(null)} />
+      )}
+
+      {transferringUserId != null &&
+        (() => {
+          const target = (users ?? []).find((u) => u.id === transferringUserId);
+          if (!target) return null;
+          return (
+            <TransferPositionForm
+              user={target}
+              allowedLevels={allowedLevels}
+              onDone={() => setTransferringUserId(null)}
+            />
+          );
+        })()}
 
       <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded border border-gray-200 p-4 sm:grid-cols-2">
         <Input
@@ -167,6 +258,22 @@ export function UserManager({ currentUser }: UserManagerProps) {
           label="Chức danh hiển thị (vd: CEO, CTO)"
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
+        />
+        <Input
+          label="Số điện thoại (tuỳ chọn)"
+          value={form.phone}
+          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+        />
+        <Input
+          label="Mã nhân viên (tuỳ chọn)"
+          value={form.employeeCode}
+          onChange={(e) => setForm({ ...form, employeeCode: e.target.value })}
+        />
+        <Input
+          label="Ngày vào làm (tuỳ chọn)"
+          type="date"
+          value={form.startDate}
+          onChange={(e) => setForm({ ...form, startDate: e.target.value })}
         />
 
         {isExecutive && form.authorityLevel !== "EXECUTIVE" && (

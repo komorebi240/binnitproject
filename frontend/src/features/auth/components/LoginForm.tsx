@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -55,6 +56,10 @@ export function LoginForm() {
       <Button type="submit" loading={login.isPending}>
         Đăng nhập
       </Button>
+
+      <Link href="/forgot-password" className="text-center text-sm text-primary hover:underline">
+        Quên mật khẩu?
+      </Link>
     </form>
   );
 }

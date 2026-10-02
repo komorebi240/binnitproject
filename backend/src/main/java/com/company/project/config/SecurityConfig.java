@@ -23,7 +23,7 @@ import org.springframework.web.cors.CorsUtils;
 
 /**
  * Stateless JWT-based (cookie-carried) security. @EnableMethodSecurity turns on @PreAuthorize
- * for coarse-grained, authority-tier checks — fine-grained scope checks (does this department
+ * for coarse-grained, authority-tier checks - fine-grained scope checks (does this department
  * actually belong to the caller's company?) still happen in the service layer, never here
  * (CLAUDE.md section 9).
  *
@@ -60,7 +60,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                .csrf(AbstractHttpConfigurer::disable) // SameSite=Strict on the auth cookie is the CSRF defense — see AuthController
+                .csrf(AbstractHttpConfigurer::disable) // SameSite=Strict on the auth cookie is the CSRF defense - see AuthController
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(authenticationEntryPoint) // -> 401 envelope, not the default blank 403
@@ -69,10 +69,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Without this, the browser's CORS preflight (OPTIONS) falls through to
                         // anyRequest().authenticated(), gets rejected as unauthenticated, and the
-                        // browser never sends the real request at all — see WebConfig's javadoc.
+                        // browser never sends the real request at all - see WebConfig's javadoc.
                         .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/logout").permitAll()
-                        // Google's redirect back to us — resolves the user from the `state`
+                        // Must be reachable while logged out - see AuthController javadoc on
+                        // each endpoint for why the response never reveals account existence.
+                        .requestMatchers("/api/v1/auth/forgot-password", "/api/v1/auth/reset-password").permitAll()
+                        .requestMatchers("/api/v1/auth/register/**", "/api/v1/auth/invitations/**").permitAll()
+                        // Google's redirect back to us - resolves the user from the `state`
                         // row it looks up itself, not from the caller's own auth (see
                         // DriveConnectionController's javadoc).
                         .requestMatchers("/api/v1/drive/oauth2/callback").permitAll()

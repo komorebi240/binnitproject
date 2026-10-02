@@ -99,7 +99,7 @@ public class DriveCatalogServiceImpl implements DriveCatalogService {
         }
         // Every other role registers into their own department only. If they don't send a
         // departmentId, default to their own; if they explicitly send a different one, reject
-        // it loudly (403) rather than silently overriding it — silent override would still be
+        // it loudly (403) rather than silently overriding it - silent override would still be
         // safe, but a mismatched value here is either a bug or an attempt worth surfacing.
         if (request.departmentId() != null && !request.departmentId().equals(caller.getDepartmentId())) {
             throw new AccessDeniedException("You can only register folders for your own department");

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,4 +46,12 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
             """)
     List<TaskEntity> findAllActiveForTeamScope(
             @Param("memberUserIds") List<Long> memberUserIds, @Param("callerId") Long callerId);
+
+    /** Tasks personally assigned (not department-wide) to a user since a given instant - used by KpiServiceImpl. */
+    @Query("""
+            select t from TaskEntity t
+            where t.deleted = false and t.assigneeUserId = :userId and t.createdAt >= :since
+            """)
+    List<TaskEntity> findAllActiveByAssigneeUserIdAndCreatedAtAfter(
+            @Param("userId") Long userId, @Param("since") Instant since);
 }

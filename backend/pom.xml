@@ -84,6 +84,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Email (forgot-password OTP, via spring.mail.* / Gmail SMTP - see application.yml) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Observability -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

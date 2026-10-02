@@ -20,9 +20,9 @@ import java.time.Instant;
 
 /**
  * A user's current org placement and authority tier. Kept separate from {@link UserEntity}
- * so a promotion/transfer is "close the old position, open a new one," not a user-row edit —
+ * so a promotion/transfer is "close the old position, open a new one," not a user-row edit -
  * see the Phase 1 plan for why. The DB also enforces that department/team match the
- * authority level (ck_positions_scope_matches_level in V4) — this constructor mirrors that
+ * authority level (ck_positions_scope_matches_level in V4) - this constructor mirrors that
  * rule in application code so a bad combination fails fast with a clear message instead of a
  * raw constraint-violation exception.
  */
@@ -77,7 +77,7 @@ public class PositionEntity {
     public PositionEntity(Long userId, AuthorityLevel authorityLevel, Long departmentId, Long teamId, String title) {
         if (!isScopeValid(authorityLevel, departmentId, teamId)) {
             // Callers should validate with isScopeValid(...) first and raise a proper 422
-            // (BusinessException) — reaching this means that check was skipped.
+            // (BusinessException) - reaching this means that check was skipped.
             throw new IllegalArgumentException(
                     "departmentId/teamId do not match authority level " + authorityLevel);
         }

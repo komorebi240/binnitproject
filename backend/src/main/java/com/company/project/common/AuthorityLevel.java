@@ -2,7 +2,7 @@ package com.company.project.common;
 
 /**
  * Authority tier for a user's position within their company. Deliberately not "role"
- * (CEO/CTO/COO are all EXECUTIVE — same permission tier, different display title) — see
+ * (CEO/CTO/COO are all EXECUTIVE - same permission tier, different display title) - see
  * the Phase 1 plan for why title and authority level are kept separate.
  *
  * Scope each tier acts on:

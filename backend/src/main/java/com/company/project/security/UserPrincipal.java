@@ -10,12 +10,12 @@ import java.util.List;
 /**
  * The authenticated identity for every request: who they are, which company they belong to
  * (the tenant boundary), and their org placement. Every scope check in the service layer
- * compares against these fields — never against a companyId/departmentId the client sent
+ * compares against these fields - never against a companyId/departmentId the client sent
  * (CLAUDE.md section 9/10).
  *
  * Built two ways: by {@link CustomUserDetailsService} from the database during login (has a
  * real password hash, used once by AuthenticationManager), and by {@link JwtService} from a
- * token's claims on every subsequent request (password hash is null — never needed again).
+ * token's claims on every subsequent request (password hash is null - never needed again).
  */
 public class UserPrincipal implements UserDetails {
 
@@ -27,6 +27,7 @@ public class UserPrincipal implements UserDetails {
     private final Long departmentId;
     private final Long teamId;
     private final boolean enabled;
+    private final boolean systemAccount;
 
     public UserPrincipal(
             Long userId,
@@ -38,6 +39,20 @@ public class UserPrincipal implements UserDetails {
             Long teamId,
             boolean enabled
     ) {
+        this(userId, username, passwordHash, companyId, authorityLevel, departmentId, teamId, enabled, false);
+    }
+
+    public UserPrincipal(
+            Long userId,
+            String username,
+            String passwordHash,
+            Long companyId,
+            AuthorityLevel authorityLevel,
+            Long departmentId,
+            Long teamId,
+            boolean enabled,
+            boolean systemAccount
+    ) {
         this.userId = userId;
         this.username = username;
         this.passwordHash = passwordHash;
@@ -46,6 +61,7 @@ public class UserPrincipal implements UserDetails {
         this.departmentId = departmentId;
         this.teamId = teamId;
         this.enabled = enabled;
+        this.systemAccount = systemAccount;
     }
 
     public Long getUserId() {
@@ -66,6 +82,10 @@ public class UserPrincipal implements UserDetails {
 
     public Long getTeamId() {
         return teamId;
+    }
+
+    public boolean isSystemAccount() {
+        return systemAccount;
     }
 
     @Override

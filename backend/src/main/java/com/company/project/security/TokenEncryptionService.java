@@ -13,10 +13,10 @@ import java.util.Arrays;
 import java.util.Base64;
 
 /**
- * AES-GCM encryption for secrets that must be stored at rest — currently just Google Drive
+ * AES-GCM encryption for secrets that must be stored at rest - currently just Google Drive
  * OAuth refresh tokens (CLAUDE.md section 7: sensitive data must be encrypted, key must not be
  * hard-coded). Explicit encrypt/decrypt calls in the service layer rather than a JPA
- * AttributeConverter — simpler to reason about and test than relying on Hibernate's Spring bean
+ * AttributeConverter - simpler to reason about and test than relying on Hibernate's Spring bean
  * container wiring for something security-sensitive (CLAUDE.md section 1: explicit over implicit).
  */
 @Service

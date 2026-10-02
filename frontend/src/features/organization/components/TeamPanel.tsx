@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { CaretDown, CaretRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { Table } from "@/components/ui/Table";
 import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import type { AuthorityLevel } from "@/features/auth/types";
 import { useCreateTeam, useDeleteTeam, useTeams } from "../hooks/useOrganization";
-import type { Team } from "../types";
+import { TeamMemberList } from "./TeamMemberList";
 
 interface TeamPanelProps {
   departmentId: number;
@@ -28,6 +28,7 @@ export function TeamPanel({ departmentId, departmentName, canManage }: TeamPanel
   const { showToast } = useToast();
   const [name, setName] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [expandedTeamId, setExpandedTeamId] = useState<number | null>(null);
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
@@ -54,32 +55,41 @@ export function TeamPanel({ departmentId, departmentName, canManage }: TeamPanel
 
       {isLoading ? (
         <Skeleton rows={2} />
-      ) : (
-        <Table<Team>
-          columns={[
-            { header: "Tên nhóm", cell: (t) => t.name },
-            ...(canManage
-              ? [
-                  {
-                    header: "",
-                    cell: (t: Team) => (
-                      <Button variant="danger" onClick={() => handleDelete(t.id)} loading={deleteTeam.isPending}>
-                        Xoá
-                      </Button>
-                    ),
-                  },
-                ]
-              : []),
-          ]}
-          rows={teams ?? []}
-          getRowKey={(t) => t.id}
-          emptyState={
-            <EmptyState
-              title="Chưa có nhóm nào trong phòng ban này"
-              description={canManage ? "Tạo nhóm đầu tiên bên dưới." : undefined}
-            />
-          }
+      ) : (teams ?? []).length === 0 ? (
+        <EmptyState
+          title="Chưa có nhóm nào trong phòng ban này"
+          description={canManage ? "Tạo nhóm đầu tiên bên dưới." : undefined}
         />
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {(teams ?? []).map((team) => {
+            const isExpanded = expandedTeamId === team.id;
+            return (
+              <li key={team.id} className="rounded border border-gray-200">
+                <div className="flex items-center justify-between gap-2 px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedTeamId(isExpanded ? null : team.id)}
+                    className="flex flex-1 items-center gap-1.5 text-left text-sm font-medium text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                  >
+                    {isExpanded ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
+                    {team.name}
+                  </button>
+                  {canManage && (
+                    <Button variant="danger" onClick={() => handleDelete(team.id)} loading={deleteTeam.isPending}>
+                      Xoá
+                    </Button>
+                  )}
+                </div>
+                {isExpanded && (
+                  <div className="animate-fade-in border-t border-gray-100 px-3 py-2">
+                    <TeamMemberList teamId={team.id} teamName={team.name} />
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       )}
 
       {canManage && (

@@ -21,7 +21,7 @@ import java.time.Instant;
 /**
  * A cross-department request for access to a catalog folder. Status transitions are guarded
  * here as a last-resort check (IllegalStateException); the service layer is expected to
- * pre-validate and raise a proper 422 BusinessException first — same pattern as TaskEntity.
+ * pre-validate and raise a proper 422 BusinessException first - same pattern as TaskEntity.
  */
 @Entity
 @Table(name = "folder_access_requests")

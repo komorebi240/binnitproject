@@ -1,8 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Theme tokens (Phase 4 plan — CLAUDE.md section 26 design tokens). Each theme sets the same
+ * set of RGB-triplet variables; Tailwind's color tokens in tailwind.config.ts read them via
+ * `rgb(var(--color-x) / <alpha-value>)` so switching `data-theme` on <html> recolors the whole
+ * app instantly, no rebuild. `light` is also the fallback (no data-theme attribute yet, e.g.
+ * before ThemeProvider's first paint).
+ *
+ * "light" and "dark" are the default pair and carry the literal "Orbit" brand hue
+ * (Indigo/Violet on a night-sky navy, researched via a UI/UX pass referencing
+ * nextlevelbuilder/ui-ux-pro-max-skill's color-palette and typography data rather than picked by
+ * eye). "gray" and "pink" are personalization options, not the brand default — but as of this
+ * pass every theme gets the SAME *structural* treatment (a two-stop gradient whose two colors
+ * are deliberately far apart in lightness, not just hue) so the gradient reads as a crisp shape
+ * against its own background instead of a flat tint that can wash out ("blind ra nền" — the
+ * reported issue was two close-lightness colors next to a similarly-toned background, not the
+ * gradient concept itself). `--color-primary-ring` is a fixed-opacity dark/light edge (see the
+ * `.gradient-surface` utility below) that keeps gradient buttons/active-nav crisply outlined
+ * regardless of how close the gradient's own hue is to the page background.
+ */
+:root,
+:root[data-theme="light"] {
+  --color-primary: 79 70 229; /* indigo-600 — Orbit brand primary */
+  --color-primary-end: 124 58 237; /* violet-600 */
+  --color-primary-foreground: 255 255 255;
+  --color-primary-ring: 0 0 0; /* dark hairline edge reads on this theme's light surfaces */
+  --color-surface: 255 255 255;
+  --color-surface-muted: 234 236 252; /* indigo-100-ish — brand-tinted instead of neutral gray */
+  --color-danger: 220 38 38; /* red-600 */
+  --color-danger-foreground: 255 255 255;
+  --color-body-bg: 247 247 255; /* near-white with a faint indigo tint, not flat white */
+  --color-body-fg: 17 24 39; /* gray-900 */
+}
+
+:root[data-theme="dark"] {
+  --color-primary: 139 92 246; /* violet-500 — lighter than the old violet-600 for more lift off the navy body */
+  --color-primary-end: 67 56 202; /* indigo-700 — darker end gives the gradient real lightness range instead of two similarly-bright stops */
+  --color-primary-foreground: 255 255 255;
+  --color-primary-ring: 255 255 255; /* light hairline edge reads on this theme's dark surfaces */
+  --color-surface: 30 41 59; /* slate-800 */
+  --color-surface-muted: 49 46 80; /* slate blended with violet-900, instead of flat slate-600 */
+  --color-danger: 248 113 113; /* red-400 */
+  --color-danger-foreground: 17 24 39;
+  --color-body-bg: 15 23 42; /* slate-900 — "night indigo" base */
+  --color-body-fg: 241 245 249; /* slate-100 */
+}
+
+:root[data-theme="gray"] {
+  --color-primary: 100 116 139; /* slate-500 */
+  --color-primary-end: 30 41 59; /* slate-800 — far enough in lightness from slate-500 to read as a real gradient, not a flat tint */
+  --color-primary-foreground: 255 255 255;
+  --color-primary-ring: 0 0 0;
+  --color-surface: 255 255 255;
+  --color-surface-muted: 226 232 240; /* slate-200 */
+  --color-danger: 220 38 38;
+  --color-danger-foreground: 255 255 255;
+  --color-body-bg: 241 245 249; /* slate-100 */
+  --color-body-fg: 17 24 39;
+}
+
+:root[data-theme="pink"] {
+  --color-primary: 244 114 182; /* pink-400 */
+  --color-primary-end: 157 23 77; /* pink-800 — far enough in lightness from pink-400 to read as a real gradient */
+  --color-primary-foreground: 255 255 255;
+  --color-primary-ring: 0 0 0;
+  --color-surface: 255 255 255;
+  --color-surface-muted: 253 242 248; /* pink-50 */
+  --color-danger: 220 38 38;
+  --color-danger-foreground: 255 255 255;
+  --color-body-bg: 255 255 255;
+  --color-body-fg: 17 24 39;
+}
+
 body {
-  color: #111827;
-  background: #ffffff;
+  background: rgb(var(--color-body-bg));
+  color: rgb(var(--color-body-fg));
+  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Orbit brand typeface pairing: Space Grotesk for headings (its geometric, slightly technical
+   character reads as "tech/space"), DM Sans for everything else (built for UI legibility at
+   small sizes — the project's screens are data-dense). Applied globally via the element
+   selector rather than a utility class on every heading across dozens of files. */
+h1,
+h2,
+h3 {
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Dark-theme readability patch: most feature panels (built before the theme system existed)
+ * hard-code neutral Tailwind classes like text-gray-900/border-gray-200/bg-white rather than a
+ * theme token, because they were never meant to render on a dark surface. Rewriting every one
+ * of those classNames is out of scope for this pass (CLAUDE.md section 29 — no work beyond
+ * what's needed); this block keeps them legible under the dark theme without touching component
+ * code, at the cost of a handful of !important overrides. New shared UI components should use
+ * the CSS-variable-backed tokens (bg-surface, text-primary, etc.) instead of raw gray/white.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] .bg-white {
+  background-color: rgb(var(--color-surface)) !important;
+}
+
+:root[data-theme="dark"] .bg-gray-100,
+:root[data-theme="dark"] .bg-gray-200 {
+  background-color: rgb(var(--color-surface-muted)) !important;
+}
+
+:root[data-theme="dark"] .text-gray-900 {
+  color: #f1f5f9 !important;
+}
+
+:root[data-theme="dark"] .text-gray-700,
+:root[data-theme="dark"] .text-gray-600 {
+  color: #cbd5e1 !important;
+}
+
+:root[data-theme="dark"] .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+:root[data-theme="dark"] .border-gray-100,
+:root[data-theme="dark"] .border-gray-200,
+:root[data-theme="dark"] .border-gray-300,
+:root[data-theme="dark"] .border-gray-400,
+:root[data-theme="dark"] .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+:root[data-theme="dark"] .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155 !important;
+}
+
+/*
+ * Crisp edge for any gradient surface (primary buttons, active sidebar nav, the self-task "+"
+ * button) — a 1px ring in --color-primary-ring (dark on light themes, light on dark themes) so
+ * the shape stays well-defined even when the gradient's own hue sits close to the page
+ * background behind it (the reported "blind ra nền" issue).
+ */
+.gradient-surface {
+  box-shadow: inset 0 0 0 1px rgb(var(--color-primary-ring) / 0.12);
+}
+
+/*
+ * Shared hover-elevation for clickable cards (department tiles, task board cards) — a brand-
+ * tinted shadow plus a slight lift, 200ms (CLAUDE.md section 25: motion for feedback/state
+ * change only). Never applied to a non-interactive card (e.g. the KPI stat cards), since lifting
+ * something the user can't actually click would be a false affordance.
+ */
+.card-interactive {
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out;
+}
+
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -10px rgb(var(--color-primary) / 0.35);
+}
+
+/* Respect the user's OS-level motion preference everywhere — including the new hover-lift and
+   gradient-shift effects above (UI/UX review: flagged High severity for ignoring this). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .card-interactive:hover {
+    transform: none;
+  }
 }

@@ -22,10 +22,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 /**
- * A task assigned to either one user or an entire department (a shared queue — see the
+ * A task assigned to either one user or an entire department (a shared queue - see the
  * Phase 2 plan). Status transitions are guarded here as a last-resort check
  * (IllegalArgumentException); the service layer is expected to pre-validate and raise a
- * proper 422 BusinessException first — mirrors the pattern already used by PositionEntity's
+ * proper 422 BusinessException first - mirrors the pattern already used by PositionEntity's
  * isScopeValid.
  */
 @Entity
@@ -69,6 +69,9 @@ public class TaskEntity {
 
     @Column(name = "due_date")
     private LocalDate dueDate;
+
+    @Column(name = "drive_url", length = 500)
+    private String driveUrl;
 
     @Column(name = "decided_at")
     private Instant decidedAt;
@@ -158,6 +161,22 @@ public class TaskEntity {
         this.status = TaskStatus.CANCELLED;
     }
 
+    /** Puts a cancelled task back into play - resets to ASSIGNED, as if it were just created. */
+    public void restore() {
+        requireStatus(TaskStatus.CANCELLED, "restore");
+        this.status = TaskStatus.ASSIGNED;
+        this.decidedAt = null;
+    }
+
+    /** Already validated/normalised by DriveUrlPolicy; null clears the link. */
+    public void changeDriveUrl(String driveUrl) {
+        this.driveUrl = driveUrl;
+    }
+
+    public void markDeleted() {
+        this.deleted = true;
+    }
+
     private void requireStatus(TaskStatus required, String action) {
         if (status != required) {
             throw new IllegalArgumentException(
@@ -167,6 +186,10 @@ public class TaskEntity {
 
     public Long getId() {
         return id;
+    }
+
+    public String getDriveUrl() {
+        return driveUrl;
     }
 
     public Long getCompanyId() {

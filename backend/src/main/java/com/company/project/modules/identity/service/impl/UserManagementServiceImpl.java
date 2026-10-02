@@ -8,11 +8,13 @@ import com.company.project.modules.identity.domain.PositionEntity;
 import com.company.project.modules.identity.domain.TeamEntity;
 import com.company.project.modules.identity.domain.UserEntity;
 import com.company.project.modules.identity.dto.request.CreateUserRequest;
+import com.company.project.modules.identity.dto.request.UpdatePositionRequest;
 import com.company.project.modules.identity.dto.response.UserSummaryResponse;
 import com.company.project.modules.identity.repository.DepartmentRepository;
 import com.company.project.modules.identity.repository.PositionRepository;
 import com.company.project.modules.identity.repository.TeamRepository;
 import com.company.project.modules.identity.repository.UserRepository;
+import com.company.project.modules.identity.service.AvatarStorageService;
 import com.company.project.modules.identity.service.UserManagementService;
 import com.company.project.security.UserPrincipal;
 import org.springframework.http.HttpStatus;
@@ -29,7 +31,7 @@ import java.util.function.Function;
  * Who can create/remove whom mirrors the org hierarchy (Phase 1 plan): EXECUTIVE manages
  * anyone in their company; DEPARTMENT_HEAD only within their own department; TEAM_LEAD only
  * within their own team, and only EMPLOYEE. Every check re-derives scope from the caller's
- * UserPrincipal — the client never gets to name its own companyId (CLAUDE.md section 9/10).
+ * UserPrincipal - the client never gets to name its own companyId (CLAUDE.md section 9/10).
  */
 @Service
 public class UserManagementServiceImpl implements UserManagementService {
@@ -39,19 +41,22 @@ public class UserManagementServiceImpl implements UserManagementService {
     private final DepartmentRepository departmentRepository;
     private final TeamRepository teamRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AvatarStorageService avatarStorageService;
 
     public UserManagementServiceImpl(
             UserRepository userRepository,
             PositionRepository positionRepository,
             DepartmentRepository departmentRepository,
             TeamRepository teamRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            AvatarStorageService avatarStorageService
     ) {
         this.userRepository = userRepository;
         this.positionRepository = positionRepository;
         this.departmentRepository = departmentRepository;
         this.teamRepository = teamRepository;
         this.passwordEncoder = passwordEncoder;
+        this.avatarStorageService = avatarStorageService;
     }
 
     @Override
@@ -62,22 +67,13 @@ public class UserManagementServiceImpl implements UserManagementService {
         if (userRepository.existsByUsername(request.username())) {
             throw new BusinessException("USERNAME_TAKEN", "Username is already in use", HttpStatus.CONFLICT);
         }
-
-        Long departmentId = resolveOwnCompanyDepartment(request.departmentId(), caller);
-        Long teamId = null;
-        if (request.teamId() != null) {
-            // Resolving a team also fills in departmentId from the team's own parent when the
-            // request only supplied a teamId — a team implies exactly one department.
-            departmentId = resolveDepartmentTeamAndReturnDepartmentId(request.teamId(), departmentId, caller);
-            teamId = request.teamId();
+        if (request.employeeCode() != null && userRepository.existsByEmployeeCode(request.employeeCode())) {
+            throw new BusinessException("EMPLOYEE_CODE_TAKEN", "Employee code is already in use", HttpStatus.CONFLICT);
         }
 
-        if (!PositionEntity.isScopeValid(request.authorityLevel(), departmentId, teamId)) {
-            throw new BusinessException(
-                    "INVALID_POSITION_SCOPE",
-                    "departmentId/teamId do not match authorityLevel " + request.authorityLevel(),
-                    HttpStatus.UNPROCESSABLE_ENTITY);
-        }
+        GrantScope scope = resolveScope(caller, request.authorityLevel(), request.departmentId(), request.teamId());
+        Long departmentId = scope.departmentId();
+        Long teamId = scope.teamId();
 
         UserEntity user = new UserEntity(
                 caller.getCompanyId(),
@@ -85,6 +81,9 @@ public class UserManagementServiceImpl implements UserManagementService {
                 passwordEncoder.encode(request.password()),
                 request.fullName(),
                 request.email());
+        user.setPhone(request.phone());
+        user.setEmployeeCode(request.employeeCode());
+        user.setStartDate(request.startDate());
         UserEntity savedUser = userRepository.save(user);
 
         PositionEntity position = new PositionEntity(
@@ -111,15 +110,23 @@ public class UserManagementServiceImpl implements UserManagementService {
         Map<Long, UserEntity> usersById = userRepository.findAllActiveByIds(userIds).stream()
                 .collect(java.util.stream.Collectors.toMap(UserEntity::getId, Function.identity()));
 
+        // The broadcast bot is a chat-only identity, never a directory entry.
         return positions.stream()
-                .filter(p -> usersById.containsKey(p.getUserId()))
+                .filter(p -> usersById.containsKey(p.getUserId()) && !usersById.get(p.getUserId()).isSystemAccount())
                 .map(p -> toSummary(usersById.get(p.getUserId()), p))
                 .toList();
     }
 
     @Override
     @Transactional
-    public void deleteUser(Long userId, UserPrincipal caller) {
+    public void deleteUser(Long userId, String password, UserPrincipal caller) {
+        UserEntity callerUser = userRepository.findActiveById(caller.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", caller.getUserId()));
+        if (!passwordEncoder.matches(password, callerUser.getPasswordHash())) {
+            throw new BusinessException(
+                    "INVALID_PASSWORD", "Your password is incorrect", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+
         if (userId.equals(caller.getUserId())) {
             throw new BusinessException(
                     "CANNOT_DELETE_SELF", "You cannot delete your own account", HttpStatus.UNPROCESSABLE_ENTITY);
@@ -140,11 +147,95 @@ public class UserManagementServiceImpl implements UserManagementService {
         targetPosition.markDeleted();
     }
 
-    /** Checked before creating a user — can the caller grant this level at this department/team? */
+    @Override
+    @Transactional
+    public UserSummaryResponse updatePosition(Long userId, UpdatePositionRequest request, UserPrincipal caller) {
+        UserEntity target = userRepository.findActiveById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        if (!target.getCompanyId().equals(caller.getCompanyId())) {
+            throw new ResourceNotFoundException("User", userId);
+        }
+        PositionEntity currentPosition = positionRepository.findActiveByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        // Can the caller touch the CURRENT holder (e.g. a department head must not be able to
+        // reach into another department's team lead), and separately, can they grant the NEW
+        // level/scope being requested - same two checks used by delete and create respectively.
+        assertCallerCanManage(caller, currentPosition);
+        assertCallerCanGrant(caller, request.authorityLevel(), request.departmentId(), request.teamId());
+
+        GrantScope scope = resolveScope(caller, request.authorityLevel(), request.departmentId(), request.teamId());
+        Long departmentId = scope.departmentId();
+        Long teamId = scope.teamId();
+
+        // Close the old position rather than editing it in place - the closed row is a free,
+        // implicit promotion/transfer history (still queryable, just is_deleted=1). Flushed
+        // explicitly before the insert: Hibernate's default flush order would otherwise emit
+        // the new row's INSERT before this row's UPDATE, and ux_positions_active_user (unique
+        // on user_id WHERE is_deleted=0) briefly sees two active rows for the same user.
+        currentPosition.markDeleted();
+        positionRepository.saveAndFlush(currentPosition);
+        PositionEntity newPosition = positionRepository.save(
+                new PositionEntity(userId, request.authorityLevel(), departmentId, teamId, request.title()));
+
+        return toSummary(target, newPosition);
+    }
+
+    @Override
+    @Transactional
+    public UserSummaryResponse setActive(Long userId, boolean active, UserPrincipal caller) {
+        if (userId.equals(caller.getUserId())) {
+            throw new BusinessException(
+                    "CANNOT_DEACTIVATE_SELF", "You cannot change your own account status", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+
+        UserEntity target = userRepository.findActiveById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        if (!target.getCompanyId().equals(caller.getCompanyId())) {
+            throw new ResourceNotFoundException("User", userId);
+        }
+        PositionEntity targetPosition = positionRepository.findActiveByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+
+        assertCallerCanManage(caller, targetPosition);
+
+        target.setActive(active);
+        return toSummary(target, targetPosition);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GrantScope validateGrantScope(UserPrincipal caller, AuthorityLevel level, Long departmentId, Long teamId) {
+        assertCallerCanGrant(caller, level, departmentId, teamId);
+        return resolveScope(caller, level, departmentId, teamId);
+    }
+
+    /**
+     * Tenant-checks the department/team (a team implies exactly one department, so its own parent
+     * fills in departmentId when only a teamId was given) and verifies they fit the level.
+     */
+    private GrantScope resolveScope(UserPrincipal caller, AuthorityLevel level, Long departmentId, Long teamId) {
+        Long resolvedDepartmentId = resolveOwnCompanyDepartment(departmentId, caller);
+        Long resolvedTeamId = null;
+        if (teamId != null) {
+            resolvedDepartmentId = resolveDepartmentTeamAndReturnDepartmentId(teamId, resolvedDepartmentId, caller);
+            resolvedTeamId = teamId;
+        }
+
+        if (!PositionEntity.isScopeValid(level, resolvedDepartmentId, resolvedTeamId)) {
+            throw new BusinessException(
+                    "INVALID_POSITION_SCOPE",
+                    "departmentId/teamId do not match authorityLevel " + level,
+                    HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        return new GrantScope(resolvedDepartmentId, resolvedTeamId);
+    }
+
+    /** Checked before creating a user - can the caller grant this level at this department/team? */
     private void assertCallerCanGrant(UserPrincipal caller, AuthorityLevel target, Long departmentId, Long teamId) {
         switch (caller.getAuthorityLevel()) {
             case EXECUTIVE -> {
-                // Any level, any department/team — as long as it belongs to their own company
+                // Any level, any department/team - as long as it belongs to their own company
                 // (checked when resolving department/team below).
             }
             case DEPARTMENT_HEAD -> {
@@ -167,7 +258,7 @@ public class UserManagementServiceImpl implements UserManagementService {
         }
     }
 
-    /** Checked before deleting a user — can the caller manage someone holding this position? */
+    /** Checked before deleting a user - can the caller manage someone holding this position? */
     private void assertCallerCanManage(UserPrincipal caller, PositionEntity target) {
         switch (caller.getAuthorityLevel()) {
             case EXECUTIVE -> {
@@ -228,6 +319,30 @@ public class UserManagementServiceImpl implements UserManagementService {
                 position.getAuthorityLevel(),
                 position.getTitle(),
                 position.getDepartmentId(),
-                position.getTeamId());
+                position.getTeamId(),
+                user.isActive(),
+                user.getPhone(),
+                user.getEmployeeCode(),
+                user.getStartDate(),
+                avatarUrl(user),
+                user.getPresenceStatus());
+    }
+
+    private String avatarUrl(UserEntity user) {
+        return user.getAvatarPath() == null ? null : "/users/" + user.getId() + "/avatar";
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AvatarStorageService.Resolved getAvatarFile(Long userId, UserPrincipal caller) {
+        UserEntity target = userRepository.findActiveById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        if (!target.getCompanyId().equals(caller.getCompanyId())) {
+            throw new ResourceNotFoundException("User", userId);
+        }
+        if (target.getAvatarPath() == null) {
+            throw new ResourceNotFoundException("Avatar", userId);
+        }
+        return avatarStorageService.load(target.getAvatarPath());
     }
 }

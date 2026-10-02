@@ -2,6 +2,7 @@ package com.company.project.modules.identity.controller;
 
 import com.company.project.common.ApiResponse;
 import com.company.project.modules.identity.dto.request.CreateDepartmentRequest;
+import com.company.project.modules.identity.dto.response.DepartmentMemberResponse;
 import com.company.project.modules.identity.dto.response.DepartmentResponse;
 import com.company.project.modules.identity.service.OrganizationService;
 import com.company.project.security.UserPrincipal;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * @PreAuthorize here only checks the caller's authority tier — whether the target department
+ * @PreAuthorize here only checks the caller's authority tier - whether the target department
  * actually belongs to their company is re-checked in OrganizationService, never trusted from
  * the URL (CLAUDE.md section 9).
  */
@@ -53,5 +54,12 @@ public class DepartmentController {
     @PreAuthorize("hasAuthority('EXECUTIVE')")
     public void delete(@PathVariable Long id, @AuthenticationPrincipal UserPrincipal caller) {
         organizationService.deleteDepartment(id, caller);
+    }
+
+    /** Internal company directory - any authenticated user, not just managers (Phase 7 plan). */
+    @GetMapping("/{id}/members")
+    public ApiResponse<List<DepartmentMemberResponse>> listMembers(
+            @PathVariable Long id, @AuthenticationPrincipal UserPrincipal caller) {
+        return ApiResponse.success(organizationService.listDepartmentMembers(id, caller));
     }
 }

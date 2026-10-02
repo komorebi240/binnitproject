@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowSquareOut } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
@@ -11,7 +12,7 @@ import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import type { UserProfile } from "@/features/auth/types";
 import { useDepartments } from "@/features/organization/hooks/useOrganization";
-import { useCatalog, useRegisterFolder } from "../hooks/useDrive";
+import { useCatalog, useDriveStatus, useRegisterFolder } from "../hooks/useDrive";
 import type { CatalogFolder } from "../types";
 
 interface FolderCatalogProps {
@@ -21,6 +22,7 @@ interface FolderCatalogProps {
 export function FolderCatalog({ currentUser }: FolderCatalogProps) {
   const { data: catalog, isLoading } = useCatalog();
   const { data: departments } = useDepartments();
+  const { data: driveStatus } = useDriveStatus();
   const registerFolder = useRegisterFolder();
   const { showToast } = useToast();
 
@@ -52,7 +54,20 @@ export function FolderCatalog({ currentUser }: FolderCatalogProps) {
       ) : (
         <Table<CatalogFolder>
           columns={[
-            { header: "Folder", cell: (f) => f.googleFolderName },
+            {
+              header: "Folder",
+              cell: (f) => (
+                <a
+                  href={`https://drive.google.com/drive/folders/${f.googleFolderId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  {f.googleFolderName}
+                  <ArrowSquareOut size={14} aria-hidden />
+                </a>
+              ),
+            },
             { header: "Thuộc phòng ban", cell: (f) => f.departmentName },
           ]}
           rows={catalog ?? []}
@@ -63,42 +78,45 @@ export function FolderCatalog({ currentUser }: FolderCatalogProps) {
         />
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded border border-gray-200 p-4 sm:flex-row sm:items-end">
-        <div className="flex-1">
-          <Input
-            label="Link hoặc ID folder Google Drive"
-            value={folderLinkOrId}
-            onChange={(e) => setFolderLinkOrId(e.target.value)}
-            placeholder="https://drive.google.com/drive/folders/..."
-            required
-          />
-        </div>
-        {isExecutive && (
-          <div className="sm:w-56">
-            <Select
-              label="Phòng ban"
-              value={departmentId}
-              onChange={(e) => setDepartmentId(e.target.value)}
-              options={[
-                { value: "", label: "-- Chọn phòng ban --" },
-                ...(departments ?? []).map((d) => ({ value: String(d.id), label: d.name })),
-              ]}
+      {driveStatus && !driveStatus.connected ? (
+        <p className="rounded border border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500">
+          Kết nối Google Drive của bạn ở mục phía trên trước khi đăng ký folder.
+        </p>
+      ) : (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded border border-gray-200 p-4 sm:flex-row sm:items-end">
+          <div className="flex-1">
+            <Input
+              label="Link hoặc ID folder Google Drive"
+              value={folderLinkOrId}
+              onChange={(e) => setFolderLinkOrId(e.target.value)}
+              placeholder="https://drive.google.com/drive/folders/..."
               required
             />
           </div>
-        )}
-        <Button type="submit" loading={registerFolder.isPending}>
-          Đăng ký folder
-        </Button>
-      </form>
+          {isExecutive && (
+            <div className="sm:w-56">
+              <Select
+                label="Phòng ban"
+                value={departmentId}
+                onChange={(e) => setDepartmentId(e.target.value)}
+                options={[
+                  { value: "", label: "-- Chọn phòng ban --" },
+                  ...(departments ?? []).map((d) => ({ value: String(d.id), label: d.name })),
+                ]}
+                required
+              />
+            </div>
+          )}
+          <Button type="submit" loading={registerFolder.isPending}>
+            Đăng ký folder
+          </Button>
+        </form>
+      )}
       {errorMessage && (
         <p role="alert" className="text-sm text-danger">
           {errorMessage}
         </p>
       )}
-      <p className="text-xs text-gray-500">
-        Cần kết nối Google Drive trước khi đăng ký folder — xem mục phía trên.
-      </p>
     </div>
   );
 }

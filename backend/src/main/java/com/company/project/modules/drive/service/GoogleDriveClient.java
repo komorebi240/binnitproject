@@ -16,7 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Talks to Google's OAuth and Drive REST APIs directly (no Google SDK dependency — see Phase 3
+ * Talks to Google's OAuth and Drive REST APIs directly (no Google SDK dependency - see Phase 3
  * plan section 1 on avoiding an unnecessary dependency). Any failure calling out to Google is
  * translated to a BusinessException here so it never leaks raw Google error payloads or stack
  * traces to our API clients (CLAUDE.md section 14).
@@ -32,7 +32,7 @@ public class GoogleDriveClient {
     private static final String USERINFO_ENDPOINT = "https://www.googleapis.com/oauth2/v2/userinfo";
     private static final String DRIVE_FILES_ENDPOINT = "https://www.googleapis.com/drive/v3/files";
     // Full "drive" scope (not the narrower "drive.file") because approving a request must call
-    // permissions.create on a pre-existing folder the app didn't create — see Phase 3 plan.
+    // permissions.create on a pre-existing folder the app didn't create - see Phase 3 plan.
     private static final String SCOPE = "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/userinfo.email";
 
     private final GoogleProperties properties;
@@ -52,7 +52,7 @@ public class GoogleDriveClient {
                 .queryParam("prompt", "consent")
                 .queryParam("state", state)
                 .build()
-                // .build() alone does not percent-encode query values — the space in SCOPE
+                // .build() alone does not percent-encode query values - the space in SCOPE
                 // was going out as a literal space in the redirect URL. Found by actually
                 // inspecting the generated Location header, not by reading the code.
                 .encode()
@@ -101,7 +101,7 @@ public class GoogleDriveClient {
             log.warn("Google Drive files.get failed for folder {}", folderId, e);
             throw new BusinessException(
                     "DRIVE_FOLDER_NOT_ACCESSIBLE",
-                    "Could not read that Google Drive folder — check the link/ID and that this Drive account can access it",
+                    "Could not read that Google Drive folder - check the link/ID and that this Drive account can access it",
                     HttpStatus.UNPROCESSABLE_ENTITY);
         }
     }

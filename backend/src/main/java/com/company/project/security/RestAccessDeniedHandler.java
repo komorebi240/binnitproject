@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- * Runs at the security-filter level (before the DispatcherServlet), so it — not
- * GlobalExceptionHandler — is what actually answers an authenticated-but-forbidden request.
+ * Runs at the security-filter level (before the DispatcherServlet), so it - not
+ * GlobalExceptionHandler - is what actually answers an authenticated-but-forbidden request.
  * Keeps the response on the same envelope as every other error (CLAUDE.md section 46.4).
  */
 @Component

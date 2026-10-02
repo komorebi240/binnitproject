@@ -30,3 +30,6 @@ application-prod.yml
 application-staging.yml
 .env
 *.env.local
+
+### Uploaded user content — never commit, see app.uploads.avatar-dir ###
+/uploads/

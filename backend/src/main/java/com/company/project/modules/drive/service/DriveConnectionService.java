@@ -13,7 +13,7 @@ public interface DriveConnectionService {
 
     DriveConnectionStatusResponse getStatus(UserPrincipal caller);
 
-    /** Fresh access token for {@code userId}, obtained by refreshing right before use — see
+    /** Fresh access token for {@code userId}, obtained by refreshing right before use - see
      * the Phase 3 plan for why we don't cache access tokens. Throws if not connected. */
     String getValidAccessToken(Long userId);
 

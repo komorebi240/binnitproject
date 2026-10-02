@@ -14,6 +14,8 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     boolean existsByUsername(String username);
 
+    boolean existsByEmployeeCode(String employeeCode);
+
     @Query("select u from UserEntity u where u.id = :id and u.deleted = false")
     Optional<UserEntity> findActiveById(@Param("id") Long id);
 
@@ -22,4 +24,9 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     @Query("select u from UserEntity u where u.id in :ids and u.deleted = false")
     List<UserEntity> findAllActiveByIds(@Param("ids") List<Long> ids);
+
+    /** Every active user across every company - only ever used for a system/broadcast account's
+     * fan-out (MessageServiceImpl.broadcastMessage), never for a normal tenant-scoped query. */
+    @Query("select u from UserEntity u where u.deleted = false")
+    List<UserEntity> findAllActive();
 }

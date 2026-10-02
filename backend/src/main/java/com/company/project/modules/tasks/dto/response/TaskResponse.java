@@ -6,6 +6,7 @@ import com.company.project.common.TaskStatus;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 public record TaskResponse(
         Long id,
@@ -23,6 +24,10 @@ public record TaskResponse(
         LocalDate dueDate,
         Instant createdAt,
         Instant decidedAt,
-        Instant completedAt
+        Instant completedAt,
+        String driveUrl,
+        List<TaskAttachmentResponse> attachments,
+        /** Whether the caller may add/remove files and change the Drive link (UI hint; the server re-checks). */
+        boolean canManage
 ) {
 }

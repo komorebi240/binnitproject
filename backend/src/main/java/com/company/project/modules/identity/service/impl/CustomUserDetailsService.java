@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Loads the identity + active position AuthenticationManager needs during login. Only used
- * at login time — every later request is authenticated from JWT claims instead
+ * at login time - every later request is authenticated from JWT claims instead
  * (JwtAuthenticationFilter), not by hitting the database again.
  */
 @Service
@@ -45,7 +45,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                 position.getAuthorityLevel(),
                 position.getDepartmentId(),
                 position.getTeamId(),
-                user.isActive()
+                user.isActive(),
+                user.isSystemAccount()
         );
     }
 }

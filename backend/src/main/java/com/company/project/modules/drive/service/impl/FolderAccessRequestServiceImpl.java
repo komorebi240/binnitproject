@@ -2,6 +2,7 @@ package com.company.project.modules.drive.service.impl;
 
 import com.company.project.common.AuthorityLevel;
 import com.company.project.common.FolderRequestStatus;
+import com.company.project.common.NotificationType;
 import com.company.project.common.exception.BusinessException;
 import com.company.project.common.exception.ResourceNotFoundException;
 import com.company.project.modules.drive.domain.DepartmentDriveFolderEntity;
@@ -14,9 +15,12 @@ import com.company.project.modules.drive.service.DriveConnectionService;
 import com.company.project.modules.drive.service.FolderAccessRequestService;
 import com.company.project.modules.drive.service.GoogleDriveClient;
 import com.company.project.modules.identity.domain.DepartmentEntity;
+import com.company.project.modules.identity.domain.PositionEntity;
 import com.company.project.modules.identity.domain.UserEntity;
 import com.company.project.modules.identity.repository.DepartmentRepository;
+import com.company.project.modules.identity.repository.PositionRepository;
 import com.company.project.modules.identity.repository.UserRepository;
+import com.company.project.modules.notifications.service.NotificationService;
 import com.company.project.security.UserPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
@@ -31,9 +35,9 @@ import java.util.stream.Collectors;
 
 /**
  * Who may approve/reject mirrors TaskServiceImpl's department-scope check: the folder's owning
- * department's head, or an executive — matching the original spec ("trưởng ban truyền thông có
+ * department's head, or an executive - matching the original spec ("trưởng ban truyền thông có
  * thể duyệt... tương tự cho quản lý cấp cao (toàn quyền)"). Approval calls the real Google
- * Drive API to grant the requester's own connected account reader access — see the Phase 3 plan.
+ * Drive API to grant the requester's own connected account reader access - see the Phase 3 plan.
  */
 @Service
 public class FolderAccessRequestServiceImpl implements FolderAccessRequestService {
@@ -44,6 +48,8 @@ public class FolderAccessRequestServiceImpl implements FolderAccessRequestServic
     private final UserRepository userRepository;
     private final DriveConnectionService driveConnectionService;
     private final GoogleDriveClient googleDriveClient;
+    private final PositionRepository positionRepository;
+    private final NotificationService notificationService;
 
     public FolderAccessRequestServiceImpl(
             FolderAccessRequestRepository requestRepository,
@@ -51,7 +57,9 @@ public class FolderAccessRequestServiceImpl implements FolderAccessRequestServic
             DepartmentRepository departmentRepository,
             UserRepository userRepository,
             DriveConnectionService driveConnectionService,
-            GoogleDriveClient googleDriveClient
+            GoogleDriveClient googleDriveClient,
+            PositionRepository positionRepository,
+            NotificationService notificationService
     ) {
         this.requestRepository = requestRepository;
         this.catalogRepository = catalogRepository;
@@ -59,6 +67,8 @@ public class FolderAccessRequestServiceImpl implements FolderAccessRequestServic
         this.userRepository = userRepository;
         this.driveConnectionService = driveConnectionService;
         this.googleDriveClient = googleDriveClient;
+        this.positionRepository = positionRepository;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -74,14 +84,40 @@ public class FolderAccessRequestServiceImpl implements FolderAccessRequestServic
                     "OWN_DEPARTMENT_FOLDER", "This folder already belongs to your own department", HttpStatus.UNPROCESSABLE_ENTITY);
         }
 
-        // Fail fast here rather than surprising the approver later — DRIVE_NOT_CONNECTED (422)
+        // Fail fast here rather than surprising the approver later - DRIVE_NOT_CONNECTED (422)
         // if this requester hasn't connected their own Google Drive yet.
         driveConnectionService.getConnectedEmail(caller.getUserId());
 
         FolderAccessRequestEntity saved = requestRepository.save(new FolderAccessRequestEntity(
                 caller.getCompanyId(), folder.getId(), caller.getUserId(), caller.getDepartmentId(), request.note()));
 
+        notifyApprovers(folder, caller, saved.getId());
+
         return toResponses(List.of(saved)).get(0);
+    }
+
+    /** Everyone who could call assertCanDecide successfully on this request: the folder's own department head(s), plus every executive in the company. */
+    private void notifyApprovers(DepartmentDriveFolderEntity folder, UserPrincipal requester, Long requestId) {
+        List<Long> companyUserIds = userRepository.findAllActiveByCompanyId(folder.getCompanyId()).stream()
+                .map(UserEntity::getId)
+                .toList();
+        List<Long> approverUserIds = positionRepository.findAllActiveByUserIds(companyUserIds).stream()
+                .filter(p -> p.getAuthorityLevel() == AuthorityLevel.EXECUTIVE
+                        || (p.getAuthorityLevel() == AuthorityLevel.DEPARTMENT_HEAD
+                                && p.getDepartmentId().equals(folder.getDepartmentId())))
+                .map(PositionEntity::getUserId)
+                .distinct()
+                .toList();
+
+        for (Long approverUserId : approverUserIds) {
+            notificationService.notify(
+                    approverUserId,
+                    NotificationType.FOLDER_ACCESS_REQUESTED,
+                    "Yêu cầu truy cập folder mới",
+                    requester.getUsername() + " xin quyền vào \"" + folder.getGoogleFolderName() + "\"",
+                    "FOLDER_ACCESS_REQUEST",
+                    requestId);
+        }
     }
 
     @Override

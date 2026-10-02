@@ -3,8 +3,8 @@ import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Project",
-  description: "Enterprise web application scaffold",
+  title: "Orbit",
+  description: "Orbit — enterprise work platform",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

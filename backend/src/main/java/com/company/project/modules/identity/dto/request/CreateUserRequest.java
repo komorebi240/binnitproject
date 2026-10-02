@@ -6,8 +6,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
+
 /**
- * No companyId field — new users always join the caller's own company (CLAUDE.md
+ * No companyId field - new users always join the caller's own company (CLAUDE.md
  * section 9/10). Whether the caller is allowed to grant {@code authorityLevel} within
  * {@code departmentId}/{@code teamId} is a business rule checked in the service layer
  * (e.g. a DEPARTMENT_HEAD may only create TEAM_LEAD/EMPLOYEE inside their own department),
@@ -36,6 +38,14 @@ public record CreateUserRequest(
 
         Long departmentId,
 
-        Long teamId
+        Long teamId,
+
+        @Size(max = 30, message = "phone must be at most 30 characters")
+        String phone,
+
+        @Size(max = 50, message = "employeeCode must be at most 50 characters")
+        String employeeCode,
+
+        LocalDate startDate
 ) {
 }

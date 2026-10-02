@@ -28,6 +28,13 @@ public class CompanyEntity {
     @Column(nullable = false, length = 200)
     private String name;
 
+    @Column(name = "contact_email", length = 200)
+    private String contactEmail;
+
+    /** Stored file name only (see AvatarStorageService), never a path. */
+    @Column(name = "logo_path", length = 300)
+    private String logoPath;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -65,6 +72,22 @@ public class CompanyEntity {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getContactEmail() {
+        return contactEmail;
+    }
+
+    public void setContactEmail(String contactEmail) {
+        this.contactEmail = contactEmail;
+    }
+
+    public String getLogoPath() {
+        return logoPath;
+    }
+
+    public void setLogoPath(String logoPath) {
+        this.logoPath = logoPath;
     }
 
     public boolean isDeleted() {

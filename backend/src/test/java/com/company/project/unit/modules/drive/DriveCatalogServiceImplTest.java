@@ -18,7 +18,7 @@ import org.springframework.security.access.AccessDeniedException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Covers the department-scoping rules from the Phase 3 plan — the same case (TC-23) was also
+ * Covers the department-scoping rules from the Phase 3 plan - the same case (TC-23) was also
  * caught for real via curl during manual testing (registerFolder originally silently ignored a
  * mismatched departmentId instead of rejecting it; fixed to throw). This locks that fix in.
  */

@@ -30,6 +30,9 @@ public class DepartmentEntity {
     @Column(nullable = false, length = 200)
     private String name;
 
+    @Column(length = 500)
+    private String description;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -54,8 +57,13 @@ public class DepartmentEntity {
     }
 
     public DepartmentEntity(Long companyId, String name) {
+        this(companyId, name, null);
+    }
+
+    public DepartmentEntity(Long companyId, String name, String description) {
         this.companyId = companyId;
         this.name = name;
+        this.description = description;
     }
 
     public Long getId() {
@@ -72,6 +80,10 @@ public class DepartmentEntity {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     public boolean isDeleted() {

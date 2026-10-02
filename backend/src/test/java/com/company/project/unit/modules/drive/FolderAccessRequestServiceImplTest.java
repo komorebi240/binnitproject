@@ -11,8 +11,12 @@ import com.company.project.modules.drive.repository.FolderAccessRequestRepositor
 import com.company.project.modules.drive.service.DriveConnectionService;
 import com.company.project.modules.drive.service.GoogleDriveClient;
 import com.company.project.modules.drive.service.impl.FolderAccessRequestServiceImpl;
+import com.company.project.modules.identity.domain.PositionEntity;
+import com.company.project.modules.identity.domain.UserEntity;
 import com.company.project.modules.identity.repository.DepartmentRepository;
+import com.company.project.modules.identity.repository.PositionRepository;
 import com.company.project.modules.identity.repository.UserRepository;
+import com.company.project.modules.notifications.service.NotificationService;
 import com.company.project.security.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,14 +25,20 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Covers the approval-authority and status-transition rules from the Phase 3 plan — the same
+ * Covers the approval-authority and status-transition rules from the Phase 3 plan - the same
  * cases (TC-26 through TC-28) were also exercised for real via curl during manual testing.
  */
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +60,10 @@ class FolderAccessRequestServiceImplTest {
     private DriveConnectionService driveConnectionService;
     @Mock
     private GoogleDriveClient googleDriveClient;
+    @Mock
+    private PositionRepository positionRepository;
+    @Mock
+    private NotificationService notificationService;
 
     private FolderAccessRequestServiceImpl service;
 
@@ -57,7 +71,7 @@ class FolderAccessRequestServiceImplTest {
     void setUp() {
         service = new FolderAccessRequestServiceImpl(
                 requestRepository, catalogRepository, departmentRepository, userRepository,
-                driveConnectionService, googleDriveClient);
+                driveConnectionService, googleDriveClient, positionRepository, notificationService);
     }
 
     private UserPrincipal principal(AuthorityLevel level, Long departmentId) {
@@ -80,6 +94,34 @@ class FolderAccessRequestServiceImplTest {
         assertThatThrownBy(() -> service.createRequest(new CreateFolderAccessRequest(1L, null), caller))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("own department");
+    }
+
+    @Test
+    void createRequest_notifiesOnlyTheFoldersApproversNotUnrelatedStaff() {
+        UserPrincipal requester = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING);
+        DepartmentDriveFolderEntity folder = marketingFolder();
+        when(catalogRepository.findActiveById(1L)).thenReturn(Optional.of(folder));
+        when(requestRepository.save(any())).thenAnswer(inv -> {
+            FolderAccessRequestEntity r = inv.getArgument(0);
+            setId(r, 7L);
+            return r;
+        });
+
+        UserEntity marketingHead = new UserEntity(COMPANY_A, "marketing-head", "hash", "Marketing Head", null);
+        setId(marketingHead, 2L);
+        UserEntity unrelatedEmployee = new UserEntity(COMPANY_A, "other", "hash", "Unrelated Employee", null);
+        setId(unrelatedEmployee, 3L);
+        when(userRepository.findAllActiveByCompanyId(COMPANY_A)).thenReturn(List.of(marketingHead, unrelatedEmployee));
+
+        PositionEntity marketingHeadPosition = new PositionEntity(2L, AuthorityLevel.DEPARTMENT_HEAD, DEPT_MARKETING, null, null);
+        PositionEntity unrelatedPosition = new PositionEntity(3L, AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null, null);
+        when(positionRepository.findAllActiveByUserIds(List.of(2L, 3L)))
+                .thenReturn(List.of(marketingHeadPosition, unrelatedPosition));
+
+        service.createRequest(new CreateFolderAccessRequest(1L, null), requester);
+
+        verify(notificationService).notify(eq(2L), any(), anyString(), anyString(), anyString(), eq(7L));
+        verify(notificationService, never()).notify(eq(3L), any(), anyString(), anyString(), anyString(), any());
     }
 
     @Test

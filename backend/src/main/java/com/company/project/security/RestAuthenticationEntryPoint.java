@@ -15,7 +15,7 @@ import java.io.IOException;
 /**
  * Without this, Spring Security's default entry point for a request with no
  * formLogin/httpBasic configured returns an empty 403 instead of a 401 with the standard
- * envelope — inconsistent with CLAUDE.md section 46.4 (401 unauthenticated, 403 forbidden).
+ * envelope - inconsistent with CLAUDE.md section 46.4 (401 unauthenticated, 403 forbidden).
  */
 @Component
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
