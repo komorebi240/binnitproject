@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-> **Document scope.** This file defines engineering standards and philosophy — what "good" means for any design or code decision in this project (architecture, security, database, testing, UI/UX). [.claude/CLAUDE.md](.claude/CLAUDE.md) defines session operating procedure — when to ask before acting, the SAFE/REVIEW/CRITICAL decision hierarchy, and the Git approval workflow. When the two appear to conflict: `.claude/CLAUDE.md` governs *when to act* (ask vs. proceed), this file governs *what the correct technical outcome looks like*. Stack-specific conventions (backend, frontend, database, API, CI/CD) live in [46. TECH STACK & PROJECT STRUCTURE](#46-tech-stack-and-project-structure).
+> **Document scope.** This file defines engineering standards and philosophy - what "good" means for any design or code decision in this project (architecture, security, database, testing, UI/UX). [.claude/CLAUDE.md](.claude/CLAUDE.md) defines session operating procedure - when to ask before acting, the SAFE/REVIEW/CRITICAL decision hierarchy, and the Git approval workflow. When the two appear to conflict: `.claude/CLAUDE.md` governs *when to act* (ask vs. proceed), this file governs *what the correct technical outcome looks like*. Stack-specific conventions (backend, frontend, database, API, CI/CD) live in [46. TECH STACK & PROJECT STRUCTURE](#46-tech-stack-and-project-structure).
 
 ## 0. ROLE AND PRIMARY OBJECTIVE
 
@@ -1542,12 +1542,12 @@ If the answer is no, improve the design before proceeding.
 
 This project's confirmed stack:
 
-* Backend: **Java 17 + Spring Boot 3.x**, build tool **Maven** (17 matches the JDK installed on the dev machine; Spring Boot 3.3.x's baseline is 17, upgrade to 21 later if desired — it is not required to run this project).
+* Backend: **Java 17 + Spring Boot 3.x**, build tool **Maven** (17 matches the JDK installed on the dev machine; Spring Boot 3.3.x's baseline is 17, upgrade to 21 later if desired - it is not required to run this project).
 * Frontend: **React + Next.js (App Router)**, TypeScript.
 * Database: **SQL Server**.
 * Repositories: **separate repos** (`backend/`, `frontend/`), each independently deployable and independently versioned.
 
-Everything in this section is a concrete application of sections 1–45 to that stack. When the stack changes, update this section — do not let it silently drift from what the code actually does.
+Everything in this section is a concrete application of sections 1-45 to that stack. When the stack changes, update this section - do not let it silently drift from what the code actually does.
 
 ## 46.1 Backend structure (Spring Boot)
 
@@ -1575,10 +1575,10 @@ com.<org>.<project>
 Rules:
 
 * Controller depends on Service interface, never on Repository or another module's internals directly.
-* Entities never leave the Service layer — controllers exchange DTOs only.
+* Entities never leave the Service layer - controllers exchange DTOs only.
 * Bean Validation (`jakarta.validation`) annotates request DTOs; business rules that can't be expressed as annotations live in the Service layer, not in validators.
 * One `@RestControllerAdvice` translates exceptions to the standard error envelope (46.4); no controller catches exceptions to hand-roll its own error shape.
-* Authorization is enforced with `@PreAuthorize` (or equivalent explicit checks) in the Service layer — never assume the controller route being "hidden" on the frontend is sufficient (see section 9).
+* Authorization is enforced with `@PreAuthorize` (or equivalent explicit checks) in the Service layer - never assume the controller route being "hidden" on the frontend is sufficient (see section 9).
 * Multi-table writes use `@Transactional` at the Service layer (see sections 32/33).
 
 Naming: classes `PascalCase`, methods/fields `camelCase`, constants `UPPER_SNAKE_CASE`.
@@ -1588,7 +1588,7 @@ Naming: classes `PascalCase`, methods/fields `camelCase`, constants `UPPER_SNAKE
 ```text
 src/
 ├── app/                        App Router routes/layouts
-├── components/ui/              design-system primitives (Button, Input, Modal, Table, Badge, Toast, EmptyState — section 26)
+├── components/ui/              design-system primitives (Button, Input, Modal, Table, Badge, Toast, EmptyState - section 26)
 ├── features/<feature>/
 │   ├── components/
 │   ├── hooks/
@@ -1603,9 +1603,9 @@ src/
 
 Rules:
 
-* No component calls `fetch`/`axios` directly — it goes through a feature's `api/` module, built on the shared client in `lib/api/client.ts`.
-* Server state (anything from the API) is managed with TanStack Query, not component state or a global store. Do not add a global client-state library (Redux, Zustand, etc.) unless a concrete, non-server state need appears — see section 29.
-* Styling uses Tailwind CSS with tokens centralized in `tailwind.config.ts` (colors, spacing, radius) — no ad hoc hex values in components.
+* No component calls `fetch`/`axios` directly - it goes through a feature's `api/` module, built on the shared client in `lib/api/client.ts`.
+* Server state (anything from the API) is managed with TanStack Query, not component state or a global store. Do not add a global client-state library (Redux, Zustand, etc.) unless a concrete, non-server state need appears - see section 29.
+* Styling uses Tailwind CSS with tokens centralized in `tailwind.config.ts` (colors, spacing, radius) - no ad hoc hex values in components.
 * Every new UI component considers all four breakpoints (section 24) and keyboard/focus accessibility (section 27) before being called done.
 
 Naming: components `PascalCase.tsx`, hooks `useXxx.ts`, everything else `camelCase`.
@@ -1614,8 +1614,8 @@ Naming: components `PascalCase.tsx`, hooks `useXxx.ts`, everything else `camelCa
 
 * Tables: plural `snake_case` (`orders`, `order_items`). Columns: `snake_case`. Foreign keys: `<singular_table>_id`.
 * Every business table carries audit columns: `created_at`, `created_by`, `updated_at`, `updated_by`. Use `is_deleted` (soft delete) instead of hard delete wherever history/audit matters (sections 6, 32).
-* Indexes are declared explicitly in migrations — never rely on an ORM to create them implicitly.
-* Migrations run through **Flyway**, versioned `V{n}__{description}.sql` under `src/main/resources/db/migration`. A shipped migration is never edited — schema changes always add a new migration (section 36).
+* Indexes are declared explicitly in migrations - never rely on an ORM to create them implicitly.
+* Migrations run through **Flyway**, versioned `V{n}__{description}.sql` under `src/main/resources/db/migration`. A shipped migration is never edited - schema changes always add a new migration (section 36).
 
 ## 46.4 API convention (extends section 11)
 
@@ -1628,7 +1628,7 @@ Naming: components `PascalCase.tsx`, hooks `useXxx.ts`, everything else `camelCa
 ```
 
 * List endpoints accept `page`, `size`, `sort`; the envelope's `meta.pagination` carries `{ page, size, totalElements, totalPages }`.
-* Status codes: `200/201/204` success, `400` validation, `401` unauthenticated, `403` unauthorized, `404` not found, `409` conflict/duplicate, `422` business-rule violation, `500` unexpected server error (never leaks internal detail — section 14).
+* Status codes: `200/201/204` success, `400` validation, `401` unauthenticated, `403` unauthorized, `404` not found, `409` conflict/duplicate, `422` business-rule violation, `500` unexpected server error (never leaks internal detail - section 14).
 
 ## 46.5 CI/CD and observability (extends sections 15, 28)
 
@@ -1637,12 +1637,12 @@ Naming: components `PascalCase.tsx`, hooks `useXxx.ts`, everything else `camelCa
 * Logs are structured (JSON in production) via SLF4J + Logback, carrying a `correlationId`/`traceId` per request so a failure can be traced across services.
 * Secrets are supplied via environment variables or a secret manager. Only `.example` config files are committed; real `application-*.yml` values for staging/prod are never in the repo.
 
-## 46.6 Testing (extends sections 20–22)
+## 46.6 Testing (extends sections 20-22)
 
 * Backend unit tests: JUnit 5 + Mockito against Service/Repository logic in isolation.
-* Backend integration tests: `@SpringBootTest` against a real SQL Server instance (Testcontainers or a dedicated test database) — not H2. SQL Server has dialect and locking behavior H2 does not reproduce; a green H2 suite can hide a broken production query.
+* Backend integration tests: `@SpringBootTest` against a real SQL Server instance (Testcontainers or a dedicated test database) - not H2. SQL Server has dialect and locking behavior H2 does not reproduce; a green H2 suite can hide a broken production query.
 * Frontend unit/component tests: Jest + React Testing Library. End-to-end flows: Playwright or Cypress against a running app.
 
 ## 46.7 Repository layout
 
-Two independent repositories, `backend-repo` and `frontend-repo`. Until they are split into their own remotes, they are developed side by side as `backend/` and `frontend/` under this workspace, each with its own `.gitignore`, lockfile, and dependency set — no shared `node_modules` or `.m2` between them. See the root [README.md](README.md) for the full directory map.
+Two independent repositories, `backend-repo` and `frontend-repo`. Until they are split into their own remotes, they are developed side by side as `backend/` and `frontend/` under this workspace, each with its own `.gitignore`, lockfile, and dependency set - no shared `node_modules` or `.m2` between them. See the root [README.md](README.md) for the full directory map.
