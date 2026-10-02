@@ -8,7 +8,7 @@ interface TeamMemberListProps {
   teamName: string;
 }
 
-/** Same internal-directory visibility rule as DepartmentMemberList — anyone in the same company
+/** Same internal-directory visibility rule as DepartmentMemberList - anyone in the same company
  * can see a team's members (OrganizationService.listTeamMembers). */
 export function TeamMemberList({ teamId, teamName }: TeamMemberListProps) {
   const { data: members, isLoading } = useTeamMembers(teamId);

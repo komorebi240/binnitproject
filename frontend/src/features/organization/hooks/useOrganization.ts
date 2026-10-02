@@ -80,7 +80,7 @@ export function useCreateUser() {
 export function useDeleteUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api.deleteUser(id),
+    mutationFn: ({ id, password }: { id: number; password: string }) => api.deleteUser(id, password),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
   });
 }

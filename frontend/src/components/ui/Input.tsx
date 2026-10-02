@@ -7,7 +7,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 /**
  * Design-system primitive (CLAUDE.md section 26). Always renders a visible <label> tied to
- * the input via id — screen readers and click-to-focus depend on that pairing, not just
+ * the input via id - screen readers and click-to-focus depend on that pairing, not just
  * placeholder text (CLAUDE.md section 27).
  */
 export const Input = forwardRef<HTMLInputElement, InputProps>(

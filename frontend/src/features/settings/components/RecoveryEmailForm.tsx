@@ -12,7 +12,7 @@ interface RecoveryEmailFormProps {
   currentUser: UserProfile;
 }
 
-/** "bind gmail" — the email used both for account contact and forgot-password OTP delivery. */
+/** "bind gmail" - the email used both for account contact and forgot-password OTP delivery. */
 export function RecoveryEmailForm({ currentUser }: RecoveryEmailFormProps) {
   const [email, setEmail] = useState(currentUser.email ?? "");
   const [phone, setPhone] = useState("");

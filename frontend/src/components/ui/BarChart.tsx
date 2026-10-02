@@ -9,9 +9,9 @@ interface BarChartProps {
 }
 
 /**
- * Design-system primitive (CLAUDE.md section 26) — a single horizontal stacked bar plus a
+ * Design-system primitive (CLAUDE.md section 26) - a single horizontal stacked bar plus a
  * legend, built from plain divs sized by percentage. Deliberately not a charting library: this
- * is the only chart in the app so far and a stacked bar is all it needs (CLAUDE.md section 29 —
+ * is the only chart in the app so far and a stacked bar is all it needs (CLAUDE.md section 29 -
  * avoid an unnecessary dependency for one use case). Revisit if a second, more complex chart
  * need shows up.
  */

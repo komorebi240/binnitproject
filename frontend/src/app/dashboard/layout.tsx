@@ -1,42 +1,48 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Avatar } from "@/components/ui/Avatar";
-import { Button } from "@/components/ui/Button";
+import { OrbitWordmark } from "@/components/brand/OrbitWordmark";
+import { CompanyBadge } from "@/features/onboarding/components/CompanyBadge";
+import { TourProvider } from "@/features/onboarding/components/OnboardingTour";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { HomeViewProvider, useHomeView } from "@/components/layout/HomeViewContext";
-import { useCurrentUser, useLogout } from "@/features/auth/hooks/useAuth";
+import { AvatarMenu } from "@/components/layout/AvatarMenu";
+import { QuickSearch } from "@/components/layout/QuickSearch";
+import { TabBar } from "@/components/layout/TabBar";
+import { TabContentRenderer } from "@/components/layout/TabContentRenderer";
+import { TabsProvider, useTabs } from "@/components/layout/TabsContext";
+import { ApiRequestError } from "@/lib/api/client";
+import { resetClientSession } from "@/lib/session";
+import { useTheme } from "@/components/theme/ThemeProvider";
+import { useCurrentUser } from "@/features/auth/hooks/useAuth";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
 import { PriorityPanel } from "@/features/tasks/components/PriorityPanel";
 import { PinnedNoteWidget } from "@/features/notes/components/PinnedNoteWidget";
-import { Gear, List, Star } from "@phosphor-icons/react";
+import { List, Star } from "@phosphor-icons/react";
 import type { UserProfile } from "@/features/auth/types";
-
-const LEVEL_LABELS: Record<string, string> = {
-  EXECUTIVE: "Điều hành",
-  DEPARTMENT_HEAD: "Trưởng phòng",
-  TEAM_LEAD: "Trưởng nhóm",
-  EMPLOYEE: "Nhân viên",
-};
 
 /**
  * Shared shell for every /dashboard/* page: auth gate (redirect to /login on a 401), header,
- * and the Sidebar nav. Individual pages just render their own panel — see
- * CLAUDE.md section 46.2 (feature components, not pages, own the actual UI logic).
+ * Sidebar, and the tab workspace. `children` (whatever Next.js route matched) is deliberately
+ * NOT rendered - in-app navigation is tab-driven now (TabsContext), not URL-driven, so the real
+ * URL stays at /dashboard and the tabs own what's on screen.
  */
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { data: currentUser, isLoading, isError } = useCurrentUser();
-  const logout = useLogout();
+export default function DashboardLayout(_props: { children: React.ReactNode }) {
+  const { data: currentUser, isLoading, error } = useCurrentUser();
   const router = useRouter();
-  const pathname = usePathname();
+  const queryClient = useQueryClient();
+
+  // Only a real 401 means "logged out" - a transient network error or 429 must not kick the user out.
+  const isUnauthenticated = error instanceof ApiRequestError && error.status === 401;
 
   useEffect(() => {
-    if (isError) {
+    if (isUnauthenticated) {
+      // The session ended (expired/revoked): don't leave this account's data behind for the next login.
+      resetClientSession(queryClient);
       router.replace("/login");
     }
-  }, [isError, router]);
+  }, [isUnauthenticated, router]);
 
   if (isLoading) {
     return (
@@ -48,98 +54,98 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (!currentUser) {
-    return null; // redirecting to /login
-  }
-
-  async function handleLogout() {
-    await logout.mutateAsync();
-    router.push("/login");
+    if (isUnauthenticated) return null; // redirecting to /login
+    return (
+      <div className="p-8 text-center text-sm text-gray-500">
+        Không kết nối được máy chủ.{" "}
+        <button type="button" onClick={() => window.location.reload()} className="text-primary underline">
+          Tải lại
+        </button>
+      </div>
+    );
   }
 
   return (
-    <HomeViewProvider>
-      <div className="flex min-h-screen flex-col">
-        <header className="flex items-center justify-between border-b border-gray-200 px-4 py-3 sm:px-8">
-          <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element -- static SVG icon, no benefit from next/image's resize pipeline */}
-            <img src="/icon.svg" alt="" width={32} height={32} aria-hidden className="shrink-0" />
-            <div>
-              <h1 className="text-lg font-semibold text-gray-900">{currentUser.companyName}</h1>
-              <p className="text-sm text-gray-500">
-                {currentUser.fullName} — {currentUser.title ?? LEVEL_LABELS[currentUser.authorityLevel]}
-                {currentUser.departmentName ? ` · ${currentUser.departmentName}` : ""}
-                {currentUser.teamName ? ` · ${currentUser.teamName}` : ""}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <HeaderIconControls currentUser={currentUser} />
-            <Link href="/dashboard/settings" title="Hồ sơ của bạn">
-              <Avatar
-                avatarUrl={currentUser.avatarUrl}
-                fullName={currentUser.fullName}
-                presenceStatus={currentUser.presenceStatus}
-                size="sm"
-              />
-            </Link>
-            <Button variant="secondary" onClick={handleLogout} loading={logout.isPending}>
-              Đăng xuất
-            </Button>
-          </div>
-        </header>
+    <TabsProvider>
+      <DashboardShell currentUser={currentUser} />
+    </TabsProvider>
+  );
+}
 
-        <div className="flex flex-1 flex-col md:flex-row">
-          <Sidebar currentUserAuthorityLevel={currentUser.authorityLevel} />
-          <main className="flex-1 px-4 py-6 sm:px-8">
-            {/* key={pathname} replays the fade-in on every page change — motion for
-                navigation feedback (CLAUDE.md section 25), not decoration. */}
-            <div key={pathname} className="animate-fade-in">
-              {children}
-            </div>
+function DashboardShell({ currentUser }: { currentUser: UserProfile }) {
+  const { setUserScope } = useTheme();
+
+  // This account's theme while signed in; back to the default as soon as the dashboard unmounts (logout).
+  useEffect(() => {
+    setUserScope(currentUser.userId);
+    return () => setUserScope(null);
+  }, [currentUser.userId, setUserScope]);
+
+  return (
+    <TourProvider currentUser={currentUser}>
+    <div className="flex h-screen flex-col overflow-hidden">
+      <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3 sm:px-8">
+        <div className="flex items-center gap-3">
+          {/* Orbit's own brand mark, not the tenant's company name - this corner is "whose
+              product is this" (consistent across every company using the app). */}
+          <OrbitWordmark width={91} height={32} className="shrink-0" />
+          <CompanyBadge />
+        </div>
+        <div className="flex items-center gap-2">
+          <HeaderIconControls currentUser={currentUser} />
+          <AvatarMenu currentUser={currentUser} />
+        </div>
+      </header>
+
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <Sidebar currentUserAuthorityLevel={currentUser.authorityLevel} />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <TabBar />
+          <main className="min-h-0 flex-1 overflow-hidden">
+            <TabContentRenderer />
           </main>
         </div>
-
-        <PinnedNoteWidget />
       </div>
-    </HomeViewProvider>
+
+      <PinnedNoteWidget />
+    </div>
+    </TourProvider>
   );
 }
 
 /**
- * ⭐ priority panel / ☰ board view (Home page only) / 🔔 notifications / ⚙️ settings (moved here
- * from Sidebar, see Phase 6 plan) — icon-only buttons with a `title` tooltip on hover. Phosphor
- * SVG icons, not emoji (UI/UX review pass referencing nextlevelbuilder/ui-ux-pro-max-skill:
- * emoji render inconsistently across OS/browser and don't read as a real icon in a professional
- * UI) — each button also carries a visible focus ring, flagged by the same review as a Critical/
- * High-severity gap for icon-only controls.
+ * ⭐ priority panel / ☰ board view (acts on the ACTIVE tab) / 🔔 notifications / ⚙️ settings -
+ * icon-only buttons with a `title` tooltip on hover. Phosphor SVG icons, not emoji, each with a
+ * visible focus ring (UI/UX review pass).
  */
 function HeaderIconControls({ currentUser }: { currentUser: UserProfile }) {
-  const { isBoardView, toggleBoardView, setBoardView } = useHomeView();
+  const { activeTab, navigateActiveTab, setActiveTabBoardView } = useTabs();
   const [priorityOpen, setPriorityOpen] = useState(false);
-  const pathname = usePathname();
-  const router = useRouter();
   const iconButtonClassName =
     "flex h-9 w-9 items-center justify-center rounded transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary";
 
-  // `isBoardView` only affects what app/dashboard/page.tsx renders (see HomeViewContext's
-  // comment) — clicking this from any other page used to just flip the flag with nothing
-  // visibly happening. Now it navigates to Home first (forcing the board view on there),
-  // and only toggles in place when already on Home.
+  const isHome = activeTab.path === "/dashboard";
+  const isBoardView = isHome && activeTab.boardView;
+
+  // On a Home tab this toggles that tab's view in place; on any other page it turns the active
+  // tab into a Home tab showing the board (the old "navigate home first" fix, tab-scoped now).
   function handleBoardViewClick() {
-    if (pathname === "/dashboard") {
-      toggleBoardView();
+    if (isHome) {
+      setActiveTabBoardView(!activeTab.boardView);
     } else {
-      setBoardView(true);
-      router.push("/dashboard");
+      navigateActiveTab("/dashboard");
+      setActiveTabBoardView(true);
     }
   }
 
   return (
     <>
+      <QuickSearch currentUserAuthorityLevel={currentUser.authorityLevel} />
       <button
         type="button"
         title="Gợi ý ưu tiên"
         aria-label="Gợi ý ưu tiên"
+        data-tour="priority"
         onClick={() => setPriorityOpen(true)}
         className={iconButtonClassName}
       >
@@ -156,10 +162,6 @@ function HeaderIconControls({ currentUser }: { currentUser: UserProfile }) {
         <List size={20} weight={isBoardView ? "fill" : "regular"} aria-hidden />
       </button>
       <NotificationBell />
-      <Link href="/dashboard/settings" title="Cài đặt" aria-label="Cài đặt" className={iconButtonClassName}>
-        <Gear size={20} aria-hidden />
-      </Link>
-
       <PriorityPanel currentUser={currentUser} open={priorityOpen} onClose={() => setPriorityOpen(false)} />
     </>
   );

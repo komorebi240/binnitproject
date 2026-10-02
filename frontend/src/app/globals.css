@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 /*
- * Theme tokens (Phase 4 plan — CLAUDE.md section 26 design tokens). Each theme sets the same
+ * Theme tokens (Phase 4 plan - CLAUDE.md section 26 design tokens). Each theme sets the same
  * set of RGB-triplet variables; Tailwind's color tokens in tailwind.config.ts read them via
  * `rgb(var(--color-x) / <alpha-value>)` so switching `data-theme` on <html> recolors the whole
  * app instantly, no rebuild. `light` is also the fallback (no data-theme attribute yet, e.g.
@@ -14,10 +14,10 @@
  * "light" and "dark" are the default pair and carry the literal "Orbit" brand hue
  * (Indigo/Violet on a night-sky navy, researched via a UI/UX pass referencing
  * nextlevelbuilder/ui-ux-pro-max-skill's color-palette and typography data rather than picked by
- * eye). "gray" and "pink" are personalization options, not the brand default — but as of this
+ * eye). "gray" and "pink" are personalization options, not the brand default - but as of this
  * pass every theme gets the SAME *structural* treatment (a two-stop gradient whose two colors
  * are deliberately far apart in lightness, not just hue) so the gradient reads as a crisp shape
- * against its own background instead of a flat tint that can wash out ("blind ra nền" — the
+ * against its own background instead of a flat tint that can wash out ("blind ra nền" - the
  * reported issue was two close-lightness colors next to a similarly-toned background, not the
  * gradient concept itself). `--color-primary-ring` is a fixed-opacity dark/light edge (see the
  * `.gradient-surface` utility below) that keeps gradient buttons/active-nav crisply outlined
@@ -25,12 +25,12 @@
  */
 :root,
 :root[data-theme="light"] {
-  --color-primary: 79 70 229; /* indigo-600 — Orbit brand primary */
+  --color-primary: 79 70 229; /* indigo-600 - Orbit brand primary */
   --color-primary-end: 124 58 237; /* violet-600 */
   --color-primary-foreground: 255 255 255;
   --color-primary-ring: 0 0 0; /* dark hairline edge reads on this theme's light surfaces */
   --color-surface: 255 255 255;
-  --color-surface-muted: 234 236 252; /* indigo-100-ish — brand-tinted instead of neutral gray */
+  --color-surface-muted: 234 236 252; /* indigo-100-ish - brand-tinted instead of neutral gray */
   --color-danger: 220 38 38; /* red-600 */
   --color-danger-foreground: 255 255 255;
   --color-body-bg: 247 247 255; /* near-white with a faint indigo tint, not flat white */
@@ -38,21 +38,21 @@
 }
 
 :root[data-theme="dark"] {
-  --color-primary: 139 92 246; /* violet-500 — lighter than the old violet-600 for more lift off the navy body */
-  --color-primary-end: 67 56 202; /* indigo-700 — darker end gives the gradient real lightness range instead of two similarly-bright stops */
+  --color-primary: 139 92 246; /* violet-500 - lighter than the old violet-600 for more lift off the navy body */
+  --color-primary-end: 67 56 202; /* indigo-700 - darker end gives the gradient real lightness range instead of two similarly-bright stops */
   --color-primary-foreground: 255 255 255;
   --color-primary-ring: 255 255 255; /* light hairline edge reads on this theme's dark surfaces */
   --color-surface: 30 41 59; /* slate-800 */
   --color-surface-muted: 49 46 80; /* slate blended with violet-900, instead of flat slate-600 */
   --color-danger: 248 113 113; /* red-400 */
   --color-danger-foreground: 17 24 39;
-  --color-body-bg: 15 23 42; /* slate-900 — "night indigo" base */
+  --color-body-bg: 15 23 42; /* slate-900 - "night indigo" base */
   --color-body-fg: 241 245 249; /* slate-100 */
 }
 
 :root[data-theme="gray"] {
   --color-primary: 100 116 139; /* slate-500 */
-  --color-primary-end: 30 41 59; /* slate-800 — far enough in lightness from slate-500 to read as a real gradient, not a flat tint */
+  --color-primary-end: 30 41 59; /* slate-800 - far enough in lightness from slate-500 to read as a real gradient, not a flat tint */
   --color-primary-foreground: 255 255 255;
   --color-primary-ring: 0 0 0;
   --color-surface: 255 255 255;
@@ -65,7 +65,7 @@
 
 :root[data-theme="pink"] {
   --color-primary: 244 114 182; /* pink-400 */
-  --color-primary-end: 157 23 77; /* pink-800 — far enough in lightness from pink-400 to read as a real gradient */
+  --color-primary-end: 157 23 77; /* pink-800 - far enough in lightness from pink-400 to read as a real gradient */
   --color-primary-foreground: 255 255 255;
   --color-primary-ring: 0 0 0;
   --color-surface: 255 255 255;
@@ -84,7 +84,7 @@ body {
 
 /* Orbit brand typeface pairing: Space Grotesk for headings (its geometric, slightly technical
    character reads as "tech/space"), DM Sans for everything else (built for UI legibility at
-   small sizes — the project's screens are data-dense). Applied globally via the element
+   small sizes - the project's screens are data-dense). Applied globally via the element
    selector rather than a utility class on every heading across dozens of files. */
 h1,
 h2,
@@ -96,7 +96,7 @@ h3 {
  * Dark-theme readability patch: most feature panels (built before the theme system existed)
  * hard-code neutral Tailwind classes like text-gray-900/border-gray-200/bg-white rather than a
  * theme token, because they were never meant to render on a dark surface. Rewriting every one
- * of those classNames is out of scope for this pass (CLAUDE.md section 29 — no work beyond
+ * of those classNames is out of scope for this pass (CLAUDE.md section 29 - no work beyond
  * what's needed); this block keeps them legible under the dark theme without touching component
  * code, at the cost of a handful of !important overrides. New shared UI components should use
  * the CSS-variable-backed tokens (bg-surface, text-primary, etc.) instead of raw gray/white.
@@ -112,6 +112,23 @@ h3 {
 :root[data-theme="dark"] .bg-gray-100,
 :root[data-theme="dark"] .bg-gray-200 {
   background-color: rgb(var(--color-surface-muted)) !important;
+}
+
+/* Pastel "tinted zone" backgrounds (home status columns, priority panel) -> translucent on dark. */
+:root[data-theme="dark"] .bg-red-50 {
+  background-color: rgb(239 68 68 / 0.14) !important;
+}
+
+:root[data-theme="dark"] .bg-amber-50 {
+  background-color: rgb(245 158 11 / 0.14) !important;
+}
+
+:root[data-theme="dark"] .bg-indigo-50 {
+  background-color: rgb(99 102 241 / 0.16) !important;
+}
+
+:root[data-theme="dark"] .bg-green-50 {
+  background-color: rgb(34 197 94 / 0.14) !important;
 }
 
 :root[data-theme="dark"] .text-gray-900 {
@@ -138,7 +155,7 @@ h3 {
 
 /*
  * Crisp edge for any gradient surface (primary buttons, active sidebar nav, the self-task "+"
- * button) — a 1px ring in --color-primary-ring (dark on light themes, light on dark themes) so
+ * button) - a 1px ring in --color-primary-ring (dark on light themes, light on dark themes) so
  * the shape stays well-defined even when the gradient's own hue sits close to the page
  * background behind it (the reported "blind ra nền" issue).
  */
@@ -147,7 +164,7 @@ h3 {
 }
 
 /*
- * Shared hover-elevation for clickable cards (department tiles, task board cards) — a brand-
+ * Shared hover-elevation for clickable cards (department tiles, task board cards) - a brand-
  * tinted shadow plus a slight lift, 200ms (CLAUDE.md section 25: motion for feedback/state
  * change only). Never applied to a non-interactive card (e.g. the KPI stat cards), since lifting
  * something the user can't actually click would be a false affordance.
@@ -161,7 +178,7 @@ h3 {
   box-shadow: 0 12px 24px -10px rgb(var(--color-primary) / 0.35);
 }
 
-/* Respect the user's OS-level motion preference everywhere — including the new hover-lift and
+/* Respect the user's OS-level motion preference everywhere - including the new hover-lift and
    gradient-shift effects above (UI/UX review: flagged High severity for ignoring this). */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -176,4 +193,17 @@ h3 {
   .card-interactive:hover {
     transform: none;
   }
+}
+
+/* Orbit wordmark: show the light-text variant only on the dark theme (see OrbitWordmark). */
+.wordmark-dark {
+  display: none;
+}
+
+:root[data-theme="dark"] .wordmark-light {
+  display: none;
+}
+
+:root[data-theme="dark"] .wordmark-dark {
+  display: inline;
 }

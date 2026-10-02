@@ -31,3 +31,36 @@ export async function cancelTask(id: number): Promise<Task> {
   const { data } = await apiClient.post<ApiResponse<Task>>(`/tasks/${id}/cancel`);
   return data.data as Task;
 }
+
+export async function restoreTask(id: number): Promise<Task> {
+  const { data } = await apiClient.post<ApiResponse<Task>>(`/tasks/${id}/restore`);
+  return data.data as Task;
+}
+
+export async function deleteTask(id: number): Promise<void> {
+  await apiClient.delete(`/tasks/${id}`);
+}
+
+export async function addTaskAttachment(taskId: number, file: File): Promise<Task> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await apiClient.post<ApiResponse<Task>>(`/tasks/${taskId}/attachments`, form);
+  return data.data as Task;
+}
+
+export async function removeTaskAttachment(taskId: number, attachmentId: number): Promise<Task> {
+  const { data } = await apiClient.delete<ApiResponse<Task>>(`/tasks/${taskId}/attachments/${attachmentId}`);
+  return data.data as Task;
+}
+
+/** Fetched through axios (not a plain link) so the auth cookie rides along - see useAuthedBlobUrl. */
+export async function downloadTaskAttachment(taskId: number, attachmentId: number): Promise<Blob> {
+  const { data } = await apiClient.get<Blob>(`/tasks/${taskId}/attachments/${attachmentId}`, { responseType: "blob" });
+  return data;
+}
+
+/** A blank link clears it. */
+export async function updateTaskDriveUrl(taskId: number, driveUrl: string): Promise<Task> {
+  const { data } = await apiClient.patch<ApiResponse<Task>>(`/tasks/${taskId}/drive-url`, { driveUrl });
+  return data.data as Task;
+}

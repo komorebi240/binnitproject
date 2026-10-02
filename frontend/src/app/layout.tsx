@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Orbit",
-  description: "Orbit — enterprise work platform",
+  description: "Orbit - enterprise work platform",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

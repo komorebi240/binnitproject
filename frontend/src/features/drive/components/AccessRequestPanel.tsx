@@ -31,7 +31,7 @@ const STATUS_TONE: Record<FolderRequestStatus, "info" | "success" | "danger"> = 
   REJECTED: "danger",
 };
 
-/** Mirrors FolderAccessRequestServiceImpl.assertCanDecide — UX only, backend re-checks
+/** Mirrors FolderAccessRequestServiceImpl.assertCanDecide - UX only, backend re-checks
  * independently (CLAUDE.md section 9). */
 function canDecide(currentUser: UserProfile, request: FolderAccessRequest): boolean {
   return (
@@ -55,7 +55,7 @@ export function AccessRequestPanel({ currentUser }: AccessRequestPanelProps) {
   const [catalogFolderId, setCatalogFolderId] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Only makes sense to request access to another department's folder — mirrors the backend's
+  // Only makes sense to request access to another department's folder - mirrors the backend's
   // OWN_DEPARTMENT_FOLDER rule.
   const requestableFolders = (catalog ?? []).filter((f) => f.departmentId !== currentUser.departmentId);
   const canRequest = currentUser.authorityLevel !== "EXECUTIVE";

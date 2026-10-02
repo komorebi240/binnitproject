@@ -24,7 +24,7 @@ interface TransferPositionFormProps {
 }
 
 /**
- * Inline row form rather than a Modal — the design system doesn't have one yet (see
+ * Inline row form rather than a Modal - the design system doesn't have one yet (see
  * components/ui/README.md) and this is the only place that would need it so far; add a real
  * Modal primitive if a second use case shows up (CLAUDE.md section 29).
  */

@@ -1,6 +1,6 @@
 export type AuthorityLevel = "EXECUTIVE" | "DEPARTMENT_HEAD" | "TEAM_LEAD" | "EMPLOYEE";
 
-/** Self-reported, display-only — never suppresses real notifications (see backend PresenceStatus javadoc). */
+/** Self-reported, display-only - never suppresses real notifications (see backend PresenceStatus javadoc). */
 export type PresenceStatus = "ONLINE" | "LIMITED" | "DO_NOT_DISTURB";
 
 export interface UserProfile {
@@ -18,6 +18,11 @@ export interface UserProfile {
   teamName: string | null;
   avatarUrl: string | null;
   presenceStatus: PresenceStatus;
+  /** A flagged communications-bot account allowed to message anyone in any company - see
+   * backend UserEntity.isSystemAccount javadoc. Gates the broadcast composer in Messages. */
+  systemAccount: boolean;
+  /** False until the first-run guided tour is finished or skipped. */
+  onboardingCompleted: boolean;
 }
 
 export interface LoginInput {

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Plus } from "@phosphor-icons/react";
+import { useTabs } from "@/components/layout/TabsContext";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
@@ -17,15 +17,16 @@ interface DepartmentManagerProps {
 }
 
 /**
- * Medium square tiles (Phase 7 plan) instead of a table — clicking one opens its own detail page
+ * Medium square tiles (Phase 7 plan) instead of a table - clicking one opens its own detail page
  * (`/dashboard/departments/[id]`) rather than expanding inline. Creating a department is still
- * EXECUTIVE-only — the backend independently enforces this too (`DepartmentController.create`'s
+ * EXECUTIVE-only - the backend independently enforces this too (`DepartmentController.create`'s
  * `@PreAuthorize("hasAuthority('EXECUTIVE')")`, unchanged by this phase).
  */
 export function DepartmentManager({ currentUser }: DepartmentManagerProps) {
   const { data: departments, isLoading } = useDepartments();
   const createDepartment = useCreateDepartment();
   const { showToast } = useToast();
+  const { navigateActiveTab } = useTabs();
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", description: "" });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -58,16 +59,22 @@ export function DepartmentManager({ currentUser }: DepartmentManagerProps) {
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
           {(departments ?? []).map((department) => (
-            <Link
+            <button
               key={department.id}
-              href={`/dashboard/departments/${department.id}`}
-              className="card-interactive flex aspect-square flex-col justify-between rounded border border-gray-200 bg-white p-4 shadow-sm hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              type="button"
+              onClick={() => navigateActiveTab(`/dashboard/departments/${department.id}`)}
+              className="card-interactive flex aspect-square flex-col justify-between rounded border border-gray-200 bg-white p-4 text-left shadow-sm hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
-              <p className="font-semibold text-gray-900">{department.name}</p>
-              {department.description && (
-                <p className="line-clamp-3 text-xs text-gray-500">{department.description}</p>
-              )}
-            </Link>
+              <span className="gradient-surface flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-primary to-primaryEnd text-sm font-semibold text-primary-foreground">
+                {department.name.charAt(0).toUpperCase()}
+              </span>
+              <div>
+                <p className="font-semibold text-gray-900">{department.name}</p>
+                {department.description && (
+                  <p className="line-clamp-2 text-xs text-gray-500">{department.description}</p>
+                )}
+              </div>
+            </button>
           ))}
 
           {isExecutive && !creating && (

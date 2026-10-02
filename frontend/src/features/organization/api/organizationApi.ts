@@ -58,8 +58,9 @@ export async function createUser(input: CreateUserInput): Promise<UserSummary> {
   return data.data as UserSummary;
 }
 
-export async function deleteUser(id: number): Promise<void> {
-  await apiClient.delete(`/users/${id}`);
+/** The caller's own password travels in the body: the server re-authenticates before deleting. */
+export async function deleteUser(id: number, password: string): Promise<void> {
+  await apiClient.delete(`/users/${id}`, { data: { password } });
 }
 
 export async function updatePosition(id: number, input: UpdatePositionInput): Promise<UserSummary> {

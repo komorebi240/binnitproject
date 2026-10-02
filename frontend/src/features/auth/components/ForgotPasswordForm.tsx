@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -9,9 +9,11 @@ import { useForgotPassword, useResetPassword } from "../hooks/useAuth";
 
 type Step = "request" | "reset";
 
+const RESEND_COOLDOWN_SECONDS = 60;
+
 /**
  * Two steps: request an OTP, then submit it with a new password. Step 1 always shows the same
- * generic message on success — the backend never reveals whether the username exists (see
+ * generic message on success - the backend never reveals whether the username exists (see
  * AuthController/AuthServiceImpl), so this screen must not either.
  */
 export function ForgotPasswordForm() {
@@ -25,14 +27,22 @@ export function ForgotPasswordForm() {
   const forgotPassword = useForgotPassword();
   const resetPassword = useResetPassword();
   const router = useRouter();
+  const [cooldown, setCooldown] = useState(0);
 
-  async function handleRequestOtp(event: React.FormEvent) {
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setTimeout(() => setCooldown((seconds) => seconds - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [cooldown]);
+
+  async function handleRequestOtp(event: React.SyntheticEvent) {
     event.preventDefault();
     setErrorMessage(null);
 
     try {
       await forgotPassword.mutateAsync(username);
       setInfoMessage("Nếu tài khoản tồn tại, mã OTP đã được gửi tới email đã đăng ký.");
+      setCooldown(RESEND_COOLDOWN_SECONDS);
       setStep("reset");
     } catch (err) {
       setErrorMessage(err instanceof ApiRequestError ? err.message : "Không gửi được yêu cầu");
@@ -114,10 +124,11 @@ export function ForgotPasswordForm() {
       </Button>
       <button
         type="button"
-        onClick={() => setStep("request")}
-        className="text-center text-sm text-gray-500 hover:underline"
+        onClick={handleRequestOtp}
+        disabled={cooldown > 0 || forgotPassword.isPending}
+        className="text-center text-sm text-gray-500 hover:underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-60"
       >
-        Gửi lại mã / đổi tên đăng nhập
+        {cooldown > 0 ? `Gửi lại mã (${cooldown}s)` : "Gửi lại mã"}
       </button>
     </form>
   );

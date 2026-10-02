@@ -16,7 +16,7 @@ interface TeamPanelProps {
   departmentId: number;
   departmentName: string;
   /** Only EXECUTIVE and the DEPARTMENT_HEAD of this exact department may create/delete teams
-   * — this only controls whether the controls are shown; the backend re-checks independently
+   * - this only controls whether the controls are shown; the backend re-checks independently
    * (CLAUDE.md section 9). */
   canManage: boolean;
 }
@@ -50,8 +50,8 @@ export function TeamPanel({ departmentId, departmentName, canManage }: TeamPanel
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded border border-gray-200 p-4">
-      <h3 className="text-sm font-semibold text-gray-900">Nhóm trong phòng &quot;{departmentName}&quot;</h3>
+    <div className="flex flex-col gap-3 rounded border border-gray-200 bg-surface p-5 shadow-sm">
+      <h3 className="text-base font-semibold text-gray-900">Nhóm trong phòng &quot;{departmentName}&quot;</h3>
 
       {isLoading ? (
         <Skeleton rows={2} />

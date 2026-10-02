@@ -8,7 +8,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  // Every theme uses a real two-stop gradient (see app/globals.css) — `.gradient-surface` adds a
+  // Every theme uses a real two-stop gradient (see app/globals.css) - `.gradient-surface` adds a
   // crisp 1px edge so the shape reads clearly even against a similarly-toned page background.
   primary:
     "gradient-surface bg-gradient-to-r from-primary to-primaryEnd text-primary-foreground hover:shadow-lg hover:shadow-primary/30",
@@ -17,7 +17,7 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 };
 
 /**
- * Design-system primitive — reused across pages instead of one-off button styles
+ * Design-system primitive - reused across pages instead of one-off button styles
  * (CLAUDE.md section 26). Add the remaining primitives (Input, Select, Modal, Table,
  * Card, Badge, Toast, Alert, Pagination, Loading, EmptyState) here following this
  * same shape as real screens need them.

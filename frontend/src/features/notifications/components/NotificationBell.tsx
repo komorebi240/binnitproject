@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTabs } from "@/components/layout/TabsContext";
 import { Bell } from "@phosphor-icons/react";
 import { useApproveAccessRequest, useRejectAccessRequest } from "@/features/drive/hooks/useDrive";
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications, useUnreadCount } from "../hooks/useNotifications";
 import type { Notification } from "../types";
 
-/** Where each notification type should take you when clicked — see NotificationServiceImpl/ CalendarServiceImpl/MessageServiceImpl for what relatedEntityId means per type. */
+/** Where each notification type should take you when clicked - see NotificationServiceImpl/ CalendarServiceImpl/MessageServiceImpl for what relatedEntityId means per type. */
 function resolveTarget(notification: Notification): string | null {
   switch (notification.type) {
     case "MESSAGE_RECEIVED":
@@ -23,19 +23,19 @@ function resolveTarget(notification: Notification): string | null {
 }
 
 /**
- * Icon-only button (header cluster — see dashboard/layout.tsx) that opens a small dropdown of
+ * Icon-only button (header cluster - see dashboard/layout.tsx) that opens a small dropdown of
  * recent notifications. No Dropdown primitive exists yet (components/ui/README.md), so this
  * builds its own absolute-positioned panel rather than adding one for a single use case
  * (CLAUDE.md section 29).
  *
  * `FOLDER_ACCESS_REQUESTED` gets inline Duyệt/Từ chối buttons so an approver doesn't have to
- * leave this dropdown to decide — `relatedEntityId` is the request's own id (see
+ * leave this dropdown to decide - `relatedEntityId` is the request's own id (see
  * FolderAccessRequestServiceImpl.notifyApprovers), which `useApproveAccessRequest`/
  * `useRejectAccessRequest` already take directly, no extra fetch needed.
  */
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const router = useRouter();
+  const { navigateActiveTab } = useTabs();
   const { data: unreadCount } = useUnreadCount();
   const { data: notifications } = useNotifications();
   const markRead = useMarkNotificationRead();
@@ -52,7 +52,7 @@ export function NotificationBell() {
     const target = resolveTarget(notification);
     if (target) {
       setOpen(false);
-      router.push(target);
+      navigateActiveTab(target);
     }
   }
 
@@ -89,7 +89,7 @@ export function NotificationBell() {
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-20 cursor-default"
           />
-          <div className="animate-fade-in absolute right-0 top-11 z-30 w-80 rounded border border-gray-200 bg-white shadow-lg">
+          <div className="animate-pop-in absolute right-0 top-11 z-30 w-80 origin-top-right rounded-lg border border-gray-200 bg-white shadow-lg">
             <div className="flex items-center justify-between border-b border-gray-100 px-3 py-2">
               <p className="text-sm font-semibold text-gray-900">Thông báo</p>
               {count > 0 && (
@@ -116,8 +116,8 @@ export function NotificationBell() {
                       onClick={() => navigateTo(n)}
                       className="block w-full text-left transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                     >
-                      <p>{n.title}</p>
-                      {n.body && <p className="mt-0.5 text-xs font-normal text-gray-500">{n.body}</p>}
+                      <p className="break-words">{n.title}</p>
+                      {n.body && <p className="mt-0.5 break-words text-xs font-normal text-gray-500">{n.body}</p>}
                     </button>
                     {n.type === "FOLDER_ACCESS_REQUESTED" && n.relatedEntityId != null && (
                       <div className="mt-1.5 flex gap-2">

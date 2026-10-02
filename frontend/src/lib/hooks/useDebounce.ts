@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 /**
- * Example cross-feature hook — anything shared by more than one feature belongs in
+ * Example cross-feature hook - anything shared by more than one feature belongs in
  * lib/hooks; anything specific to one feature belongs in features/<feature>/hooks
  * (CLAUDE.md section 46.2).
  */

@@ -8,6 +8,3 @@ export interface UpdateProfileInput {
   phone?: string;
 }
 
-export interface UpdateCompanyInput {
-  name: string;
-}

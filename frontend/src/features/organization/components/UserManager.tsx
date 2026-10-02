@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Plus } from "@phosphor-icons/react";
+import { ActionMenu } from "@/components/ui/ActionMenu";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -11,10 +13,13 @@ import { Table } from "@/components/ui/Table";
 import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import type { AuthorityLevel, UserProfile } from "@/features/auth/types";
+import { allowedLevelsFor } from "../grantLevels";
 import { useDepartments, useTeams } from "../hooks/useOrganization";
-import { useCreateUser, useDeleteUser, useSetUserActive, useUsers } from "../hooks/useOrganization";
+import { useCreateUser, useSetUserActive, useUsers } from "../hooks/useOrganization";
+import { DeleteUserDialog } from "./DeleteUserDialog";
 import { TransferPositionForm } from "./TransferPositionForm";
 import { UserKpiPanel } from "@/features/kpi/components/UserKpiPanel";
+import { InviteStaffButton } from "@/features/onboarding/components/InviteStaffButton";
 import { AddEventForUserForm } from "@/features/calendar/components/AddEventForUserForm";
 import type { CreateUserInput, UserSummary } from "../types";
 
@@ -25,21 +30,6 @@ const LEVEL_LABELS: Record<AuthorityLevel, string> = {
   EMPLOYEE: "Nhân viên",
 };
 
-/** Mirrors UserManagementServiceImpl.assertCallerCanGrant on the backend — for UX only, the
- * backend re-checks independently (CLAUDE.md section 9). */
-function allowedLevelsFor(callerLevel: AuthorityLevel): AuthorityLevel[] {
-  switch (callerLevel) {
-    case "EXECUTIVE":
-      return ["EXECUTIVE", "DEPARTMENT_HEAD", "TEAM_LEAD", "EMPLOYEE"];
-    case "DEPARTMENT_HEAD":
-      return ["TEAM_LEAD", "EMPLOYEE"];
-    case "TEAM_LEAD":
-      return ["EMPLOYEE"];
-    default:
-      return [];
-  }
-}
-
 interface UserManagerProps {
   currentUser: UserProfile;
 }
@@ -48,7 +38,6 @@ export function UserManager({ currentUser }: UserManagerProps) {
   const { data: users, isLoading } = useUsers();
   const { data: departments } = useDepartments();
   const createUser = useCreateUser();
-  const deleteUser = useDeleteUser();
   const setUserActive = useSetUserActive();
   const { showToast } = useToast();
 
@@ -70,6 +59,8 @@ export function UserManager({ currentUser }: UserManagerProps) {
   const [transferringUserId, setTransferringUserId] = useState<number | null>(null);
   const [kpiUserId, setKpiUserId] = useState<number | null>(null);
   const [schedulingUserId, setSchedulingUserId] = useState<number | null>(null);
+  const [deletingUser, setDeletingUser] = useState<UserSummary | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const isExecutive = currentUser.authorityLevel === "EXECUTIVE";
   const { data: teamsInChosenDepartment } = useTeams(form.departmentId ?? -1);
@@ -104,17 +95,10 @@ export function UserManager({ currentUser }: UserManagerProps) {
         startDate: "",
       }));
       showToast("success", "Đã thêm nhân sự");
+      setCreating(false);
     } catch (err) {
       setErrorMessage(err instanceof ApiRequestError ? err.message : "Không tạo được người dùng");
     }
-  }
-
-  function handleDelete(userId: number) {
-    deleteUser.mutate(userId, {
-      onSuccess: () => showToast("success", "Đã xoá nhân sự"),
-      onError: (err) =>
-        showToast("error", err instanceof ApiRequestError ? err.message : "Không xoá được nhân sự"),
-    });
   }
 
   function handleToggleActive(user: UserSummary) {
@@ -134,7 +118,20 @@ export function UserManager({ currentUser }: UserManagerProps) {
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold text-gray-900">Nhân sự</h2>
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-gray-900">Nhân sự</h2>
+        <button
+          type="button"
+          onClick={() => setCreating((v) => !v)}
+          title="Thêm nhân sự"
+          aria-label="Thêm nhân sự"
+          aria-pressed={creating}
+          className={`gradient-surface flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-r from-primary to-primaryEnd text-primary-foreground shadow-sm transition-all duration-150 hover:shadow-md hover:shadow-primary/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${creating ? "rotate-45" : ""}`}
+        >
+          <Plus size={16} weight="bold" aria-hidden />
+        </button>
+        <InviteStaffButton currentUser={currentUser} />
+      </div>
 
       {isLoading ? (
         <Skeleton rows={4} />
@@ -158,36 +155,20 @@ export function UserManager({ currentUser }: UserManagerProps) {
             {
               header: "",
               cell: (u) => (
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => setKpiUserId(kpiUserId === u.id ? null : u.id)}
-                  >
-                    Xem KPI
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => setTransferringUserId(transferringUserId === u.id ? null : u.id)}
-                  >
-                    Chuyển vị trí
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => setSchedulingUserId(schedulingUserId === u.id ? null : u.id)}
-                  >
-                    Thêm lịch
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleToggleActive(u)}
-                    loading={setUserActive.isPending}
-                  >
-                    {u.active ? "Khoá" : "Mở khoá"}
-                  </Button>
-                  <Button variant="danger" onClick={() => handleDelete(u.id)} loading={deleteUser.isPending}>
-                    Xoá
-                  </Button>
-                </div>
+                <ActionMenu
+                  label={`Tuỳ chọn cho ${u.fullName}`}
+                  items={[
+                    { label: "Xem KPI", onSelect: () => setKpiUserId(kpiUserId === u.id ? null : u.id) },
+                    { label: "Chuyển vị trí", onSelect: () => setTransferringUserId(transferringUserId === u.id ? null : u.id) },
+                    { label: "Thêm lịch", onSelect: () => setSchedulingUserId(schedulingUserId === u.id ? null : u.id) },
+                    {
+                      label: u.active ? "Khoá" : "Mở khoá",
+                      onSelect: () => handleToggleActive(u),
+                      disabled: setUserActive.isPending,
+                    },
+                    { label: "Xoá", onSelect: () => setDeletingUser(u), danger: true },
+                  ]}
+                />
               ),
             },
           ]}
@@ -196,7 +177,7 @@ export function UserManager({ currentUser }: UserManagerProps) {
           emptyState={
             <EmptyState
               title="Chưa có nhân sự nào trong phạm vi của bạn"
-              description="Thêm nhân sự đầu tiên bằng form bên dưới."
+              description="Bấm + cạnh tiêu đề để thêm nhân sự đầu tiên."
             />
           }
         />
@@ -221,7 +202,8 @@ export function UserManager({ currentUser }: UserManagerProps) {
           );
         })()}
 
-      <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded border border-gray-200 p-4 sm:grid-cols-2">
+      {creating && (
+      <form onSubmit={handleCreate} className="animate-fade-in grid grid-cols-1 gap-3 rounded border border-gray-200 bg-surface p-4 shadow-sm sm:grid-cols-2">
         <Input
           label="Tên đăng nhập"
           value={form.username}
@@ -308,10 +290,21 @@ export function UserManager({ currentUser }: UserManagerProps) {
           </Button>
         </div>
       </form>
+      )}
       {errorMessage && (
         <p role="alert" className="text-sm text-danger sm:col-span-2">
           {errorMessage}
         </p>
+      )}
+      {deletingUser && (
+        <DeleteUserDialog
+          user={deletingUser}
+          onClose={() => setDeletingUser(null)}
+          onDeleted={() => {
+            showToast("success", `Đã xoá ${deletingUser.fullName}`);
+            setDeletingUser(null);
+          }}
+        />
       )}
     </section>
   );

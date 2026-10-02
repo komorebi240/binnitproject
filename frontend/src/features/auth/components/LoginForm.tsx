@@ -23,7 +23,7 @@ export function LoginForm() {
       await login.mutateAsync({ username, password });
       router.push("/dashboard");
     } catch (err) {
-      // Deliberately generic — the backend already collapses "wrong password" and "no such
+      // Deliberately generic - the backend already collapses "wrong password" and "no such
       // user" into one message so this screen can't be used to enumerate usernames.
       setErrorMessage(err instanceof ApiRequestError ? err.message : "Đăng nhập thất bại");
     }
@@ -60,6 +60,13 @@ export function LoginForm() {
       <Link href="/forgot-password" className="text-center text-sm text-primary hover:underline">
         Quên mật khẩu?
       </Link>
+
+      <p className="text-center text-sm text-gray-500">
+        Chưa có doanh nghiệp?{" "}
+        <Link href="/register" className="font-medium text-primary hover:underline">
+          Đăng ký doanh nghiệp
+        </Link>
+      </p>
     </form>
   );
 }

@@ -22,7 +22,7 @@ interface AddEventForUserFormProps {
 }
 
 /**
- * Used from UserManager ("Thêm lịch") — the manager never gets to SEE the target's calendar
+ * Used from UserManager ("Thêm lịch") - the manager never gets to SEE the target's calendar
  * (it's private, see CalendarServiceImpl), only to propose a PENDING event they must accept.
  */
 export function AddEventForUserForm({ userId, onDone }: AddEventForUserFormProps) {

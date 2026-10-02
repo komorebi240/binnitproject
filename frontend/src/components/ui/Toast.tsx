@@ -26,9 +26,9 @@ const AUTO_DISMISS_MS = 4000;
 const EXIT_ANIMATION_MS = 150;
 
 /**
- * Design-system primitive (CLAUDE.md section 26) — the one place every feature reports
+ * Design-system primitive (CLAUDE.md section 26) - the one place every feature reports
  * "it worked" / "it failed" instead of the page staying silent after a mutation. Slides/fades
- * in and out (CLAUDE.md section 25: motion for feedback, not decoration) — additive to, not a
+ * in and out (CLAUDE.md section 25: motion for feedback, not decoration) - additive to, not a
  * replacement for, inline field errors that stay visible (e.g. form validation).
  */
 export function ToastProvider({ children }: { children: ReactNode }) {

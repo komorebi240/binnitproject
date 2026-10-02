@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
+import { Modal } from "@/components/ui/Modal";
+import { PlusButton } from "@/components/ui/PlusButton";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -37,7 +39,7 @@ function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-/** Mon-first 6-week grid covering the given month — the simplest layout that always fits every month. */
+/** Mon-first 6-week grid covering the given month - the simplest layout that always fits every month. */
 function buildMonthGrid(monthDate: Date): Date[] {
   const firstOfMonth = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
   const firstWeekday = (firstOfMonth.getDay() + 6) % 7; // 0 = Monday
@@ -52,7 +54,7 @@ function buildMonthGrid(monthDate: Date): Date[] {
 }
 
 /**
- * A self-drawn month grid (Apple Calendar-style, simplified) — no calendar library added for
+ * A self-drawn month grid (Apple Calendar-style, simplified) - no calendar library added for
  * this one view (CLAUDE.md section 29). Events the caller didn't create themselves and that are
  * still PENDING get an Accept/Decline pair; everything else is read-only display.
  */
@@ -71,6 +73,7 @@ export function CalendarView() {
     startAt: "",
     description: "",
   });
+  const [creating, setCreating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const grid = useMemo(() => buildMonthGrid(monthDate), [monthDate]);
@@ -93,6 +96,7 @@ export function CalendarView() {
       });
       setForm({ title: "", eventType: "MEETING", startAt: "", description: "" });
       showToast("success", "Đã thêm sự kiện");
+      setCreating(false);
     } catch (err) {
       setErrorMessage(err instanceof ApiRequestError ? err.message : "Không thêm được sự kiện");
     }
@@ -104,13 +108,18 @@ export function CalendarView() {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-gray-900">Lịch của tôi</h2>
+        <PlusButton label="Thêm sự kiện" onClick={() => setCreating(true)} />
+      </div>
+
       {pendingEvents.length > 0 && (
         <section className="flex flex-col gap-2 rounded border border-yellow-200 bg-yellow-50 p-4">
           <p className="text-sm font-medium text-gray-900">Sự kiện chờ bạn xác nhận</p>
           {pendingEvents.map((e) => (
             <div key={e.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span>
-                {e.title} — {new Date(e.startAt).toLocaleString("vi-VN")}
+                {e.title} - {new Date(e.startAt).toLocaleString("vi-VN")}
                 {e.createdByName && !e.createdBySelf && (
                   <span className="text-gray-500"> (thêm bởi {e.createdByName})</span>
                 )}
@@ -196,7 +205,7 @@ export function CalendarView() {
                   <Badge tone={e.status === "DECLINED" ? "danger" : e.status === "PENDING" ? "warning" : "neutral"}>
                     {TYPE_LABELS[e.eventType]}
                   </Badge>
-                  {e.title} — {new Date(e.startAt).toLocaleString("vi-VN")}
+                  {e.title} - {new Date(e.startAt).toLocaleString("vi-VN")}
                 </span>
                 <Button variant="danger" onClick={() => deleteEvent.mutate(e.id)} loading={deleteEvent.isPending}>
                   Xoá
@@ -207,38 +216,44 @@ export function CalendarView() {
         )}
       </section>
 
-      <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 rounded border border-gray-200 p-4 sm:grid-cols-2">
-        <p className="text-sm font-medium text-gray-700 sm:col-span-2">Thêm sự kiện mới</p>
-        <Input label="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-        <Select
-          label="Loại"
-          value={form.eventType}
-          onChange={(e) => setForm({ ...form, eventType: e.target.value as CalendarEventType })}
-          options={Object.entries(TYPE_LABELS).map(([value, label]) => ({ value, label }))}
-        />
-        <Input
-          label="Thời gian bắt đầu"
-          type="datetime-local"
-          value={form.startAt}
-          onChange={(e) => setForm({ ...form, startAt: e.target.value })}
-          required
-        />
-        <Input
-          label="Mô tả (tuỳ chọn)"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-        {errorMessage && (
-          <p role="alert" className="text-sm text-danger sm:col-span-2">
-            {errorMessage}
-          </p>
-        )}
-        <div className="sm:col-span-2">
-          <Button type="submit" loading={createEvent.isPending}>
-            Thêm sự kiện
-          </Button>
-        </div>
-      </form>
+      {creating && (
+        <Modal title="Thêm sự kiện mới" onClose={() => setCreating(false)}>
+        <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Input label="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+          <Select
+            label="Loại"
+            value={form.eventType}
+            onChange={(e) => setForm({ ...form, eventType: e.target.value as CalendarEventType })}
+            options={Object.entries(TYPE_LABELS).map(([value, label]) => ({ value, label }))}
+          />
+          <Input
+            label="Thời gian bắt đầu"
+            type="datetime-local"
+            value={form.startAt}
+            onChange={(e) => setForm({ ...form, startAt: e.target.value })}
+            required
+          />
+          <Input
+            label="Mô tả (tuỳ chọn)"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+          {errorMessage && (
+            <p role="alert" className="text-sm text-danger sm:col-span-2">
+              {errorMessage}
+            </p>
+          )}
+          <div className="flex gap-2 sm:col-span-2">
+            <Button type="submit" loading={createEvent.isPending}>
+              Thêm sự kiện
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setCreating(false)}>
+              Huỷ
+            </Button>
+          </div>
+        </form>
+        </Modal>
+      )}
     </div>
   );
 }

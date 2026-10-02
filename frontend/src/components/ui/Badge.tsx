@@ -15,7 +15,7 @@ const TONE_CLASSES: Record<BadgeTone, string> = {
   danger: "bg-red-100 text-red-700",
 };
 
-/** Design-system primitive (CLAUDE.md section 26) — status/priority pills use color plus text,
+/** Design-system primitive (CLAUDE.md section 26) - status/priority pills use color plus text,
  * never color alone, so the meaning still reads without relying on color perception (CLAUDE.md
  * section 27). */
 export function Badge({ tone = "neutral", children }: BadgeProps) {

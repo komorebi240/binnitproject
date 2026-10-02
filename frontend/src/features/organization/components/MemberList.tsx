@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { DotsThreeVertical } from "@phosphor-icons/react";
+import { useTabs } from "@/components/layout/TabsContext";
 import { Avatar } from "@/components/ui/Avatar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -24,13 +24,14 @@ interface MemberListProps {
 }
 
 /**
- * Presentational member list shared by DepartmentMemberList and TeamMemberList — same "..."
+ * Presentational member list shared by DepartmentMemberList and TeamMemberList - same "..."
  * info popover (public info plus entry points into messaging/Drive, never management actions;
  * see DepartmentMemberList's original comment) regardless of whether the members came from a
  * department or a team.
  */
 export function MemberList({ members, isLoading, contextLabel, emptyTitle }: MemberListProps) {
   const [openMemberId, setOpenMemberId] = useState<number | null>(null);
+  const { navigateActiveTab } = useTabs();
 
   if (isLoading) {
     return <Skeleton rows={4} />;
@@ -75,18 +76,22 @@ export function MemberList({ members, isLoading, contextLabel, emptyTitle }: Mem
                   {contextLabel} · {LEVEL_LABELS[member.authorityLevel]}
                 </p>
                 <div className="mt-2 flex flex-col gap-1.5">
-                  <Link
-                    href={`/dashboard/messages?with=${member.userId}&name=${encodeURIComponent(member.fullName)}`}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigateActiveTab(`/dashboard/messages?with=${member.userId}&name=${encodeURIComponent(member.fullName)}`)
+                    }
                     className="rounded bg-surface-muted px-2 py-1.5 text-center text-xs font-medium text-gray-700 hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                   >
                     Nhắn tin riêng
-                  </Link>
-                  <Link
-                    href="/dashboard/drive"
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateActiveTab("/dashboard/drive")}
                     className="rounded bg-surface-muted px-2 py-1.5 text-center text-xs font-medium text-gray-700 hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                   >
                     Gửi yêu cầu Drive
-                  </Link>
+                  </button>
                 </div>
               </div>
             </>

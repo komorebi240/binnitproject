@@ -21,11 +21,12 @@ const PRIORITY_LABELS: Record<TaskPriority, string> = {
 
 interface CreateTaskFormProps {
   currentUser: UserProfile;
+  onDone: () => void;
 }
 
-/** Only EXECUTIVE/DEPARTMENT_HEAD/TEAM_LEAD render this at all (see TasksPanel) — mirrors
+/** Only EXECUTIVE/DEPARTMENT_HEAD/TEAM_LEAD render this at all (see TasksPanel) - mirrors
  * UserManager's allowedLevelsFor pattern for who can assign to what. */
-export function CreateTaskForm({ currentUser }: CreateTaskFormProps) {
+export function CreateTaskForm({ currentUser, onDone }: CreateTaskFormProps) {
   const canAssignToDepartment = currentUser.authorityLevel !== "TEAM_LEAD";
   const { data: departments } = useDepartments();
   const { data: users } = useUsers();
@@ -41,18 +42,19 @@ export function CreateTaskForm({ currentUser }: CreateTaskFormProps) {
     assigneeDepartmentId: "",
     priority: "MEDIUM" as TaskPriority,
     dueDate: "",
+    driveUrl: "",
   });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // A department head only manages their own department; the department dropdown mirrors that
-  // for UX — the backend independently re-checks this regardless (CLAUDE.md section 9).
+  // for UX - the backend independently re-checks this regardless (CLAUDE.md section 9).
   const assignableDepartments =
     currentUser.authorityLevel === "DEPARTMENT_HEAD"
       ? (departments ?? []).filter((d) => d.id === currentUser.departmentId)
       : (departments ?? []);
 
   // Shown right under the assignee picker so a manager sees what that person already has on
-  // their plate before adding more — avoids accidental duplicate assignments (Phase 7 plan).
+  // their plate before adding more - avoids accidental duplicate assignments (Phase 7 plan).
   const selectedAssigneeId = form.assigneeType === "USER" && form.assigneeUserId ? Number(form.assigneeUserId) : null;
   const selectedAssigneeOpenTasks = selectedAssigneeId
     ? (allTasks ?? []).filter((t) => t.assigneeUserId === selectedAssigneeId && OPEN_STATUSES.has(t.status))
@@ -73,17 +75,18 @@ export function CreateTaskForm({ currentUser }: CreateTaskFormProps) {
             : undefined,
         priority: form.priority,
         dueDate: form.dueDate || undefined,
+        driveUrl: form.driveUrl.trim() || undefined,
       };
       await createTask.mutateAsync(input);
-      setForm((prev) => ({ ...prev, title: "", description: "", assigneeUserId: "", assigneeDepartmentId: "", dueDate: "" }));
       showToast("success", "Đã giao việc");
+      onDone();
     } catch (err) {
       setErrorMessage(err instanceof ApiRequestError ? err.message : "Không giao được việc");
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 rounded border border-gray-200 p-4 sm:grid-cols-2">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
         <Input label="Tên việc" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
       </div>
@@ -161,8 +164,21 @@ export function CreateTaskForm({ currentUser }: CreateTaskFormProps) {
       />
 
       <div className="sm:col-span-2">
+        <Input
+          label="Link Google Drive (tuỳ chọn)"
+          type="url"
+          placeholder="https://drive.google.com/..."
+          value={form.driveUrl}
+          onChange={(e) => setForm({ ...form, driveUrl: e.target.value })}
+        />
+      </div>
+
+      <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" loading={createTask.isPending}>
           Giao việc
+        </Button>
+        <Button type="button" variant="secondary" onClick={onDone}>
+          Huỷ
         </Button>
       </div>
       {errorMessage && (

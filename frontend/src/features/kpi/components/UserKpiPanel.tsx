@@ -15,7 +15,7 @@ interface UserKpiPanelProps {
   userId: number;
 }
 
-/** Inline panel shown under a Nhân sự row when a manager clicks "Xem KPI" — see UserManager.tsx. */
+/** Inline panel shown under a Nhân sự row when a manager clicks "Xem KPI" - see UserManager.tsx. */
 export function UserKpiPanel({ userId }: UserKpiPanelProps) {
   const { data: summary, isLoading, isError, error } = useUserKpiSummary(userId, true);
 

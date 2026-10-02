@@ -4,7 +4,7 @@ import * as api from "../api/notificationApi";
 const LIST_KEY = ["notifications"] as const;
 const UNREAD_COUNT_KEY = ["notifications", "unread-count"] as const;
 
-// Polling, not a WebSocket — simple and enough at this scale (CLAUDE.md section 29: no new
+// Polling, not a WebSocket - simple and enough at this scale (CLAUDE.md section 29: no new
 // real-time infra until something actually needs it).
 const POLL_INTERVAL_MS = 30_000;
 

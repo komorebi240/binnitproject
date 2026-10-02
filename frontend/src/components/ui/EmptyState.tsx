@@ -6,7 +6,7 @@ interface EmptyStateProps {
 
 /**
  * Every list/table view needs a deliberate empty state instead of a blank area
- * (CLAUDE.md section 39/40 — "clear empty state" is part of Definition of Done).
+ * (CLAUDE.md section 39/40 - "clear empty state" is part of Definition of Done).
  */
 export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (

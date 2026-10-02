@@ -1,6 +1,6 @@
 "use client";
 
-import { useAvatarSrc } from "@/features/auth/hooks/useAvatarSrc";
+import { useAuthedBlobUrl } from "@/lib/hooks/useAuthedBlobUrl";
 import type { PresenceStatus } from "@/features/auth/types";
 
 const SIZE_CLASSES = {
@@ -23,7 +23,7 @@ const STATUS_CLASSES: Record<PresenceStatus, string> = {
 
 export const STATUS_LABELS: Record<PresenceStatus, string> = {
   ONLINE: "Trực tuyến",
-  LIMITED: "Hạn chế — chỉ thông báo quan trọng",
+  LIMITED: "Hạn chế",
   DO_NOT_DISTURB: "Không làm phiền",
 };
 
@@ -43,12 +43,12 @@ function initials(fullName: string): string {
 
 /**
  * Design-system primitive (CLAUDE.md section 26). Falls back to initials-on-brand-gradient when
- * no avatar is set, and optionally overlays a colored presence dot (see PresenceStatus — purely
+ * no avatar is set, and optionally overlays a colored presence dot (see PresenceStatus - purely
  * a display signal, never a notification filter). Used anywhere a person is shown: header,
  * directory, Nhân sự table.
  */
 export function Avatar({ avatarUrl, fullName, presenceStatus, size = "md" }: AvatarProps) {
-  const objectUrl = useAvatarSrc(avatarUrl);
+  const objectUrl = useAuthedBlobUrl(avatarUrl);
 
   return (
     <span className={`relative inline-flex shrink-0 ${SIZE_CLASSES[size]}`}>

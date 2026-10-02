@@ -9,7 +9,7 @@ interface DepartmentMemberListProps {
 }
 
 /**
- * Internal company directory for one department (Phase 7 plan) — readable by anyone, not just
+ * Internal company directory for one department (Phase 7 plan) - readable by anyone, not just
  * managers (see OrganizationService.listDepartmentMembers). Rendering itself lives in
  * MemberList, shared with TeamMemberList.
  */

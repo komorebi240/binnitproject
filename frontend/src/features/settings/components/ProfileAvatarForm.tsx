@@ -1,11 +1,13 @@
 "use client";
 
 import { useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Avatar, STATUS_LABELS } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
-import { useUpdatePresence, useUploadAvatar } from "@/features/auth/hooks/useAuth";
-import type { PresenceStatus, UserProfile } from "@/features/auth/types";
+import { useLogout, useUpdatePresence, useUploadAvatar } from "@/features/auth/hooks/useAuth";
+import type { AuthorityLevel, PresenceStatus, UserProfile } from "@/features/auth/types";
 
 const STATUS_OPTIONS: PresenceStatus[] = ["ONLINE", "LIMITED", "DO_NOT_DISTURB"];
 
@@ -15,20 +17,34 @@ const STATUS_DOT_CLASSES: Record<PresenceStatus, string> = {
   DO_NOT_DISTURB: "bg-red-500",
 };
 
+const LEVEL_LABELS: Record<AuthorityLevel, string> = {
+  EXECUTIVE: "Điều hành",
+  DEPARTMENT_HEAD: "Trưởng phòng",
+  TEAM_LEAD: "Trưởng nhóm",
+  EMPLOYEE: "Nhân viên",
+};
+
 interface ProfileAvatarFormProps {
   currentUser: UserProfile;
 }
 
 /**
- * Avatar upload + presence status — both self-service, both purely about how this user presents
+ * Avatar upload + presence status - both self-service, both purely about how this user presents
  * to others (see Avatar.tsx / backend PresenceStatus javadoc: status is a display signal only,
  * it never filters real notifications).
  */
 export function ProfileAvatarForm({ currentUser }: ProfileAvatarFormProps) {
   const uploadAvatar = useUploadAvatar();
   const updatePresence = useUpdatePresence();
+  const logout = useLogout();
+  const router = useRouter();
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleLogout() {
+    await logout.mutateAsync();
+    router.push("/login");
+  }
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -52,7 +68,19 @@ export function ProfileAvatarForm({ currentUser }: ProfileAvatarFormProps) {
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold text-gray-900">Hồ sơ</h2>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Hồ sơ</h2>
+          <p className="text-sm text-gray-500">
+            {currentUser.fullName} - {currentUser.title ?? LEVEL_LABELS[currentUser.authorityLevel]}
+            {currentUser.departmentName ? ` · ${currentUser.departmentName}` : ""}
+            {currentUser.teamName ? ` · ${currentUser.teamName}` : ""}
+          </p>
+        </div>
+        <Button variant="secondary" onClick={handleLogout} loading={logout.isPending}>
+          Đăng xuất
+        </Button>
+      </div>
 
       <div className="flex items-center gap-4">
         <Avatar avatarUrl={currentUser.avatarUrl} fullName={currentUser.fullName} size="lg" />

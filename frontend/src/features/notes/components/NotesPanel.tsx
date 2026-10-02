@@ -4,55 +4,23 @@ import { useState } from "react";
 import { PushPin } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Input } from "@/components/ui/Input";
+import { PlusButton } from "@/components/ui/PlusButton";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
-import { useCreateNote, useDeleteNote, useNotes, useSetNotePinned, useUpdateNote } from "../hooks/useNotes";
-import { NoteExpandModal } from "./NoteExpandModal";
+import { useDeleteNote, useNotes, useSetNotePinned } from "../hooks/useNotes";
+import { NoteModal } from "./NoteModal";
 import type { Note } from "../types";
 
-/** Fully private per-user notes (Phase 6 plan) — no sharing UI at all, matching the backend. */
+/** Fully private per-user notes (Phase 6 plan) - no sharing UI at all, matching the backend. */
 export function NotesPanel() {
   const { data: notes, isLoading } = useNotes();
-  const createNote = useCreateNote();
-  const updateNote = useUpdateNote();
   const deleteNote = useDeleteNote();
   const setPinned = useSetNotePinned();
   const { showToast } = useToast();
 
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [expandedNote, setExpandedNote] = useState<Note | null>(null);
-  const [form, setForm] = useState({ title: "", content: "" });
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  function startEditing(note: Note) {
-    setEditingId(note.id);
-    setForm({ title: note.title, content: note.content ?? "" });
-  }
-
-  function startNew() {
-    setEditingId(0);
-    setForm({ title: "", content: "" });
-  }
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    setErrorMessage(null);
-    try {
-      if (editingId) {
-        await updateNote.mutateAsync({ id: editingId, input: form });
-        showToast("success", "Đã lưu ghi chú");
-      } else {
-        await createNote.mutateAsync(form);
-        showToast("success", "Đã tạo ghi chú");
-      }
-      setEditingId(null);
-      setForm({ title: "", content: "" });
-    } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không lưu được ghi chú");
-    }
-  }
+  // undefined = closed, null = creating a new note, Note = viewing/editing that note
+  const [modalNote, setModalNote] = useState<Note | null | undefined>(undefined);
 
   function handleDelete(id: number) {
     deleteNote.mutate(id, {
@@ -67,38 +35,13 @@ export function NotesPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      {editingId === null ? (
-        <Button onClick={startNew}>Tạo ghi chú mới</Button>
-      ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded border border-gray-200 p-4">
-          <Input label="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">Nội dung</label>
-            <textarea
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-              rows={6}
-              className="rounded border border-gray-300 px-3 py-2 text-sm transition-colors duration-150 hover:border-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-            />
-          </div>
-          {errorMessage && (
-            <p role="alert" className="text-sm text-danger">
-              {errorMessage}
-            </p>
-          )}
-          <div className="flex gap-2">
-            <Button type="submit" loading={createNote.isPending || updateNote.isPending}>
-              Lưu
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => setEditingId(null)}>
-              Huỷ
-            </Button>
-          </div>
-        </form>
-      )}
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-gray-900">Note của tôi</h2>
+        <PlusButton label="Tạo ghi chú mới" onClick={() => setModalNote(null)} />
+      </div>
 
       {(notes ?? []).length === 0 ? (
-        <EmptyState title="Chưa có ghi chú nào" description="Tạo ghi chú đầu tiên bằng nút bên trên." />
+        <EmptyState title="Chưa có ghi chú nào" description="Tạo ghi chú đầu tiên bằng nút + bên trên." />
       ) : (
         <ul className="flex flex-col gap-2">
           {(notes ?? []).map((note) => (
@@ -119,11 +62,8 @@ export function NotesPanel() {
                   >
                     <PushPin size={16} weight={note.pinned ? "fill" : "regular"} aria-hidden />
                   </button>
-                  <Button variant="secondary" onClick={() => setExpandedNote(note)}>
-                    Mở rộng
-                  </Button>
-                  <Button variant="secondary" onClick={() => startEditing(note)}>
-                    Sửa
+                  <Button variant="secondary" onClick={() => setModalNote(note)}>
+                    Mở / Sửa
                   </Button>
                   <Button variant="danger" onClick={() => handleDelete(note.id)} loading={deleteNote.isPending}>
                     Xoá
@@ -135,7 +75,7 @@ export function NotesPanel() {
         </ul>
       )}
 
-      {expandedNote && <NoteExpandModal note={expandedNote} onClose={() => setExpandedNote(null)} />}
+      {modalNote !== undefined && <NoteModal note={modalNote} onClose={() => setModalNote(undefined)} />}
     </div>
   );
 }

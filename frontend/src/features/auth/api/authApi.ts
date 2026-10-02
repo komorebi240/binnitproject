@@ -16,7 +16,7 @@ export async function getCurrentUser(): Promise<UserProfile> {
   return data.data as UserProfile;
 }
 
-/** Always resolves the same way regardless of whether the username exists — see backend AuthController. */
+/** Always resolves the same way regardless of whether the username exists - see backend AuthController. */
 export async function forgotPassword(username: string): Promise<void> {
   await apiClient.post("/auth/forgot-password", { username });
 }

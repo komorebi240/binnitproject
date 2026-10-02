@@ -13,7 +13,7 @@ interface KpiConfigFormProps {
   currentUser: UserProfile;
 }
 
-/** EXECUTIVE-only — the backend independently enforces this too (KpiController). */
+/** EXECUTIVE-only - the backend independently enforces this too (KpiController). */
 export function KpiConfigForm({ currentUser }: KpiConfigFormProps) {
   const { data: config } = useKpiConfig();
   const updateConfig = useUpdateKpiConfig();
@@ -75,7 +75,7 @@ export function KpiConfigForm({ currentUser }: KpiConfigFormProps) {
 
       <form onSubmit={handleSaveWeight} className="flex max-w-sm flex-col gap-3">
         <Input
-          label="Trọng số tỷ lệ hoàn thành (%) — phần còn lại tính cho đúng hạn"
+          label="Trọng số tỷ lệ hoàn thành (%) - phần còn lại tính cho đúng hạn"
           type="number"
           min={0}
           max={100}

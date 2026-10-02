@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { useDriveStatus } from "../hooks/useDrive";
 
 /**
- * OAuth is a full-page redirect flow, not something axios/XHR can do — clicking this button
+ * OAuth is a full-page redirect flow, not something axios/XHR can do - clicking this button
  * navigates the whole browser to the backend's /drive/connect, which redirects again to
  * Google's consent screen (see backend DriveConnectionController's javadoc).
  */

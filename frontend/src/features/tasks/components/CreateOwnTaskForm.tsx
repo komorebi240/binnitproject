@@ -18,14 +18,14 @@ interface CreateOwnTaskFormProps {
 }
 
 /**
- * Anyone can give themselves a task now (Phase 7 plan — the backend only still gates assigning
+ * Anyone can give themselves a task now (Phase 7 plan - the backend only still gates assigning
  * to SOMEONE ELSE by authority tier, see TaskServiceImpl.createTask). No assignee picker since
  * it's always the caller.
  */
 export function CreateOwnTaskForm({ currentUser, onDone }: CreateOwnTaskFormProps) {
   const createTask = useCreateTask();
   const { showToast } = useToast();
-  const [form, setForm] = useState({ title: "", description: "", priority: "MEDIUM" as TaskPriority, dueDate: "" });
+  const [form, setForm] = useState({ title: "", description: "", priority: "MEDIUM" as TaskPriority, dueDate: "", driveUrl: "" });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent) {
@@ -39,6 +39,7 @@ export function CreateOwnTaskForm({ currentUser, onDone }: CreateOwnTaskFormProp
         assigneeUserId: currentUser.userId,
         priority: form.priority,
         dueDate: form.dueDate || undefined,
+        driveUrl: form.driveUrl.trim() || undefined,
       });
       showToast("success", "Đã thêm việc");
       onDone();
@@ -48,7 +49,7 @@ export function CreateOwnTaskForm({ currentUser, onDone }: CreateOwnTaskFormProp
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mb-4 grid grid-cols-1 gap-3 rounded border border-gray-200 p-4 sm:grid-cols-2">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
         <Input label="Tên việc" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
       </div>
@@ -71,6 +72,15 @@ export function CreateOwnTaskForm({ currentUser, onDone }: CreateOwnTaskFormProp
         value={form.dueDate}
         onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
       />
+      <div className="sm:col-span-2">
+        <Input
+          label="Link Google Drive (tuỳ chọn)"
+          type="url"
+          placeholder="https://drive.google.com/..."
+          value={form.driveUrl}
+          onChange={(e) => setForm({ ...form, driveUrl: e.target.value })}
+        />
+      </div>
       {errorMessage && (
         <p role="alert" className="text-sm text-danger sm:col-span-2">
           {errorMessage}
