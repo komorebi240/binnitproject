@@ -83,7 +83,7 @@ export function FolderCatalog({ currentUser }: FolderCatalogProps) {
           Kết nối Google Drive của bạn ở mục phía trên trước khi đăng ký folder.
         </p>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded border border-gray-200 p-4 sm:flex-row sm:items-end">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded border border-gray-200 p-4 sm:flex-row sm:items-end [.pane-narrow_&]:sm:flex-col [.pane-narrow_&]:sm:items-stretch">
           <div className="flex-1">
             <Input
               label="Link hoặc ID folder Google Drive"

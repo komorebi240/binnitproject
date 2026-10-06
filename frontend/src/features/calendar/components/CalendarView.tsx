@@ -5,8 +5,6 @@ import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { PlusButton } from "@/components/ui/PlusButton";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
@@ -17,14 +15,9 @@ import {
   useDeleteEvent,
   useMyCalendarEvents,
 } from "../hooks/useCalendar";
-import type { CalendarEventType } from "../types";
-
-const TYPE_LABELS: Record<CalendarEventType, string> = {
-  MEETING: "Họp",
-  DEADLINE: "Hạn chót",
-  BUSINESS_TRIP: "Công tác",
-  OTHER: "Khác",
-};
+import { coversDay, EMPTY_EVENT_FORM, formatSpan, toEventInput, TYPE_LABELS, upcomingEvents } from "../eventRange";
+import type { CalendarEvent, CalendarEventType } from "../types";
+import { CalendarEventFields } from "./CalendarEventFields";
 
 const TYPE_DOT: Record<CalendarEventType, string> = {
   MEETING: "bg-primary",
@@ -53,10 +46,26 @@ function buildMonthGrid(monthDate: Date): Date[] {
   });
 }
 
+function EventRow({ event, onDelete, deleting }: { event: CalendarEvent; onDelete: () => void; deleting: boolean }) {
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 px-3 py-2 text-sm">
+      <span className="flex min-w-0 items-center gap-2">
+        <Badge tone={event.status === "PENDING" ? "warning" : "neutral"}>{TYPE_LABELS[event.eventType]}</Badge>
+        <span className="truncate">{event.title}</span>
+        <span className="shrink-0 text-gray-500">{formatSpan(event)}</span>
+      </span>
+      <Button variant="danger" onClick={onDelete} loading={deleting}>
+        Xoá
+      </Button>
+    </li>
+  );
+}
+
 /**
  * A self-drawn month grid (Apple Calendar-style, simplified) - no calendar library added for
  * this one view (CLAUDE.md section 29). Events the caller didn't create themselves and that are
- * still PENDING get an Accept/Decline pair; everything else is read-only display.
+ * still PENDING get an Accept/Decline pair; clicking a day opens that day's events, and below the
+ * grid only what is coming up is listed (not the whole history).
  */
 export function CalendarView() {
   const { data: events, isLoading } = useMyCalendarEvents();
@@ -67,34 +76,24 @@ export function CalendarView() {
   const { showToast } = useToast();
 
   const [monthDate, setMonthDate] = useState(() => new Date());
-  const [form, setForm] = useState({
-    title: "",
-    eventType: "MEETING" as CalendarEventType,
-    startAt: "",
-    description: "",
-  });
+  const [form, setForm] = useState(EMPTY_EVENT_FORM);
   const [creating, setCreating] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const grid = useMemo(() => buildMonthGrid(monthDate), [monthDate]);
   const today = new Date();
 
-  const eventsByDay = (day: Date) =>
-    (events ?? []).filter((e) => sameDay(new Date(e.startAt), day) && e.status !== "DECLINED");
-
+  const eventsOnDay = (day: Date) => (events ?? []).filter((e) => coversDay(e, day) && e.status !== "DECLINED");
   const pendingEvents = (events ?? []).filter((e) => e.status === "PENDING");
+  const coming = upcomingEvents(events ?? [], today);
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault();
     setErrorMessage(null);
     try {
-      await createEvent.mutateAsync({
-        title: form.title,
-        eventType: form.eventType,
-        startAt: new Date(form.startAt).toISOString(),
-        description: form.description || undefined,
-      });
-      setForm({ title: "", eventType: "MEETING", startAt: "", description: "" });
+      await createEvent.mutateAsync(toEventInput(form));
+      setForm(EMPTY_EVENT_FORM);
       showToast("success", "Đã thêm sự kiện");
       setCreating(false);
     } catch (err) {
@@ -105,6 +104,8 @@ export function CalendarView() {
   if (isLoading) {
     return <Skeleton rows={4} />;
   }
+
+  const selectedEvents = selectedDay ? eventsOnDay(selectedDay) : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -119,7 +120,7 @@ export function CalendarView() {
           {pendingEvents.map((e) => (
             <div key={e.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span>
-                {e.title} - {new Date(e.startAt).toLocaleString("vi-VN")}
+                {e.title} - {formatSpan(e)}
                 {e.createdByName && !e.createdBySelf && (
                   <span className="text-gray-500"> (thêm bởi {e.createdByName})</span>
                 )}
@@ -163,95 +164,85 @@ export function CalendarView() {
             </div>
           ))}
           {grid.map((day) => {
-            const dayEvents = eventsByDay(day);
+            const dayEvents = eventsOnDay(day);
             const isCurrentMonth = day.getMonth() === monthDate.getMonth();
             const isToday = sameDay(day, today);
             return (
-              <div
+              <button
+                type="button"
                 key={day.toISOString()}
-                className={`min-h-20 bg-white p-1 ${isCurrentMonth ? "" : "bg-gray-50 text-gray-300"}`}
+                onClick={() => setSelectedDay(day)}
+                aria-label={`Ngày ${day.getDate()}/${day.getMonth() + 1}${dayEvents.length > 0 ? `, ${dayEvents.length} sự kiện` : ""}`}
+                className={`min-h-20 bg-white p-1 text-left transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${isCurrentMonth ? "" : "bg-gray-50 text-gray-300"}`}
               >
                 <span
                   className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${isToday ? "bg-primary text-primary-foreground" : ""}`}
                 >
                   {day.getDate()}
                 </span>
-                <div className="mt-1 flex flex-col gap-0.5">
+                <span className="mt-1 flex flex-col gap-0.5">
                   {dayEvents.slice(0, 3).map((e) => (
                     <span key={e.id} className="flex items-center gap-1 truncate text-[11px] text-gray-700">
                       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPE_DOT[e.eventType]}`} />
                       {e.title}
                     </span>
                   ))}
-                </div>
-              </div>
+                  {dayEvents.length > 3 && <span className="text-[11px] text-gray-400">+{dayEvents.length - 3} nữa</span>}
+                </span>
+              </button>
             );
           })}
         </div>
       </section>
 
       <section className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-gray-700">Tất cả sự kiện</p>
-        {(events ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Chưa có sự kiện nào</p>
+        <p className="text-sm font-medium text-gray-700">Sự kiện sắp tới</p>
+        {coming.length === 0 ? (
+          <p className="text-sm text-gray-400">Không có sự kiện sắp tới</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
-            {(events ?? []).map((e) => (
-              <li
-                key={e.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 px-3 py-2 text-sm"
-              >
-                <span className="flex items-center gap-2">
-                  <Badge tone={e.status === "DECLINED" ? "danger" : e.status === "PENDING" ? "warning" : "neutral"}>
-                    {TYPE_LABELS[e.eventType]}
-                  </Badge>
-                  {e.title} - {new Date(e.startAt).toLocaleString("vi-VN")}
-                </span>
-                <Button variant="danger" onClick={() => deleteEvent.mutate(e.id)} loading={deleteEvent.isPending}>
-                  Xoá
-                </Button>
-              </li>
+            {coming.map((e) => (
+              <EventRow key={e.id} event={e} onDelete={() => deleteEvent.mutate(e.id)} deleting={deleteEvent.isPending} />
             ))}
           </ul>
         )}
       </section>
 
+      {selectedDay && (
+        <Modal
+          title={`Ngày ${selectedDay.getDate()}/${selectedDay.getMonth() + 1}/${selectedDay.getFullYear()}`}
+          onClose={() => setSelectedDay(null)}
+        >
+          {selectedEvents.length === 0 ? (
+            <p className="text-sm text-gray-400">Không có sự kiện trong ngày này</p>
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {selectedEvents.map((e) => (
+                <EventRow key={e.id} event={e} onDelete={() => deleteEvent.mutate(e.id)} deleting={deleteEvent.isPending} />
+              ))}
+            </ul>
+          )}
+        </Modal>
+      )}
+
       {creating && (
         <Modal title="Thêm sự kiện mới" onClose={() => setCreating(false)}>
-        <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Input label="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-          <Select
-            label="Loại"
-            value={form.eventType}
-            onChange={(e) => setForm({ ...form, eventType: e.target.value as CalendarEventType })}
-            options={Object.entries(TYPE_LABELS).map(([value, label]) => ({ value, label }))}
-          />
-          <Input
-            label="Thời gian bắt đầu"
-            type="datetime-local"
-            value={form.startAt}
-            onChange={(e) => setForm({ ...form, startAt: e.target.value })}
-            required
-          />
-          <Input
-            label="Mô tả (tuỳ chọn)"
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-          />
-          {errorMessage && (
-            <p role="alert" className="text-sm text-danger sm:col-span-2">
-              {errorMessage}
-            </p>
-          )}
-          <div className="flex gap-2 sm:col-span-2">
-            <Button type="submit" loading={createEvent.isPending}>
-              Thêm sự kiện
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => setCreating(false)}>
-              Huỷ
-            </Button>
-          </div>
-        </form>
+          <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <CalendarEventFields form={form} onChange={setForm} />
+            {errorMessage && (
+              <p role="alert" className="text-sm text-danger sm:col-span-2">
+                {errorMessage}
+              </p>
+            )}
+            <div className="flex gap-2 sm:col-span-2">
+              <Button type="submit" loading={createEvent.isPending}>
+                Thêm sự kiện
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setCreating(false)}>
+                Huỷ
+              </Button>
+            </div>
+          </form>
         </Modal>
       )}
     </div>

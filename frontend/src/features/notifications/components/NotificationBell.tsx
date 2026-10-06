@@ -17,6 +17,16 @@ function resolveTarget(notification: Notification): string | null {
       return "/dashboard/calendar";
     case "FOLDER_ACCESS_REQUESTED":
       return "/dashboard/drive";
+    case "TASK_ASSIGNED":
+    case "TASK_ACCEPTED":
+    case "TASK_DECLINED":
+    case "TASK_COMPLETED":
+      return "/dashboard/tasks";
+    case "PROJECT_INVITED":
+    case "PROJECT_RESPONDED":
+    case "PROJECT_MEMBER_ADDED":
+      // relatedEntityId is the project's id (see ProjectServiceImpl).
+      return notification.relatedEntityId != null ? `/dashboard/projects/${notification.relatedEntityId}` : "/dashboard/projects";
     default:
       return null;
   }
@@ -69,6 +79,7 @@ export function NotificationBell() {
       <button
         type="button"
         title="Thông báo"
+        data-tour="notifications"
         onClick={() => setOpen((v) => !v)}
         aria-label="Thông báo"
         className="relative flex h-9 w-9 items-center justify-center rounded transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"

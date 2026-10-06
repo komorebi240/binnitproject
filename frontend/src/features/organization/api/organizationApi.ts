@@ -6,6 +6,7 @@ import type {
   Department,
   DepartmentMember,
   Team,
+  UpdateDepartmentInput,
   UpdatePositionInput,
   UserSummary,
 } from "../types";
@@ -18,6 +19,26 @@ export async function listDepartments(): Promise<Department[]> {
 export async function createDepartment(input: CreateDepartmentInput): Promise<Department> {
   const { data } = await apiClient.post<ApiResponse<Department>>("/departments", input);
   return data.data as Department;
+}
+
+export async function updateDepartment(id: number, input: UpdateDepartmentInput): Promise<Department> {
+  const { data } = await apiClient.patch<ApiResponse<Department>>(`/departments/${id}`, input);
+  return data.data as Department;
+}
+
+/** Emails the staff member a password-reset code; they choose their own new password. */
+export async function sendStaffPasswordReset(userId: number): Promise<void> {
+  await apiClient.post(`/users/${userId}/password-reset`);
+}
+
+/** Sends a confirmation code to the NEW address; the email only changes after the code is confirmed. */
+export async function requestStaffEmailChange(userId: number, email: string): Promise<void> {
+  await apiClient.post(`/users/${userId}/email-change`, { email });
+}
+
+export async function confirmStaffEmailChange(userId: number, otp: string): Promise<UserSummary> {
+  const { data } = await apiClient.post<ApiResponse<UserSummary>>(`/users/${userId}/email-change/confirm`, { otp });
+  return data.data as UserSummary;
 }
 
 export async function deleteDepartment(id: number): Promise<void> {

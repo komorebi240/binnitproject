@@ -13,6 +13,7 @@ import type { UserProfile } from "@/features/auth/types";
 import { useConversations, useRecallMessage, useSetConversationArchived, useThreadWith } from "../hooks/useMessages";
 import type { Conversation, Message } from "../types";
 import { MessageBubble } from "./MessageBubble";
+import { ColleagueSearch } from "./ColleagueSearch";
 import { MessageComposer } from "./MessageComposer";
 
 interface MessengerViewProps {
@@ -45,6 +46,7 @@ export function MessengerView({ currentUser, initialWith = null, initialWithName
   const setArchived = useSetConversationArchived();
   const { showToast } = useToast();
   const [openMenuUserId, setOpenMenuUserId] = useState<number | null>(null);
+  const [pickedName, setPickedName] = useState<string | null>(null);
   const [messageToRecall, setMessageToRecall] = useState<Message | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -59,6 +61,7 @@ export function MessengerView({ currentUser, initialWith = null, initialWithName
   const activeName =
     activeConversation?.otherUserName ??
     (activeUserId === Number(initialWith) ? initialWithName : null) ??
+    pickedName ??
     (activeUserId ? `Người dùng #${activeUserId}` : null);
 
   function handleArchive(userId: number, archived: boolean) {
@@ -105,6 +108,15 @@ export function MessengerView({ currentUser, initialWith = null, initialWithName
             {(archivedConversations ?? []).length > 0 && <span className="text-gray-400">{archivedConversations?.length}</span>}
           </button>
         </div>
+
+        <ColleagueSearch
+          currentUser={currentUser}
+          onPick={(userId, fullName) => {
+            setPickedName(fullName);
+            setListView("active");
+            setActiveUserId(userId);
+          }}
+        />
 
         {conversationsLoading ? (
           <Skeleton rows={3} />

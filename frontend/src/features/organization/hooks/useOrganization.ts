@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "../api/organizationApi";
-import type { CreateDepartmentInput, CreateUserInput, UpdatePositionInput } from "../types";
+import type { CreateDepartmentInput, CreateUserInput, UpdateDepartmentInput, UpdatePositionInput } from "../types";
 
 const DEPARTMENTS_KEY = ["departments"] as const;
 const USERS_KEY = ["users"] as const;
@@ -20,10 +20,37 @@ export function useCreateDepartment() {
   });
 }
 
-export function useDepartmentMembers(departmentId: number) {
+export function useUpdateDepartment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input: UpdateDepartmentInput }) => api.updateDepartment(id, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: DEPARTMENTS_KEY }),
+  });
+}
+
+export function useSendStaffPasswordReset() {
+  return useMutation({ mutationFn: (userId: number) => api.sendStaffPasswordReset(userId) });
+}
+
+export function useRequestStaffEmailChange() {
+  return useMutation({
+    mutationFn: ({ userId, email }: { userId: number; email: string }) => api.requestStaffEmailChange(userId, email),
+  });
+}
+
+export function useConfirmStaffEmailChange() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, otp }: { userId: number; otp: string }) => api.confirmStaffEmailChange(userId, otp),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+  });
+}
+
+export function useDepartmentMembers(departmentId: number | null) {
   return useQuery({
-    queryKey: departmentMembersKey(departmentId),
-    queryFn: () => api.listDepartmentMembers(departmentId),
+    queryKey: departmentMembersKey(departmentId ?? -1),
+    queryFn: () => api.listDepartmentMembers(departmentId as number),
+    enabled: departmentId != null,
   });
 }
 
@@ -73,7 +100,12 @@ export function useCreateUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateUserInput) => api.createUser(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+        // A new person also appears in their department's directory.
+        queryClient.invalidateQueries({ queryKey: DEPARTMENTS_KEY }),
+      ]),
   });
 }
 
@@ -89,7 +121,12 @@ export function useUpdatePosition() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, input }: { id: number; input: UpdatePositionInput }) => api.updatePosition(id, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: USERS_KEY }),
+        // A transfer also changes who is listed in the departments' directories.
+        queryClient.invalidateQueries({ queryKey: DEPARTMENTS_KEY }),
+      ]),
   });
 }
 

@@ -59,9 +59,19 @@ const config: Config = {
           from: { opacity: "0", transform: "translateY(-0.375rem) scale(0.96)" },
           to: { opacity: "1", transform: "translateY(0) scale(1)" },
         },
-        "tab-in": {
-          from: { opacity: "0", transform: "translateY(0.5rem) scale(0.95)" },
-          to: { opacity: "1", transform: "translateY(0) scale(1)" },
+        // A tab chip grows out of the left while sliding in; closing plays the same motion backwards.
+        "tab-slide-in": {
+          from: { maxWidth: "0", opacity: "0", paddingLeft: "0", paddingRight: "0", transform: "translateX(-1rem)" },
+          to: { maxWidth: "180px", opacity: "1", paddingLeft: "0.75rem", paddingRight: "0.75rem", transform: "translateX(0)" },
+        },
+        "tab-slide-out": {
+          from: { maxWidth: "180px", opacity: "1", paddingLeft: "0.75rem", paddingRight: "0.75rem", transform: "translateX(0)" },
+          to: { maxWidth: "0", opacity: "0", paddingLeft: "0", paddingRight: "0", transform: "translateX(-1rem)" },
+        },
+        // Heading and sign-in form rise into place once the login intro has finished.
+        "rise-in": {
+          from: { opacity: "0", transform: "translateY(0.75rem)" },
+          to: { opacity: "1", transform: "translateY(0)" },
         },
         "toast-in": {
           from: { opacity: "0", transform: "translateY(0.5rem) scale(0.95)" },
@@ -75,7 +85,9 @@ const config: Config = {
       animation: {
         "fade-in": "fade-in 200ms ease-out",
         "pop-in": "pop-in 160ms cubic-bezier(0.16, 1, 0.3, 1)",
-        "tab-in": "tab-in 220ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "tab-slide-in": "tab-slide-in 320ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "tab-slide-out": "tab-slide-out 240ms cubic-bezier(0.4, 0, 0.2, 1) forwards",
+        "rise-in": "rise-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both",
         "toast-in": "toast-in 200ms cubic-bezier(0.16, 1, 0.3, 1)",
         "toast-out": "toast-out 150ms ease-in forwards",
       },

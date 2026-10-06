@@ -93,6 +93,14 @@ export function useUploadCompanyLogo() {
   });
 }
 
+export function useUploadCompanyBanner() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => api.uploadCompanyBanner(file),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: COMPANY_KEY }),
+  });
+}
+
 export function useCompleteOnboarding() {
   const queryClient = useQueryClient();
   return useMutation({

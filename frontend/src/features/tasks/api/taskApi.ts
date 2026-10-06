@@ -53,6 +53,22 @@ export async function removeTaskAttachment(taskId: number, attachmentId: number)
   return data.data as Task;
 }
 
+export async function addChecklistItem(taskId: number, text: string): Promise<Task> {
+  const { data } = await apiClient.post<ApiResponse<Task>>(`/tasks/${taskId}/checklist`, { text });
+  return data.data as Task;
+}
+
+/** Ticking the last open item completes the task on the server. */
+export async function setChecklistItemDone(taskId: number, itemId: number, done: boolean): Promise<Task> {
+  const { data } = await apiClient.patch<ApiResponse<Task>>(`/tasks/${taskId}/checklist/${itemId}`, { done });
+  return data.data as Task;
+}
+
+export async function removeChecklistItem(taskId: number, itemId: number): Promise<Task> {
+  const { data } = await apiClient.delete<ApiResponse<Task>>(`/tasks/${taskId}/checklist/${itemId}`);
+  return data.data as Task;
+}
+
 /** Fetched through axios (not a plain link) so the auth cookie rides along - see useAuthedBlobUrl. */
 export async function downloadTaskAttachment(taskId: number, attachmentId: number): Promise<Blob> {
   const { data } = await apiClient.get<Blob>(`/tasks/${taskId}/attachments/${attachmentId}`, { responseType: "blob" });

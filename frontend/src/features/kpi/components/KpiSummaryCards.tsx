@@ -70,7 +70,7 @@ export function KpiSummaryCards({ currentUser }: KpiSummaryCardsProps) {
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 [.pane-narrow_&]:sm:grid-cols-1">
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <p className="text-sm text-gray-500">Khối lượng công việc ({MONTH_LABEL(summary.periodYear, summary.periodMonth)})</p>
           <p className="mt-1 text-2xl font-semibold text-gray-900">{summary.totalAssigned}</p>
@@ -88,7 +88,7 @@ export function KpiSummaryCards({ currentUser }: KpiSummaryCardsProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 [.pane-narrow_&]:lg:grid-cols-1">
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <p className="mb-3 text-sm font-medium text-gray-700">
             Khối lượng công việc theo trạng thái ({MONTH_LABEL(summary.periodYear, summary.periodMonth)})

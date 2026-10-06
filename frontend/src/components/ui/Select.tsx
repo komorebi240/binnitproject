@@ -1,5 +1,8 @@
+"use client";
+
 import { type SelectHTMLAttributes, forwardRef, useId } from "react";
 import { CaretDown } from "@phosphor-icons/react";
+import { FieldError, useNativeValidationMessage } from "./FieldError";
 
 interface SelectOption {
   value: string;
@@ -9,13 +12,16 @@ interface SelectOption {
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label: string;
   options: SelectOption[];
+  /** A message from the server or the caller; it wins over the browser's own validation message. */
   error?: string;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, options, error, id, className = "", ...props }, ref) => {
+  ({ label, options, error, id, className = "", onInvalid, onChange, ...props }, ref) => {
     const generatedId = useId();
     const selectId = id ?? generatedId;
+    const validation = useNativeValidationMessage(label);
+    const shownError = error ?? validation.message ?? undefined;
 
     return (
       <div className="flex flex-col gap-1">
@@ -30,12 +36,22 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           <select
             ref={ref}
             id={selectId}
-            aria-invalid={Boolean(error)}
+            aria-invalid={Boolean(shownError)}
+            aria-describedby={shownError ? `${selectId}-error` : undefined}
+            onInvalid={(event) => {
+              validation.handleInvalid(event);
+              onInvalid?.(event);
+            }}
+            onChange={(event) => {
+              validation.clear();
+              onChange?.(event);
+            }}
             className={`peer w-full appearance-none rounded border bg-white px-3 py-2 pr-9 text-sm shadow-sm
               transition-all duration-150
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:shadow-md
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:shadow-md
+              ${shownError ? "focus-visible:ring-danger" : "focus-visible:ring-primary"}
               disabled:cursor-not-allowed disabled:opacity-50
-              ${error ? "border-danger" : "border-gray-300 hover:border-gray-400 hover:shadow"} ${className}`}
+              ${shownError ? "border-danger" : "border-gray-300 hover:border-gray-400 hover:shadow"} ${className}`}
             {...props}
           >
             {options.map((option) => (
@@ -54,11 +70,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition-transform duration-150 peer-focus:rotate-180 peer-focus:text-primary"
           />
         </div>
-        {error && (
-          <p role="alert" className="text-sm text-danger">
-            {error}
-          </p>
-        )}
+        {shownError && <FieldError id={`${selectId}-error`} message={shownError} />}
       </div>
     );
   },

@@ -12,8 +12,9 @@ type Step = "request" | "reset";
 const RESEND_COOLDOWN_SECONDS = 60;
 
 /**
- * Two steps: request an OTP, then submit it with a new password. Step 1 always shows the same
- * generic message on success - the backend never reveals whether the username exists (see
+ * Two steps: request an OTP, then submit it with a new password. People often forget which username
+ * they chose, so the first field takes a username or the account's email. Step 1 always shows the same
+ * generic message on success - the backend never reveals whether the account exists (see
  * AuthController/AuthServiceImpl), so this screen must not either.
  */
 export function ForgotPasswordForm() {
@@ -41,7 +42,7 @@ export function ForgotPasswordForm() {
 
     try {
       await forgotPassword.mutateAsync(username);
-      setInfoMessage("Nếu tài khoản tồn tại, mã OTP đã được gửi tới email đã đăng ký.");
+      setInfoMessage("Nếu tài khoản tồn tại, mã OTP đã được gửi tới email đã đăng ký. Hãy kiểm tra cả thư mục spam.");
       setCooldown(RESEND_COOLDOWN_SECONDS);
       setStep("reset");
     } catch (err) {
@@ -70,7 +71,7 @@ export function ForgotPasswordForm() {
     return (
       <form onSubmit={handleRequestOtp} className="flex w-full max-w-sm flex-col gap-4">
         <Input
-          label="Tên đăng nhập"
+          label="Tên đăng nhập hoặc email"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"

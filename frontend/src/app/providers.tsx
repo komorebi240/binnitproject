@@ -12,7 +12,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultOptions: {
           // Without a staleTime every component mount refetches; with all dashboard tabs kept
           // mounted that multiplied requests and made navigation slower over time.
-          queries: { staleTime: 30_000, refetchOnWindowFocus: false },
+          // Changes made by other people (a new task, an edited event...) show up without a manual
+          // reload: visible queries refresh on a slow poll and when the window regains focus.
+          queries: { staleTime: 30_000, refetchOnWindowFocus: true, refetchInterval: 30_000 },
         },
       }),
   );

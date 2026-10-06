@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import type { UserProfile } from "@/features/auth/types";
 import { useCreateTask } from "../hooks/useTasks";
+import { AttachmentDraftPicker, ChecklistDraftEditor } from "./TaskDraftFields";
 import type { TaskPriority } from "../types";
 
 const PRIORITY_LABELS: Record<TaskPriority, string> = { LOW: "Thấp", MEDIUM: "Trung bình", HIGH: "Cao" };
@@ -26,22 +27,32 @@ export function CreateOwnTaskForm({ currentUser, onDone }: CreateOwnTaskFormProp
   const createTask = useCreateTask();
   const { showToast } = useToast();
   const [form, setForm] = useState({ title: "", description: "", priority: "MEDIUM" as TaskPriority, dueDate: "", driveUrl: "" });
+  const [checklist, setChecklist] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setErrorMessage(null);
     try {
-      await createTask.mutateAsync({
-        title: form.title,
-        description: form.description || undefined,
-        assigneeType: "USER",
-        assigneeUserId: currentUser.userId,
-        priority: form.priority,
-        dueDate: form.dueDate || undefined,
-        driveUrl: form.driveUrl.trim() || undefined,
+      const { failedUploads } = await createTask.mutateAsync({
+        input: {
+          title: form.title,
+          description: form.description || undefined,
+          assigneeType: "USER",
+          assigneeUserId: currentUser.userId,
+          priority: form.priority,
+          dueDate: form.dueDate || undefined,
+          driveUrl: form.driveUrl.trim() || undefined,
+          checklist: checklist.length > 0 ? checklist : undefined,
+        },
+        files,
       });
-      showToast("success", "Đã thêm việc");
+      if (failedUploads > 0) {
+        showToast("error", `Đã thêm việc nhưng ${failedUploads} tệp không tải lên được, hãy đính kèm lại trong chi tiết việc`);
+      } else {
+        showToast("success", "Đã thêm việc");
+      }
       onDone();
     } catch (err) {
       setErrorMessage(err instanceof ApiRequestError ? err.message : "Không thêm được việc");
@@ -80,6 +91,12 @@ export function CreateOwnTaskForm({ currentUser, onDone }: CreateOwnTaskFormProp
           value={form.driveUrl}
           onChange={(e) => setForm({ ...form, driveUrl: e.target.value })}
         />
+      </div>
+      <div className="sm:col-span-2">
+        <ChecklistDraftEditor items={checklist} onChange={setChecklist} />
+      </div>
+      <div className="sm:col-span-2">
+        <AttachmentDraftPicker files={files} onChange={setFiles} />
       </div>
       {errorMessage && (
         <p role="alert" className="text-sm text-danger sm:col-span-2">

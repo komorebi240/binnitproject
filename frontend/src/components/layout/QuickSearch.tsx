@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MagnifyingGlass } from "@phosphor-icons/react";
-import { NAV_ITEMS } from "./Sidebar";
+import { Highlight } from "@/components/ui/Highlight";
+import { searchFeatures } from "./featureSearch";
 import { useTabs } from "./TabsContext";
 import type { AuthorityLevel } from "@/features/auth/types";
 
@@ -11,10 +12,11 @@ interface QuickSearchProps {
 }
 
 /**
- * A command-palette-style quick search over the app's own nav destinations (Ctrl/Cmd+K, or the
- * header's magnifying-glass icon) - searches the same `NAV_ITEMS` the Sidebar renders, so it's
- * never out of sync with what's actually navigable. Filtered to whatever roles the Sidebar
- * itself would show (CLAUDE.md section 9 - UX-only mirror, not a new authorization decision).
+ * A command-palette-style quick search over the app's pages AND the smaller features inside them
+ * (Ctrl/Cmd+K, or the header's magnifying-glass icon). A matching small feature is listed under its
+ * parent page, and the typed words are highlighted. Pages come from the Sidebar's `NAV_ITEMS`, so the
+ * list never drifts from what is navigable; it is filtered by role like the Sidebar (CLAUDE.md section 9 -
+ * a UX mirror, not an authorization decision).
  */
 export function QuickSearch({ currentUserAuthorityLevel }: QuickSearchProps) {
   const [open, setOpen] = useState(false);
@@ -23,10 +25,18 @@ export function QuickSearch({ currentUserAuthorityLevel }: QuickSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { navigateActiveTab } = useTabs();
 
-  const visibleItems = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(currentUserAuthorityLevel));
-  const results = query.trim()
-    ? visibleItems.filter((item) => item.label.toLowerCase().includes(query.trim().toLowerCase()))
-    : visibleItems;
+  const groups = searchFeatures(query, currentUserAuthorityLevel);
+  // One flat list so arrow keys walk pages and their sub-features in the order they are drawn.
+  const results = groups.flatMap((group) => [
+    { key: group.entry.href, href: group.entry.href, label: group.entry.label, icon: group.entry.icon, child: false },
+    ...group.children.map((child) => ({
+      key: `${group.entry.href}#${child.label}`,
+      href: group.entry.href,
+      label: child.label,
+      icon: group.entry.icon,
+      child: true,
+    })),
+  ]);
 
   useEffect(() => {
     function handleGlobalKeyDown(e: KeyboardEvent) {
@@ -107,17 +117,23 @@ export function QuickSearch({ currentUserAuthorityLevel }: QuickSearchProps) {
                 results.map((item, index) => {
                   const ItemIcon = item.icon;
                   return (
-                    <li key={item.href}>
+                    <li key={item.key}>
                       <button
                         type="button"
                         onClick={() => go(item.href)}
                         onMouseEnter={() => setActiveIndex(index)}
-                        className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm ${
+                        className={`flex w-full items-center gap-2.5 py-2 pr-3 text-left text-sm ${item.child ? "pl-9" : "pl-3"} ${
                           index === activeIndex ? "bg-surface-muted text-gray-900" : "text-gray-700"
                         }`}
                       >
-                        <ItemIcon size={16} aria-hidden className="shrink-0 text-gray-400" />
-                        {item.label}
+                        {item.child ? (
+                          <span aria-hidden className="h-1 w-1 shrink-0 rounded-full bg-gray-300" />
+                        ) : (
+                          <ItemIcon size={16} aria-hidden className="shrink-0 text-gray-400" />
+                        )}
+                        <span className={item.child ? "text-gray-600" : "font-medium"}>
+                          <Highlight text={item.label} query={query} />
+                        </span>
                       </button>
                     </li>
                   );

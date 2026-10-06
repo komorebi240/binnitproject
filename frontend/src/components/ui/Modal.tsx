@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { X } from "@phosphor-icons/react";
 
 interface ModalProps {
@@ -13,9 +13,13 @@ interface ModalProps {
 
 /** Dimmed overlay + centered dialog; closes on Escape or an overlay click. */
 export function Modal({ title, onClose, children, widthClassName = "max-w-lg" }: ModalProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      // A dialog left open in a background tab stays mounted (hidden); Esc pressed in the visible tab must not close it.
+      const hiddenInBackgroundTab = panelRef.current?.getClientRects().length === 0;
+      if (event.key === "Escape" && !hiddenInBackgroundTab) onClose();
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -25,6 +29,7 @@ export function Modal({ title, onClose, children, widthClassName = "max-w-lg" }:
     <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
       <button type="button" aria-label="Đóng" onClick={onClose} className="absolute inset-0 cursor-default bg-black/40" />
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}

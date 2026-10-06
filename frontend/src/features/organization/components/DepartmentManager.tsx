@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import type { UserProfile } from "@/features/auth/types";
+import { DepartmentAppearancePicker, DepartmentAvatar } from "../departmentAppearance";
 import { useCreateDepartment, useDepartments } from "../hooks/useOrganization";
 
 interface DepartmentManagerProps {
@@ -28,7 +29,7 @@ export function DepartmentManager({ currentUser }: DepartmentManagerProps) {
   const { showToast } = useToast();
   const { navigateActiveTab } = useTabs();
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "" });
+  const [form, setForm] = useState({ name: "", description: "", color: "", icon: "" });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isExecutive = currentUser.authorityLevel === "EXECUTIVE";
@@ -37,8 +38,13 @@ export function DepartmentManager({ currentUser }: DepartmentManagerProps) {
     event.preventDefault();
     setErrorMessage(null);
     try {
-      await createDepartment.mutateAsync({ name: form.name, description: form.description || undefined });
-      setForm({ name: "", description: "" });
+      await createDepartment.mutateAsync({
+        name: form.name,
+        description: form.description || undefined,
+        color: form.color || undefined,
+        icon: form.icon || undefined,
+      });
+      setForm({ name: "", description: "", color: "", icon: "" });
       setCreating(false);
       showToast("success", "Đã tạo phòng ban");
     } catch (err) {
@@ -57,7 +63,7 @@ export function DepartmentManager({ currentUser }: DepartmentManagerProps) {
       {(departments ?? []).length === 0 && !isExecutive ? (
         <EmptyState title="Chưa có phòng ban nào" />
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 [.pane-narrow_&]:sm:grid-cols-2 [.pane-narrow_&]:md:grid-cols-2">
           {(departments ?? []).map((department) => (
             <button
               key={department.id}
@@ -65,9 +71,7 @@ export function DepartmentManager({ currentUser }: DepartmentManagerProps) {
               onClick={() => navigateActiveTab(`/dashboard/departments/${department.id}`)}
               className="card-interactive flex aspect-square flex-col justify-between rounded border border-gray-200 bg-white p-4 text-left shadow-sm hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
-              <span className="gradient-surface flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-primary to-primaryEnd text-sm font-semibold text-primary-foreground">
-                {department.name.charAt(0).toUpperCase()}
-              </span>
+              <DepartmentAvatar department={department} />
               <div>
                 <p className="font-semibold text-gray-900">{department.name}</p>
                 {department.description && (
@@ -91,12 +95,17 @@ export function DepartmentManager({ currentUser }: DepartmentManagerProps) {
       )}
 
       {isExecutive && creating && (
-        <form onSubmit={handleCreate} className="flex max-w-sm flex-col gap-3 rounded border border-gray-200 p-4">
+        <form onSubmit={handleCreate} className="flex max-w-md flex-col gap-3 rounded border border-gray-200 p-4">
           <Input label="Tên phòng ban" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           <Input
             label="Mô tả (tuỳ chọn)"
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+          <DepartmentAppearancePicker
+            showPresets
+            value={{ name: form.name, color: form.color, icon: form.icon }}
+            onChange={(look) => setForm({ ...form, name: look.name, color: look.color, icon: look.icon })}
           />
           {errorMessage && (
             <p role="alert" className="text-sm text-danger">

@@ -4,8 +4,11 @@ export interface Company {
   id: number;
   name: string;
   contactEmail: string | null;
+  description: string | null;
   /** Same-origin API path (null when no logo is set). */
   logoUrl: string | null;
+  /** Same-origin API path (null when no banner is set). */
+  bannerUrl: string | null;
 }
 
 export interface Invitation {
@@ -56,8 +59,11 @@ export interface AcceptInvitationInput {
 export interface UpdateCompanyInput {
   name: string;
   contactEmail?: string;
+  /** Replaces the stored text; leave out (or blank) to clear it. */
+  description?: string;
 }
 
+/** Limits for the company logo and banner (the backend enforces the same ones). */
 export const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 export const LOGO_ACCEPT = "image/png,image/jpeg,image/webp";
 

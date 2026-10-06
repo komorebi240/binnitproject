@@ -13,6 +13,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import { useAuthedBlobUrl } from "@/lib/hooks/useAuthedBlobUrl";
 import { useCurrentUser } from "@/features/auth/hooks/useAuth";
 import { downloadTaskAttachment } from "../api/taskApi";
+import { TaskChecklist } from "./TaskChecklist";
 import { useAddTaskAttachment, useRemoveTaskAttachment, useTasksList, useUpdateTaskDriveUrl } from "../hooks/useTasks";
 import {
   MAX_TASK_ATTACHMENTS,
@@ -343,6 +344,8 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
             </div>
           )}
         </div>
+
+        <TaskChecklist task={task} />
 
         <section className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">

@@ -5,11 +5,24 @@ export interface Department {
   name: string;
   description: string | null;
   companyId: number;
+  /** Preset keys (see departmentAppearance.tsx); null = the default look. */
+  color: string | null;
+  icon: string | null;
 }
 
 export interface CreateDepartmentInput {
   name: string;
   description?: string;
+  color?: string;
+  icon?: string;
+}
+
+/** Full replacement of the editable fields; leaving color/icon out resets them to the default look. */
+export interface UpdateDepartmentInput {
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
 }
 
 export interface DepartmentMember {

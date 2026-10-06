@@ -75,6 +75,13 @@ export async function uploadCompanyLogo(file: File): Promise<Company> {
   return data.data as Company;
 }
 
+export async function uploadCompanyBanner(file: File): Promise<Company> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await apiClient.post<ApiResponse<Company>>("/companies/me/banner", form);
+  return data.data as Company;
+}
+
 // ---- first-run tour
 export async function completeOnboarding(): Promise<UserProfile> {
   const { data } = await apiClient.post<ApiResponse<UserProfile>>("/auth/me/onboarding/complete");

@@ -9,6 +9,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import { useDeleteTask, useRestoreTask, useTasksList } from "../hooks/useTasks";
 import { Modal } from "@/components/ui/Modal";
 import { PlusButton } from "@/components/ui/PlusButton";
+import { ChecklistProgress } from "./TaskChecklist";
 import { TaskDetailModal } from "./TaskDetailModal";
 import { CreateOwnTaskForm } from "./CreateOwnTaskForm";
 import type { Task, TaskStatus } from "../types";
@@ -159,6 +160,7 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
         <p className="font-medium text-gray-900">{task.title}</p>
         <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
           <Badge tone={PRIORITY_TONE[task.priority]}>{task.priority}</Badge>
+          <ChecklistProgress task={task} />
           {task.dueDate && <span>Deadline: {new Date(task.dueDate).toLocaleDateString("vi-VN")}</span>}
         </div>
       </button>
@@ -185,7 +187,7 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
         </Modal>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 [.pane-narrow_&]:sm:grid-cols-1">
         {COLUMNS.map((column) => {
           const items = myTasks.filter((t) => t.status === column.status);
           return (
@@ -216,7 +218,7 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
           Đã hoàn thành ({completedTasks.length})
         </button>
         {showCompleted && (
-          <div className="animate-fade-in mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="animate-fade-in mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3 [.pane-narrow_&]:sm:grid-cols-1">
             {completedTasks.length === 0 ? (
               <p className="text-xs text-gray-400">Chưa có việc nào hoàn thành trong khoảng thời gian này</p>
             ) : (
@@ -236,7 +238,7 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
           Đã huỷ ({cancelledTasks.length})
         </button>
         {showCancelled && (
-          <div className="animate-fade-in mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="animate-fade-in mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3 [.pane-narrow_&]:sm:grid-cols-1">
             {cancelledTasks.length === 0 ? (
               <p className="text-xs text-gray-400">Chưa có việc nào bị huỷ trong khoảng thời gian này</p>
             ) : (

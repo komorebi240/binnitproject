@@ -1,4 +1,4 @@
-import { Buildings, GearSix } from "@phosphor-icons/react";
+import { Briefcase, Buildings, GearSix, Handshake } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
 import { NAV_ITEMS } from "./Sidebar";
 
@@ -11,6 +11,15 @@ export function describeTab(path: string): { label: string; icon: Icon } {
 
   if (pathname?.startsWith("/dashboard/departments/")) {
     return { label: "Phòng ban", icon: Buildings };
+  }
+
+  if (pathname?.startsWith("/dashboard/projects/")) {
+    return { label: "Dự án", icon: Handshake };
+  }
+
+  // The company page is reached from the company badge in the header.
+  if (pathname === "/dashboard/company") {
+    return { label: "Công ty", icon: Briefcase };
   }
 
   // Settings is reached from the avatar menu, so it has no Sidebar entry of its own.

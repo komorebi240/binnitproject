@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import type { UserProfile } from "@/features/auth/types";
 import { useTasksList } from "../hooks/useTasks";
 import type { Task, TaskPriority, TaskStatus } from "../types";
+import { ChecklistProgress } from "./TaskChecklist";
 import { TaskDetailModal } from "./TaskDetailModal";
 
 const RECENT_DONE_LIMIT = 8;
@@ -58,7 +59,7 @@ export function HomeTaskColumns({ currentUser }: { currentUser: UserProfile }) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3 [.pane-narrow_&]:md:grid-cols-1">
       {COLUMNS.map((column) => {
         const items = itemsFor(column.status);
         return (
@@ -82,6 +83,7 @@ export function HomeTaskColumns({ currentUser }: { currentUser: UserProfile }) {
                     <p className="break-words font-medium text-gray-900">{task.title}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                       <Badge tone={PRIORITY_TONE[task.priority]}>{PRIORITY_LABELS[task.priority]}</Badge>
+                      <ChecklistProgress task={task} />
                       {task.dueDate && (
                         <span className={isOverdue(task, now) ? "font-medium text-danger" : ""}>
                           {isOverdue(task, now) ? "Quá hạn " : "Hạn "}

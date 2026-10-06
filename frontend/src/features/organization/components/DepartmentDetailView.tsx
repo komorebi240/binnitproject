@@ -1,12 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { PlusButton } from "@/components/ui/PlusButton";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import { useCurrentUser } from "@/features/auth/hooks/useAuth";
 import { useDeleteDepartment, useDepartments } from "../hooks/useOrganization";
+import { DepartmentAvatar } from "../departmentAppearance";
+import { DepartmentEditDialog } from "./DepartmentEditDialog";
 import { DepartmentMemberList } from "./DepartmentMemberList";
+import { AddExistingStaffDialog } from "./AddExistingStaffDialog";
 import { TeamPanel, canManageDepartmentTeams } from "./TeamPanel";
 
 interface DepartmentDetailViewProps {
@@ -24,6 +29,8 @@ export function DepartmentDetailView({ departmentId, onDeleted }: DepartmentDeta
   const { data: departments, isLoading } = useDepartments();
   const deleteDepartment = useDeleteDepartment();
   const { showToast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [addingStaff, setAddingStaff] = useState(false);
 
   const department = departments?.find((d) => d.id === departmentId);
 
@@ -46,15 +53,19 @@ export function DepartmentDetailView({ departmentId, onDeleted }: DepartmentDeta
   }
 
   const isExecutive = currentUser.authorityLevel === "EXECUTIVE";
+  const canEdit = isExecutive || (currentUser.authorityLevel === "DEPARTMENT_HEAD" && currentUser.departmentId === departmentId);
 
   return (
-    <div className="flex flex-col gap-6 md:flex-row">
-      <aside className="flex flex-col gap-3 rounded border border-gray-200 bg-surface p-5 shadow-sm md:w-1/4">
-        <span className="gradient-surface flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-r from-primary to-primaryEnd text-lg font-semibold text-primary-foreground">
-          {department.name.charAt(0).toUpperCase()}
-        </span>
+    <div className="flex flex-col gap-6 md:flex-row [.pane-narrow_&]:md:flex-col">
+      <aside className="flex flex-col gap-3 rounded border border-gray-200 bg-surface p-5 shadow-sm md:w-1/4 [.pane-narrow_&]:md:w-full">
+        <DepartmentAvatar department={department} size="lg" />
         <h1 className="text-xl font-semibold text-gray-900">{department.name}</h1>
         <p className="text-sm text-gray-600">{department.description ?? "Chưa có mô tả."}</p>
+        {canEdit && (
+          <Button variant="secondary" onClick={() => setEditing(true)}>
+            Chỉnh sửa
+          </Button>
+        )}
         {isExecutive && (
           <Button variant="danger" onClick={handleDelete} loading={deleteDepartment.isPending}>
             Xoá phòng ban
@@ -62,9 +73,12 @@ export function DepartmentDetailView({ departmentId, onDeleted }: DepartmentDeta
         )}
       </aside>
 
-      <div className="flex flex-col gap-6 md:w-3/4">
+      <div className="flex flex-col gap-6 md:w-3/4 [.pane-narrow_&]:md:w-full">
         <section className="flex flex-col gap-3 rounded border border-gray-200 bg-surface p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-gray-900">Nhân sự</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-gray-900">Nhân sự</h2>
+            {canEdit && <PlusButton label="Thêm nhân sự có sẵn vào phòng ban" onClick={() => setAddingStaff(true)} />}
+          </div>
           <DepartmentMemberList departmentId={departmentId} departmentName={department.name} />
         </section>
 
@@ -74,6 +88,10 @@ export function DepartmentDetailView({ departmentId, onDeleted }: DepartmentDeta
           canManage={canManageDepartmentTeams(currentUser.authorityLevel, currentUser.departmentId, departmentId)}
         />
       </div>
+      {addingStaff && (
+        <AddExistingStaffDialog departmentId={departmentId} departmentName={department.name} onClose={() => setAddingStaff(false)} />
+      )}
+      {editing && <DepartmentEditDialog department={department} onClose={() => setEditing(false)} />}
     </div>
   );
 }

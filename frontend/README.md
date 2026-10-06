@@ -1,6 +1,6 @@
 # Frontend - Next.js app
 
-React + Next.js (App Router), TypeScript, Tailwind CSS, TanStack Query. Status: **Phases 1-23
+React + Next.js (App Router), TypeScript, Tailwind CSS, TanStack Query. Status: **Phases 1-27
 verified end to end in a real browser** - see "Verified" sections below. Stack-wide conventions
 this structure implements are in the root
 [CLAUDE.md § 46](../CLAUDE.md#46-tech-stack-and-project-structure); read that before adding code.
@@ -257,7 +257,8 @@ The 3 bugs were all real:
 ### Orbit logo/favicon, bolder theme contrast, avatars + presence (Phase 12)
 
 * **Logo/favicon** - `app/icon.svg` (planet-only mark, Next's App Router convention for the
-  favicon) and `public/orbit-wordmark.svg` (planet + "ORBIT" wordmark, shown on `/login`),
+  favicon) and `public/orbit-wordmark.svg` (planet + "ORBIT" wordmark, shown on `/login`; replaced
+  in Phase 25 by the inline `components/brand/OrbitWordmark.tsx`),
   redrawn cleanly from the user's own rough draft rather than reusing its jagged paths, recolored
   to the actual Indigo/Violet tokens. Rendered as plain `<img>` tags, not `next/image` - the
   optimizer's `/_next/image` route returned `400 "isn't a valid image"` for both SVGs (confirmed
@@ -348,7 +349,7 @@ Another user feedback batch:
   identity and the "leave" action now live in the one place that's actually about the caller's
   own account, instead of being split across two spots.
 * **Header's top-left corner now shows the Orbit brand (icon + wordmark), not the tenant's
-  company name** - same `public/orbit-wordmark.svg` the login page uses, just smaller. This is
+  company name** - same wordmark the login page uses (now the `OrbitWordmark` component), just smaller. This is
   "whose product is this" (constant across every company using the app), not "whose workspace is
   this" (which was already redundant with the sidebar/Settings context).
 - **`components/ui/Select.tsx`** gained a second round of polish: the caret now rotates 180°
@@ -424,12 +425,19 @@ who) once the backend is running with its dev seed data.
 ```bash
 npm run lint
 npx tsc --noEmit     # type-check
-npm test             # Jest + React Testing Library, once test files exist under src/
+npm test             # Jest (jest.config.mjs, via next/jest) - the *.test.ts files under src/
 ```
 
-**Not yet written**: automated component tests. Phase 1 was verified by hand in a real browser
-(see "Verified" below) - real evidence it works today, but not a regression guard. Add Jest/RTL
-tests for `LoginForm`, `DepartmentManager`, and `UserManager` before building Phase 2 on top.
+**Written (Phase 25)**: unit tests for pure logic only, in a node environment - the floating-window
+geometry (`lib/floatingWindow.test.ts`) and the login intro timeline
+(`features/auth/introTimeline.test.ts`), 34 tests. They import `describe/it/expect` from
+`@jest/globals` (it ships with jest; `@types/jest` is not installed).
+
+**Not yet written**: automated component tests. `@testing-library/react` is a dependency but a DOM
+test environment (`jest-environment-jsdom`) is not, so anything that renders a component is still
+verified by hand in a real browser (see "Verified" below) - real evidence it works today, but not a
+regression guard. Add Jest/RTL tests for `LoginForm`, `DepartmentManager`, and `UserManager`
+(and install the jsdom environment) before building on top of them.
 End-to-end tests (Playwright/Cypress) are still deferred per CLAUDE.md section 29 (don't add a
 dependency before it earns its keep) - reconsider once there's a multi-page flow worth covering.
 
@@ -746,6 +754,7 @@ the card click (only its API was exercised).
   button (`aria-label="Quay lại danh sách hội thoại"`). Before this the "Gửi" button was clipped at phone width.
 * `components/brand/OrbitWordmark.tsx` + `public/orbit-wordmark-dark.svg`: the "ORBIT" text was dark navy on the dark
   theme; `globals.css` now shows the light-text variant only when `data-theme="dark"` (header and login).
+  (Phase 25 dropped the second file: one inline SVG recolours its text through `.orbit-wordmark-text`.)
 
 ## Verified - Phase 18 follow-up (2026-10-02, this machine)
 
@@ -842,8 +851,7 @@ Not tested: touch dragging of the note, split screen at tablet width, a real (no
 
 ### Phase 22 follow-up - one tab strip per split pane
 
-In split-screen the tab bar splits in two and each half sits exactly above its pane (like editor groups): it shows that pane's tab, then the tabs open in the
-background (picking one swaps it into THIS pane via `selectTabInPane`), a "+" that opens a new Home tab in that pane (`openNewTabInPane`), and the split
+In split-screen the tab bar splits in two and each half sits exactly above its pane (like editor groups): it lists only the tabs that belong to that half (every tab belongs to exactly one half, see "one half per tab" below; the pane's own tab is highlighted and nothing moves when you pick one) and picking one shows it in THIS pane via `selectTabInPane`, a "+" that opens a new Home tab in that pane (`openNewTabInPane`), and the split
 toggle at the far right. Panes keep their side (`activeOnLeft` in `TabsContext`, persisted) instead of following tab order, so replacing a tab no longer makes a
 pane jump to the other side. Below `md` only the focused pane and its strip are shown.
 
@@ -857,8 +865,157 @@ strip replaced only the left pane; closing the right pane's tab returned to the 
   opens settings" shortcut and the separate gear icon (they duplicated each other). Esc / outside click close it, arrow keys move between items.
   The tour's "settings" steps now point at the avatar (`data-tour="profile"`); the Settings tab got its own label/icon in `tabMeta` (it used to be labelled "Home").
 * **Motion** (tailwind keyframes `pop-in`, `tab-in`): the avatar menu, notification dropdown and search palette pop in from their corner/edge (search also
-  gets a dimmed backdrop that fades in); a newly opened tab chip rises in. `prefers-reduced-motion` still switches animation off globally.
+  gets a dimmed backdrop that fades in); a newly opened tab chip slides in (see Phase 24). `prefers-reduced-motion` still switches animation off globally.
 
 Verified in the browser: gear gone; menu shows 4 items, changing status to Hạn chế and back reached the server (`/auth/me`); "Cài đặt" opened the Settings tab; the
 animation classes resolve (`pop-in`, `tab-in`) and opacity was mid-transition 30-40 ms after opening the menu / notifications / search / a new tab. Not tested:
 the avatar upload from the menu (same `useUploadAvatar` as Settings), logout from the menu (same `useLogout` as Settings), touch devices.
+
+## Phase 24 - tab slide animations
+
+Opening a tab: the chip grows out of the left edge (width, padding and opacity from 0, 320 ms, ease-in-out). Closing: the same motion backwards (240 ms) and the tab is
+removed only when it has finished. `useTabMotion` (TabBar) animates only tabs that appear after the first render, so loading the page or toggling split screen (which
+re-mounts the chips) does not replay it; users with `prefers-reduced-motion` get an instant close. Keyframes `tab-slide-in` / `tab-slide-out` in `tailwind.config.ts`
+(`tab-in` was removed); the timers in `TabBar.tsx` must match their durations. Tailwind needs a dev-server restart to pick up keyframe changes.
+
+Verified in the browser by sampling every frame: a new chip went 2 px -> 106 px wide with opacity 0 -> 1 while sliding right 16 px, and a closing chip went 106 px -> 2 px
+with opacity 1 -> 0 and was gone after the animation. Not tested: closing a tab in split-screen strips, touch devices.
+
+## Phase 25 - floating note windows and the login intro
+
+* **`components/ui/FloatingWindow`** (geometry in `lib/floatingWindow.ts`, pure and unit-tested): a titled window you drag by its title bar and resize from any of its 8 edges/corners
+  (a visible grip sits bottom-right). It can never leave the screen: position and size are clamped to the viewport with an 8 px margin, and it is pulled back in when the browser window
+  shrinks. Keyboard: with the title bar focused, arrows move it 16 px and Shift+arrows resize it; the "Thu gọn" button folds it to its title bar. Built on pointer events with pointer
+  capture and `touch-none` handles.
+* **Pinned notes** (`PinnedNoteWidget`) are now these windows instead of one fixed 4-row card: one window per pinned note, the one touched last on top. Each remembers its own size, position and
+  collapsed state per account and note (`localStorage` key `pinned-note-window:<userId>:<noteId>`, so re-pinning a note brings its window back as it was; the old
+  `pinned-note-position:<userId>` key is no longer read, so a pinned note shows up in the default corner once). The text area fills the window.
+  **Auto-grow**: as soon as the text reaches the bottom of the visible area the window grows by exactly the overflow, up to 70 % of the screen height; if growing would push it past the
+  bottom edge it moves up instead, so it never spills off the screen; past the cap the text area scrolls. A window you made taller yourself is never shrunk, and a note opened for the first
+  time is fitted to its text once. Text autosaves 1.2 s after typing stops and when the text area loses focus (a failed save shows an error toast and is retried on the next change); edits made
+  in "Note của tôi" appear in an open window unless you are typing in it. Because a shrinking browser window clamps the window and the clamped size is what gets remembered, a note does not
+  grow back by itself when the browser is enlarged again.
+* **Login intro** (`LoginIntro`, `OrbitIntroLogo`, `introTimeline.ts`): on a fresh load of `/login` the planet starts in the middle, the letters O-R-B-I-T fade in one by one on a tilted orbit
+  (same -18° slant as the logo's ring; the far side is smaller, dimmer and passes behind the planet) and circle it; then they are pushed out one by one - T first, O last - into their places in
+  the word while the planet slides left to its place in the logo and the scene eases from a 1.45x zoom to the real logo size (about 3 s). Only then do the heading and the sign-in form rise in
+  (`animate-rise-in`) and the username field gets the focus.
+  * The motion is one pure function, `frameAt(t, targets)`; `OrbitIntroLogo` applies each frame straight to the SVG attributes in `requestAnimationFrame` (no React re-render per frame).
+  * The letters' final positions are measured from a hidden reference `<text>` once the Space Grotesk font has loaded (1.2 s cap), so they land exactly on the glyphs of the static word and the
+    hand-over to plain text has no jump, whatever font the browser ended up with.
+  * T is released first because releasing O first made letters cross each other on the way (closest pair 0.8 px); a unit test now requires at least 14 px.
+  * Plays once per page load (a module variable, not storage): a reload or a new visit plays it, signing out and coming back to the login page without reloading does not. Skipped for
+    `prefers-reduced-motion`; any key press or click jumps to the end. Until it ends the heading and form are `invisible` (they keep their space and stay out of the tab order).
+* **`OrbitWordmark` is an inline SVG** (`components/brand/OrbitWordmark.tsx`; the drawing constants shared with the intro are in `orbitLogo.tsx`), so the intro and the static logo are literally
+  the same drawing. `public/orbit-wordmark.svg` and `public/orbit-wordmark-dark.svg` were deleted (nothing references them); the text colour for the dark theme comes from
+  `.orbit-wordmark-text` in `globals.css`.
+* **Dark-theme fix**: only `text-gray-900/700/600/500` were remapped in the dark theme, so `text-gray-800` stayed dark-on-dark (it showed up as invisible text in the new note window; the task
+  description box and the priority panel had the same latent problem). `globals.css` now remaps `.text-gray-800` as well.
+* **Tests** (`jest.config.mjs`, see "Testing" above): 21 for the window geometry (clamp, edge resize with a minimum size, auto-grow cap and shift-up, cascade defaults, stored-data parsing) and 13 for
+  the timeline (first and last frame, orbit radius, near/far side, T-first landing order, letters never piling up, monotone zoom and slide, no NaN for any time).
+* The Notes page's own editor (`NoteModal`) is unchanged: it is still a centred modal, only the always-on-screen pinned note became a floating window.
+
+## Verified - Phase 25 (2026-10-03, this machine)
+
+`tsc --noEmit`, `jest` (34 tests) and `next build` (all pages generated, `/login` prerendered) clean, `next lint` has no errors (only the existing "unused parameter name" warnings on callback types, two of them now also in `FloatingWindow`);
+the Phase 25 files pass `prettier --check` (the rest of the repo does not - 91 of 124 source files predate that check and were left alone). Real browser (binmit1), before the Prettier pass: the intro sampled over time - planet in the middle, letters fading in
+on the orbit, circling with the near-side letters larger, released T first, ending on exactly the position of the static word; a key press and a click each skipped to the end; signing out and
+returning to `/login` did not replay it, a reload did; the username field had the focus afterwards. Note windows: dragged with a real mouse and stopped at the 8 px screen margin; resized from the
+edges and corners; typing near the bottom edge grew the window (190 -> 250 -> 310 -> 470 px, then capped at 489 px = 70 % of the viewport and scrolled) without ever leaving the screen; the text
+autosaved to the server and survived a reload; collapse/expand; shrinking the browser window pulled the window back in; two pinned notes stacked with the touched one on top.
+After the Prettier pass (formatting only) a smoke run repeated the essentials: the intro frames (planet in the middle, orbit guide, letters circling, word formed, then the form revealed with the username
+field focused); a note window in the dark theme with legible text; a real-mouse drag into the corner stopped exactly 8 px from the right and bottom edges; Shift+arrows shrank it to the 140 px minimum and
+arrows moved it to the bottom edge; typing ten lines there grew it from 140 to 270 px upwards with the bottom gap still 8 px and no scrollbar in the text area.
+Not tested: the `prefers-reduced-motion` path in a real browser, touch dragging on a real device, the gray/pink themes on the new UI (the note window was checked in dark; the login page always uses the
+default theme), and a login page opened in a background tab (its clock keeps running while the tab is hidden, so by the code the intro would jump to the finished logo when the tab is shown again).
+
+## Phase 26 - drag tabs to reorder and between split panes
+
+* **Reorder**: press a tab chip and move: it lifts off the bar as a floating chip (solid, tilted, shadowed) that follows the pointer while the other chips slide aside; release to drop it in
+  the new slot (it glides home first). `Esc` cancels. A press that moves less than 4 px is still an ordinary click, and the click that ends a drag does not select the chip.
+* **Between split halves**: drag a chip onto the other half of the bar (that half gets a ring while it is a valid target). The tab changes half and is shown there. Reordering inside a strip moves any chip of that strip (the tab order is shared by both strips and the single bar).
+* Code: `lib/tabDrag.ts` (pure geometry, 11 unit tests), `components/layout/useTabDrag.ts` (pointer handling, floating state), `TabBar.tsx` (chips + `FloatingChip`), and two new `TabsContext`
+  actions, `reorderTabs(ids)` (ignored unless it is a permutation of the open tabs) and `moveTabToPane`. The new order is saved with the other tab state in sessionStorage. Pointer events with
+  pointer capture, not HTML5 drag and drop, because that gives no control over the floating chip.
+
+Verified in the browser (binmit2, real mouse drags): reorder in a single bar (order saved); in split mode a pane's own tab dragged to the other half swapped the panes; a background tab dragged
+to the other half replaced that pane's content and focused it; a held drag showed the solid floating chip, the highlighted target half and the hidden placeholder; `Esc` cancelled with nothing
+changed; `tsc`, `jest` (45 tests), `prettier --check` clean, no lint errors. Not tested: touch dragging (chips do not set `touch-action`, so a touch swipe scrolls the bar), reordering with
+many tabs while the strip is scrolled, reduced-motion, dark theme.
+
+## Phase 27 - checklist, Pomodoro, department look, staff account actions, split ratio
+
+* **Tab content keeps its state** (`TabContentRenderer`): hidden tabs were wrapped in a `<div>` while visible ones were `<section>`, so React re-mounted a page every time its tab was hidden or shown -
+  the half-filled "add staff" form (and scroll position, open menus) was lost when you went to another tab. Both are now the same `<section>` (see `TabPane`); `Modal` ignores Escape while its tab is hidden.
+* **Checklist** (`TaskChecklist`, `TaskDraftFields`): add lines when creating or assigning a task, and in the task window add/tick/remove them with a progress bar; cards show "2/5"
+  (`ChecklistProgress`). Items are tickable once the task is accepted; ticking the last one completes the task (toast), and the table's "Hoàn thành" button is disabled for tasks with a checklist.
+* **Files when assigning**: both creation forms (`CreateTaskForm`, `CreateOwnTaskForm`) have a file picker (<= 10 files, 5MB each); the task is created first, then the files are uploaded one by one
+  (`useCreateTask` returns how many failed, shown in the toast; the task is kept).
+* **Pomodoro** (`features/timer`): header button with a floating window (Tập trung 25 / Nghỉ ngắn 5 / Nghỉ dài 15, long break after every 4th focus round), start/pause/reset; the clock keeps running
+  across tabs, shows in the header while active, is saved per account **as an end time** (survives a reload) and plays a short chime + toast when a phase ends. Pure logic and 12 tests in `pomodoro.ts`.
+  Fixed during testing: the first save after a reload overwrote the stored state (the `hydrated` flag in `PomodoroProvider`).
+* **Departments** (`departmentAppearance.tsx`): 8 colours x 10 icons plus 9 ready-made presets (Kỹ thuật, Kinh doanh, ... pick one to fill name, colour and icon); tiles and the detail page show them;
+  "Chỉnh sửa" (executive or that department's head) edits name, description, colour and icon (`DepartmentEditDialog`). The preset keys must match `DepartmentAppearance.java`.
+* **Staff management window** (`StaffSettingsDialog`, replaces the row menu's many entries and the forms that used to open under the table): the row menu is now just "Quản lý" and "Xoá". "Quản lý" opens one window laid out like Settings - sections on the left (tabs on a phone): "Phòng ban & chức vụ" (the old transfer form, so a department can be assigned after the person was created), "KPI", "Lịch" (add an event for them) and "Tài khoản" (lock/unlock, "Gửi email đặt lại mật khẩu" where the staff member sets their own password, "Đổi email" with a code sent to the new address; `StaffAccountPanels`). The table has a "Phòng ban" column ("Chưa có" when none). Deleting stays a separate, confirmed action.
+* **KPI tab redesigned** (`UserKpiPanel`, ui-design-and-taste skill): one headline score (large number, "/ 100 điểm", tier badge) over a meter with the 40 and 70 band marks (`role="meter"`, so it is not colour alone), then an open row (no card inside a card) of three numbers - tasks assigned, completed x/y with its rate, on-time rate - each with a thin progress bar. A person with no tasks this month gets an explanation instead of a misleading 0; loading and error states are kept. The tier bands (40/70) match the badge thresholds that were already used.
+* **Split screen ratio**: a divider between the panes (drag, Left/Right/Home/End keys, double-click for 50/50); the ratio (25-75%) is saved with the tabs and the tab strips follow it (both read
+  `--split-left`). A pane narrower than 600px gets the class `pane-narrow`, and these page-level layouts fall back to one/two columns there: Home columns and KPI cards, department tiles and detail,
+  task board, Drive folder form. Forms inside dialogs are unchanged (the dialog has its own width).
+* Tests: `npm test` now 57 (the `lib/tabDrag.test.ts` from Phase 26 plus `features/timer/pomodoro.test.ts`).
+
+Verified in the browser (binmit1, real mouse for the divider): the staff-form draft survived switching to another tab and back; a department created from the "Chăm sóc khách hàng" preset showed the violet
+tile with the headset icon, was recoloured to rose in the edit dialog and then deleted; a task assigned to binmit2 with 3 checklist lines and an attached file was created in one go, accepted, and ticking
+the lines in the task window went 1/3, 2/3, 3/3 -> Hoàn thành with the toast; the row menu showed the new items and both dialogs opened (nothing was sent); the Pomodoro counted down, showed in the header
+and kept running after a reload; the divider drag set 35% (saved, strips aligned), double-click restored 50%, and in a 306px pane Home fell back to one column. `tsc`, `next build`, `next lint` (0 errors) clean.
+Not tested: touch use of the divider and tabs, the chime (audio), the end of a 25-minute phase in the browser (covered by unit tests), dark theme for the new UI, real delivery of the reset/email-change mails,
+narrow-pane layouts of Messages/Calendar/Notes/Settings (not adapted).
+
+### Phase 26 fix - phantom tab drag
+
+Pressing on a tab chip and releasing just outside it never reached the chip's pointer-up, so the drag logic kept the press and the next mouse move (no button held) started a drag: a copy of the chip
+followed the pointer, and the next click anywhere "dropped" it - in split mode the tab jumped to the other pane. `useTabDrag` now ignores moves while no button is down (and drops a drag that
+lost its button), forgets an unfinished press on any window pointer-up, and cancels when the pointer capture is lost. Reproduced and re-checked with a real mouse; reorder by dragging still works.
+Not covered by an automated test (the hook needs real pointer events).
+
+### Running a second dev environment
+
+`run-dev-parallel.ps1` starts dev servers on http://localhost:3001 (frontend) and port 8081 (backend, database `project_dev`, seed users, mail only written to the backend window) next to the public site;
+`-Stop` closes them. It works through `SERVER_PORT` / `FRONTEND_PORT` in `run-local.ps1`, `BACKEND_ORIGIN` and `NEXT_DIST_DIR` (the dev server builds into `.next-dev`, so it cannot disturb the
+production build in `.next`) in `next.config.mjs`.
+
+### Phase 26 fix - chips keep their place in split mode
+
+In split mode each strip used to put the pane's own tab first, so clicking a chip made it jump to the front and pushed the previous one back. Both strips now list the tabs in the shared tab order
+(minus the tab the other pane shows) and a click only moves the highlight. Checked with real clicks: with the order Công việc, Home, Lịch, choosing Công việc and then Home in the left strip left the
+strip as "Công việc | Home" both times; the underlying tab order was unchanged.
+
+### Phase 26 fix - one half per tab
+
+The previous fix still listed every tab in both strips (minus the tab shown in the other pane), so tabs appeared in both halves. Now, like editor groups, every `Tab` carries a `side` (`left`/`right`, missing = left)
+and each strip lists only its own tabs. Choosing a chip only selects the tab inside its half; `+` opens a new tab in the half whose `+` was clicked; dragging a chip into the other strip moves it (the last tab of
+a half cannot leave, so a drag never ends the split by accident); closing the shown tab shows its nearest neighbour in the same half and closing a half's last tab ends the split. Turning split on puts the
+chosen partner on the right and every other tab on the left; sessions saved before this change are repaired on load (`normalizeSplit`). Rules are pure functions in `lib/tabSplit.ts` (11 unit tests);
+`TabsContext` calls them. Checked in the browser with pointer-event drags: select/`+`/drag/close behaved as described and the stored sides matched the strips.
+
+## Phase 28 (wave 1) - search, calendar, notes, notifications
+
+* **Header**: the Orbit logo is a button that sends the active tab Home. Staff table: clicking a name opens the staff management window (same as the row menu).
+* **Quick search (Ctrl+K)**: searches pages *and* the smaller features inside them (`components/layout/featureSearch.ts`, one catalog of sub-features per page). A matching sub-feature is listed under its parent page; typed words are highlighted (`components/ui/Highlight.tsx`). Matching ignores case and accents (`lib/textMatch.ts`). When a page gains a feature, add it to the catalog and to the tour.
+* **Messages**: a search box lists colleagues of the user's own department (`ColleagueSearch`) to start a chat; pictures are shown without a bubble and open in a dimmed lightbox (`components/ui/ImageLightbox.tsx`).
+* **Calendar**: clicking a day opens that day's events; the list below shows only upcoming events (`features/calendar/eventRange.ts`); a `Công tác` event takes a from/to date range and is drawn on every day it covers. The two add-event forms share `CalendarEventFields`.
+* **Notes**: card grid with search, pinned first, delete on hover.
+* **Department page**: a + beside "Nhân sự" lists existing employees (searchable) and moves the chosen one into that department (`AddExistingStaffDialog`); when the person is not there yet it links to the Nhân sự page to create them.
+* **Forgot password** takes a username or the account's email; **registration** says plainly when an email already belongs to an account.
+* **Live data**: the shared QueryClient now polls every 30 s and refetches on window focus, so changes by other people show up without a manual reload.
+* **Tour**: steps added for notes, timer, notifications, board view, split screen, departments; search and calendar texts updated.
+* **Password fields** have their own always-visible show/hide button (the browser's own icon appeared only on focus).
+
+## Phase 28 (wave 2) - company page
+
+* Clicking the company badge (logo + name) in the header opens the **Công ty** tab (`/dashboard/company`, `CompanyOverview`): banner, logo, introduction, contact email and the department cards (each opens that department). Everyone sees it; an executive also gets quick settings - edit the text (`CompanyEditDialog`), change the logo or the banner (`CompanyImageButton`), jump to department management and Settings.
+* Settings > "Thông tin công ty" now reuses the same dialog and image buttons instead of its own form. Quick search and the tour know the new page.
+
+## Phase 28 (wave 3) - projects
+
+* New **Dự án** entry in the sidebar (`/dashboard/projects`, `/dashboard/projects/{id}`; `features/projects`). The list shows the projects you can see, with a badge when an invitation waits for your answer; executives and department heads get a + to create one (owner department, departments to invite, optional note).
+* A project page has tabs: **Tổng quan** (departments and how each answered; invite or remove a department), **Thành viên** (grouped by department, message each person, heads add their own people, leave), **Công việc** (the project's tasks; the person a task is for accepts and finishes it in their own Công việc page), **Trao đổi** (one shared chat, refreshes every 8 s), **Tệp Drive** (shared folders picked from the Drive catalog). The three work tabs are disabled for someone who may only answer an invitation.
+* Notifications about projects open the project; quick search and the tour know the new page. The buttons shown follow the server's hints (`canManage`, `canWork`, `respondableDepartmentIds`, `memberManageableDepartmentIds`); every action is checked again on the server.

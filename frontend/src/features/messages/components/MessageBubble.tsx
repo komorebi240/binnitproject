@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { DotsThreeVertical, DownloadSimple, File as FileIcon } from "@phosphor-icons/react";
 import { Avatar } from "@/components/ui/Avatar";
+import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { useToast } from "@/components/ui/Toast";
 import { useAuthedBlobUrl } from "@/lib/hooks/useAuthedBlobUrl";
 import type { PresenceStatus } from "@/features/auth/types";
@@ -17,14 +18,23 @@ function formatSize(bytes: number): string {
 
 function ImageAttachment({ attachment }: { attachment: MessageAttachment }) {
   const src = useAuthedBlobUrl(`/messages/attachments/${attachment.id}`);
+  const [open, setOpen] = useState(false);
   if (!src) {
     return <div className="h-32 w-48 animate-pulse rounded bg-black/10" aria-label="Đang tải ảnh" />;
   }
   return (
-    <a href={src} target="_blank" rel="noopener noreferrer" title={attachment.fileName}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL, next/image can't optimize it */}
-      <img src={src} alt={attachment.fileName} className="max-h-60 max-w-full rounded object-cover" />
-    </a>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title={attachment.fileName}
+        className="rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL, next/image can't optimize it */}
+        <img src={src} alt={attachment.fileName} className="max-h-60 max-w-full rounded-lg object-cover" />
+      </button>
+      {open && <ImageLightbox src={src} alt={attachment.fileName} onClose={() => setOpen(false)} />}
+    </>
   );
 }
 
@@ -92,21 +102,20 @@ export function MessageBubble({ message, isMine, senderName, senderAvatarUrl, se
       <Avatar avatarUrl={senderAvatarUrl} fullName={senderName} presenceStatus={senderPresence} size="sm" />
 
       <div className={`relative flex max-w-xs flex-col gap-1 ${isMine ? "items-end" : "items-start"}`}>
-        <div className={`flex max-w-full flex-col gap-1.5 rounded-lg px-3 py-1.5 text-sm ${bubbleClassName}`}>
-          {message.recalled ? (
-            <span>Tin nhắn đã thu hồi</span>
-          ) : (
-            <>
-              {message.attachment &&
-                (message.attachment.image ? (
-                  <ImageAttachment attachment={message.attachment} />
-                ) : (
-                  <FileAttachment attachment={message.attachment} />
-                ))}
-              {message.body && <span className="whitespace-pre-wrap break-words">{message.body}</span>}
-            </>
-          )}
-        </div>
+        {/* A picture is shown on its own, without a coloured bubble (and its padding) around it. */}
+        {!message.recalled && message.attachment?.image && <ImageAttachment attachment={message.attachment} />}
+        {(message.recalled || message.body || (message.attachment && !message.attachment.image)) && (
+          <div className={`flex max-w-full flex-col gap-1.5 rounded-lg px-3 py-1.5 text-sm ${bubbleClassName}`}>
+            {message.recalled ? (
+              <span>Tin nhắn đã thu hồi</span>
+            ) : (
+              <>
+                {message.attachment && !message.attachment.image && <FileAttachment attachment={message.attachment} />}
+                {message.body && <span className="whitespace-pre-wrap break-words">{message.body}</span>}
+              </>
+            )}
+          </div>
+        )}
         <span className="text-[10px] text-gray-400">
           {new Date(message.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
         </span>

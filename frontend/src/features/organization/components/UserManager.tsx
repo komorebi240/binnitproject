@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "@phosphor-icons/react";
 import { ActionMenu } from "@/components/ui/ActionMenu";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
+import { Modal } from "@/components/ui/Modal";
+import { PlusButton } from "@/components/ui/PlusButton";
 import { Select } from "@/components/ui/Select";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Table } from "@/components/ui/Table";
@@ -17,10 +18,8 @@ import { allowedLevelsFor } from "../grantLevels";
 import { useDepartments, useTeams } from "../hooks/useOrganization";
 import { useCreateUser, useSetUserActive, useUsers } from "../hooks/useOrganization";
 import { DeleteUserDialog } from "./DeleteUserDialog";
-import { TransferPositionForm } from "./TransferPositionForm";
-import { UserKpiPanel } from "@/features/kpi/components/UserKpiPanel";
+import { StaffSettingsDialog } from "./StaffSettingsDialog";
 import { InviteStaffButton } from "@/features/onboarding/components/InviteStaffButton";
-import { AddEventForUserForm } from "@/features/calendar/components/AddEventForUserForm";
 import type { CreateUserInput, UserSummary } from "../types";
 
 const LEVEL_LABELS: Record<AuthorityLevel, string> = {
@@ -56,13 +55,12 @@ export function UserManager({ currentUser }: UserManagerProps) {
     startDate: "",
   });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [transferringUserId, setTransferringUserId] = useState<number | null>(null);
-  const [kpiUserId, setKpiUserId] = useState<number | null>(null);
-  const [schedulingUserId, setSchedulingUserId] = useState<number | null>(null);
+  const [managingUserId, setManagingUserId] = useState<number | null>(null);
   const [deletingUser, setDeletingUser] = useState<UserSummary | null>(null);
   const [creating, setCreating] = useState(false);
 
   const isExecutive = currentUser.authorityLevel === "EXECUTIVE";
+  const managingUser = managingUserId == null ? undefined : (users ?? []).find((u) => u.id === managingUserId);
   const { data: teamsInChosenDepartment } = useTeams(form.departmentId ?? -1);
 
   async function handleCreate(event: React.FormEvent) {
@@ -120,16 +118,13 @@ export function UserManager({ currentUser }: UserManagerProps) {
     <section className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <h2 className="text-lg font-semibold text-gray-900">Nhân sự</h2>
-        <button
-          type="button"
-          onClick={() => setCreating((v) => !v)}
-          title="Thêm nhân sự"
-          aria-label="Thêm nhân sự"
-          aria-pressed={creating}
-          className={`gradient-surface flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-r from-primary to-primaryEnd text-primary-foreground shadow-sm transition-all duration-150 hover:shadow-md hover:shadow-primary/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${creating ? "rotate-45" : ""}`}
-        >
-          <Plus size={16} weight="bold" aria-hidden />
-        </button>
+        <PlusButton
+          label="Thêm nhân sự"
+          onClick={() => {
+            setErrorMessage(null);
+            setCreating(true);
+          }}
+        />
         <InviteStaffButton currentUser={currentUser} />
       </div>
 
@@ -139,8 +134,21 @@ export function UserManager({ currentUser }: UserManagerProps) {
         <Table<UserSummary>
           columns={[
             { header: "Tên đăng nhập", cell: (u) => u.username },
-            { header: "Họ tên", cell: (u) => u.fullName },
+            {
+              header: "Họ tên",
+              cell: (u) => (
+                <button
+                  type="button"
+                  onClick={() => setManagingUserId(u.id)}
+                  title="Mở cửa sổ quản lý"
+                  className="rounded text-left font-medium text-gray-900 hover:text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  {u.fullName}
+                </button>
+              ),
+            },
             { header: "Vai trò", cell: (u) => LEVEL_LABELS[u.authorityLevel] },
+            { header: "Phòng ban", cell: (u) => (departments ?? []).find((d) => d.id === u.departmentId)?.name ?? "Chưa có" },
             { header: "Chức danh", cell: (u) => u.title ?? "-" },
             { header: "Mã NV", cell: (u) => u.employeeCode ?? "-" },
             { header: "SĐT", cell: (u) => u.phone ?? "-" },
@@ -158,14 +166,7 @@ export function UserManager({ currentUser }: UserManagerProps) {
                 <ActionMenu
                   label={`Tuỳ chọn cho ${u.fullName}`}
                   items={[
-                    { label: "Xem KPI", onSelect: () => setKpiUserId(kpiUserId === u.id ? null : u.id) },
-                    { label: "Chuyển vị trí", onSelect: () => setTransferringUserId(transferringUserId === u.id ? null : u.id) },
-                    { label: "Thêm lịch", onSelect: () => setSchedulingUserId(schedulingUserId === u.id ? null : u.id) },
-                    {
-                      label: u.active ? "Khoá" : "Mở khoá",
-                      onSelect: () => handleToggleActive(u),
-                      disabled: setUserActive.isPending,
-                    },
+                    { label: "Quản lý", onSelect: () => setManagingUserId(u.id) },
                     { label: "Xoá", onSelect: () => setDeletingUser(u), danger: true },
                   ]}
                 />
@@ -183,27 +184,9 @@ export function UserManager({ currentUser }: UserManagerProps) {
         />
       )}
 
-      {kpiUserId != null && <UserKpiPanel userId={kpiUserId} />}
-
-      {schedulingUserId != null && (
-        <AddEventForUserForm userId={schedulingUserId} onDone={() => setSchedulingUserId(null)} />
-      )}
-
-      {transferringUserId != null &&
-        (() => {
-          const target = (users ?? []).find((u) => u.id === transferringUserId);
-          if (!target) return null;
-          return (
-            <TransferPositionForm
-              user={target}
-              allowedLevels={allowedLevels}
-              onDone={() => setTransferringUserId(null)}
-            />
-          );
-        })()}
-
       {creating && (
-      <form onSubmit={handleCreate} className="animate-fade-in grid grid-cols-1 gap-3 rounded border border-gray-200 bg-surface p-4 shadow-sm sm:grid-cols-2">
+      <Modal title="Thêm nhân sự" onClose={() => setCreating(false)} widthClassName="max-w-2xl">
+      <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Input
           label="Tên đăng nhập"
           value={form.username}
@@ -284,17 +267,21 @@ export function UserManager({ currentUser }: UserManagerProps) {
             />
           )}
 
-        <div className="sm:col-span-2">
+        {errorMessage && (
+          <p role="alert" className="text-sm text-danger sm:col-span-2">
+            {errorMessage}
+          </p>
+        )}
+        <div className="flex gap-2 sm:col-span-2">
           <Button type="submit" loading={createUser.isPending}>
             Thêm nhân sự
           </Button>
+          <Button type="button" variant="secondary" onClick={() => setCreating(false)}>
+            Huỷ
+          </Button>
         </div>
       </form>
-      )}
-      {errorMessage && (
-        <p role="alert" className="text-sm text-danger sm:col-span-2">
-          {errorMessage}
-        </p>
+      </Modal>
       )}
       {deletingUser && (
         <DeleteUserDialog
@@ -304,6 +291,15 @@ export function UserManager({ currentUser }: UserManagerProps) {
             showToast("success", `Đã xoá ${deletingUser.fullName}`);
             setDeletingUser(null);
           }}
+        />
+      )}
+      {managingUser && (
+        <StaffSettingsDialog
+          user={managingUser}
+          allowedLevels={allowedLevels}
+          onToggleActive={() => handleToggleActive(managingUser)}
+          toggleActivePending={setUserActive.isPending}
+          onClose={() => setManagingUserId(null)}
         />
       )}
     </section>

@@ -19,6 +19,8 @@ import { useCurrentUser } from "@/features/auth/hooks/useAuth";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
 import { PriorityPanel } from "@/features/tasks/components/PriorityPanel";
 import { PinnedNoteWidget } from "@/features/notes/components/PinnedNoteWidget";
+import { PomodoroControl } from "@/features/timer/components/PomodoroControl";
+import { PomodoroProvider } from "@/features/timer/components/PomodoroProvider";
 import { List, Star } from "@phosphor-icons/react";
 import type { UserProfile } from "@/features/auth/types";
 
@@ -74,6 +76,7 @@ export default function DashboardLayout(_props: { children: React.ReactNode }) {
 
 function DashboardShell({ currentUser }: { currentUser: UserProfile }) {
   const { setUserScope } = useTheme();
+  const { navigateActiveTab } = useTabs();
 
   // This account's theme while signed in; back to the default as soon as the dashboard unmounts (logout).
   useEffect(() => {
@@ -83,12 +86,22 @@ function DashboardShell({ currentUser }: { currentUser: UserProfile }) {
 
   return (
     <TourProvider currentUser={currentUser}>
+    <PomodoroProvider key={currentUser.userId} userId={currentUser.userId}>
     <div className="flex h-screen flex-col overflow-hidden">
       <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3 sm:px-8">
         <div className="flex items-center gap-3">
           {/* Orbit's own brand mark, not the tenant's company name - this corner is "whose
               product is this" (consistent across every company using the app). */}
-          <OrbitWordmark width={91} height={32} className="shrink-0" />
+          <button
+            type="button"
+            onClick={() => navigateActiveTab("/dashboard")}
+            aria-label="Về trang chủ"
+            data-tour="logo"
+            title="Về trang chủ"
+            className="shrink-0 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            <OrbitWordmark width={91} height={32} />
+          </button>
           <CompanyBadge />
         </div>
         <div className="flex items-center gap-2">
@@ -109,6 +122,7 @@ function DashboardShell({ currentUser }: { currentUser: UserProfile }) {
 
       <PinnedNoteWidget />
     </div>
+    </PomodoroProvider>
     </TourProvider>
   );
 }
@@ -155,12 +169,14 @@ function HeaderIconControls({ currentUser }: { currentUser: UserProfile }) {
         type="button"
         title="Xem công việc dạng cột"
         aria-label="Xem công việc dạng cột"
+        data-tour="board-view"
         aria-pressed={isBoardView}
         onClick={handleBoardViewClick}
         className={`${iconButtonClassName} ${isBoardView ? "bg-surface-muted" : ""}`}
       >
         <List size={20} weight={isBoardView ? "fill" : "regular"} aria-hidden />
       </button>
+      <PomodoroControl userId={currentUser.userId} />
       <NotificationBell />
       <PriorityPanel currentUser={currentUser} open={priorityOpen} onClose={() => setPriorityOpen(false)} />
     </>

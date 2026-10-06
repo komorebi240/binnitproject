@@ -4,6 +4,7 @@ import { ApiRequestError } from "@/lib/api/client";
 const MESSAGES: Record<string, string> = {
   INVALID_OTP: "Mã không đúng, đã hết hạn hoặc đã nhập sai quá nhiều lần. Hãy gửi lại mã mới.",
   INVALID_VERIFICATION: "Phiên xác minh email đã hết hạn hoặc đã được dùng. Vui lòng xác minh lại email.",
+  EMAIL_ALREADY_REGISTERED: "Email này đã thuộc một tài khoản. Hãy đăng nhập, hoặc dùng \"Quên mật khẩu\" nếu bạn không nhớ mật khẩu.",
   USERNAME_TAKEN: "Tên đăng nhập này đã được sử dụng, hãy chọn tên khác.",
   EMAIL_SERVICE_UNAVAILABLE: "Dịch vụ gửi email chưa sẵn sàng. Vui lòng thử lại sau.",
   TOO_MANY_REQUESTS: "Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.",

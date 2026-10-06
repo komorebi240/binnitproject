@@ -134,7 +134,12 @@ export function TaskList({ currentUser }: TaskListProps) {
             </>
           )}
           {t.status === "ACCEPTED" && canActOnTask(currentUser, t) && (
-            <Button onClick={() => handleComplete(t.id)} loading={complete.isPending}>
+            <Button
+              onClick={() => handleComplete(t.id)}
+              loading={complete.isPending}
+              disabled={t.checklist.length > 0}
+              title={t.checklist.length > 0 ? "Tick đủ checklist trong chi tiết việc để hoàn thành" : undefined}
+            >
               Hoàn thành
             </Button>
           )}

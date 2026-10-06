@@ -135,6 +135,10 @@ h3 {
   color: #f1f5f9 !important;
 }
 
+:root[data-theme="dark"] .text-gray-800 {
+  color: #e2e8f0 !important;
+}
+
 :root[data-theme="dark"] .text-gray-700,
 :root[data-theme="dark"] .text-gray-600 {
   color: #cbd5e1 !important;
@@ -195,15 +199,11 @@ h3 {
   }
 }
 
-/* Orbit wordmark: show the light-text variant only on the dark theme (see OrbitWordmark). */
-.wordmark-dark {
-  display: none;
+/* Orbit wordmark text: dark navy on light surfaces, light on the dark theme (see components/brand). */
+.orbit-wordmark-text {
+  fill: #312e81;
 }
 
-:root[data-theme="dark"] .wordmark-light {
-  display: none;
-}
-
-:root[data-theme="dark"] .wordmark-dark {
-  display: inline;
+:root[data-theme="dark"] .orbit-wordmark-text {
+  fill: #e0e7ff;
 }

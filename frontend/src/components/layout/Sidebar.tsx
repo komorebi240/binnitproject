@@ -9,6 +9,7 @@ import {
   ChatCircle,
   ClipboardText,
   HardDrives,
+  Handshake,
   House,
   NotePencil,
   UsersThree,
@@ -34,6 +35,7 @@ export const NAV_ITEMS: NavItem[] = [
   // page that would just be blank (the backend's GET /users 403s EMPLOYEE too either way).
   { href: "/dashboard/users", label: "Nhân sự", icon: UsersThree, roles: ["EXECUTIVE", "DEPARTMENT_HEAD", "TEAM_LEAD"] },
   { href: "/dashboard/tasks", label: "Công việc", icon: ClipboardText },
+  { href: "/dashboard/projects", label: "Dự án", icon: Handshake },
   { href: "/dashboard/messages", label: "Tin nhắn", icon: ChatCircle },
   { href: "/dashboard/calendar", label: "Lịch của tôi", icon: CalendarBlank },
   { href: "/dashboard/notes", label: "Note của tôi", icon: NotePencil },

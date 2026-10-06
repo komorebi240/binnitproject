@@ -9,6 +9,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import type { UserProfile } from "@/features/auth/types";
 import { useDepartments, useUsers } from "@/features/organization/hooks/useOrganization";
 import { useCreateTask, useTasksList } from "../hooks/useTasks";
+import { AttachmentDraftPicker, ChecklistDraftEditor } from "./TaskDraftFields";
 import type { AssigneeType, CreateTaskInput, TaskPriority } from "../types";
 
 const OPEN_STATUSES = new Set(["ASSIGNED", "ACCEPTED"]);
@@ -44,6 +45,8 @@ export function CreateTaskForm({ currentUser, onDone }: CreateTaskFormProps) {
     dueDate: "",
     driveUrl: "",
   });
+  const [checklist, setChecklist] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // A department head only manages their own department; the department dropdown mirrors that
@@ -76,9 +79,14 @@ export function CreateTaskForm({ currentUser, onDone }: CreateTaskFormProps) {
         priority: form.priority,
         dueDate: form.dueDate || undefined,
         driveUrl: form.driveUrl.trim() || undefined,
+        checklist: checklist.length > 0 ? checklist : undefined,
       };
-      await createTask.mutateAsync(input);
-      showToast("success", "Đã giao việc");
+      const { failedUploads } = await createTask.mutateAsync({ input, files });
+      if (failedUploads > 0) {
+        showToast("error", `Đã giao việc nhưng ${failedUploads} tệp không tải lên được, hãy đính kèm lại trong chi tiết việc`);
+      } else {
+        showToast("success", "Đã giao việc");
+      }
       onDone();
     } catch (err) {
       setErrorMessage(err instanceof ApiRequestError ? err.message : "Không giao được việc");
@@ -171,6 +179,13 @@ export function CreateTaskForm({ currentUser, onDone }: CreateTaskFormProps) {
           value={form.driveUrl}
           onChange={(e) => setForm({ ...form, driveUrl: e.target.value })}
         />
+      </div>
+
+      <div className="sm:col-span-2">
+        <ChecklistDraftEditor items={checklist} onChange={setChecklist} />
+      </div>
+      <div className="sm:col-span-2">
+        <AttachmentDraftPicker files={files} onChange={setFiles} />
       </div>
 
       <div className="flex gap-2 sm:col-span-2">

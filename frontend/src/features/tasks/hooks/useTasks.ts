@@ -8,10 +8,50 @@ export function useTasksList() {
   return useQuery({ queryKey: TASKS_KEY, queryFn: api.listTasks });
 }
 
+/**
+ * Creates the task, then uploads the picked files one by one (the task id is needed first). A failed
+ * upload does not undo the task: the result says how many files did not make it.
+ */
 export function useCreateTask() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: CreateTaskInput) => api.createTask(input),
+    mutationFn: async ({ input, files = [] }: { input: CreateTaskInput; files?: File[] }) => {
+      const task = await api.createTask(input);
+      let failedUploads = 0;
+      for (const file of files) {
+        try {
+          await api.addTaskAttachment(task.id, file);
+        } catch {
+          failedUploads++;
+        }
+      }
+      return { task, failedUploads };
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: TASKS_KEY }),
+  });
+}
+
+export function useAddChecklistItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, text }: { taskId: number; text: string }) => api.addChecklistItem(taskId, text),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: TASKS_KEY }),
+  });
+}
+
+export function useSetChecklistItemDone() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, itemId, done }: { taskId: number; itemId: number; done: boolean }) =>
+      api.setChecklistItemDone(taskId, itemId, done),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: TASKS_KEY }),
+  });
+}
+
+export function useRemoveChecklistItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, itemId }: { taskId: number; itemId: number }) => api.removeChecklistItem(taskId, itemId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: TASKS_KEY }),
   });
 }
