@@ -69,6 +69,21 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
+    public void sendEmailChangeOtp(String toEmail, String otp) {
+        send(toEmail, "Mã xác nhận email mới trên Orbit",
+                "Mã xác nhận của bạn là: " + otp + "\n\n"
+                        + "Mã có hiệu lực trong 15 phút. Hãy đưa mã này cho người quản lý đang đổi email tài khoản Orbit của bạn. "
+                        + "Nếu bạn không biết về việc này, hãy bỏ qua email.");
+    }
+
+    @Override
+    public void sendEmailChangedNotice(String oldEmail, String newEmail) {
+        send(oldEmail, "Email tài khoản Orbit đã được đổi",
+                "Email đăng ký của tài khoản Orbit của bạn vừa được đổi sang " + newEmail + ".\n\n"
+                        + "Nếu bạn không biết về thay đổi này, hãy liên hệ quản trị viên ngay.");
+    }
+
+    @Override
     public void sendInvitation(String toEmail, String companyName, String inviterName, String inviteLink) {
         send(toEmail, "Lời mời tham gia " + companyName + " trên Orbit",
                 inviterName + " đã mời bạn tham gia " + companyName + " trên Orbit.\n\n"

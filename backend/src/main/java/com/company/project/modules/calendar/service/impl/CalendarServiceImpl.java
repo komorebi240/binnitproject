@@ -60,6 +60,7 @@ public class CalendarServiceImpl implements CalendarService {
     @Override
     @Transactional
     public CalendarEventResponse createOwnEvent(CreateCalendarEventRequest request, UserPrincipal caller) {
+        requireValidRange(request);
         CalendarEventEntity saved = calendarEventRepository.save(new CalendarEventEntity(
                 caller.getUserId(), caller.getUserId(), request.title(), request.description(),
                 request.eventType(), request.startAt(), request.endAt(), CalendarEventStatus.CONFIRMED));
@@ -69,6 +70,7 @@ public class CalendarServiceImpl implements CalendarService {
     @Override
     @Transactional
     public CalendarEventResponse createEventForUser(Long userId, CreateCalendarEventRequest request, UserPrincipal caller) {
+        requireValidRange(request);
         UserEntity target = userRepository.findActiveById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", userId));
         if (!target.getCompanyId().equals(caller.getCompanyId())) {
@@ -179,5 +181,13 @@ public class CalendarServiceImpl implements CalendarService {
         return new CalendarEventResponse(
                 e.getId(), e.getTitle(), e.getDescription(), e.getEventType(), e.getStartAt(), e.getEndAt(),
                 e.getStatus(), e.getCreatedByUserId(), creatorName, e.getCreatedByUserId().equals(callerId));
+    }
+
+    /** An event that ends before it starts (e.g. a business trip with the dates swapped) is rejected. */
+    private void requireValidRange(CreateCalendarEventRequest request) {
+        if (request.endAt() != null && request.endAt().isBefore(request.startAt())) {
+            throw new BusinessException(
+                    "INVALID_EVENT_RANGE", "The event cannot end before it starts", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
     }
 }

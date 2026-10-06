@@ -33,6 +33,13 @@ public class DepartmentEntity {
     @Column(length = 500)
     private String description;
 
+    /** Preset keys, see DepartmentAppearance; null = the default look. */
+    @Column(length = 20)
+    private String color;
+
+    @Column(length = 30)
+    private String icon;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -84,6 +91,21 @@ public class DepartmentEntity {
 
     public String getDescription() {
         return description;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void updateDetails(String name, String description, String color, String icon) {
+        this.name = name;
+        this.description = description;
+        this.color = color;
+        this.icon = icon;
     }
 
     public boolean isDeleted() {

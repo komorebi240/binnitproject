@@ -35,6 +35,13 @@ public class CompanyEntity {
     @Column(name = "logo_path", length = 300)
     private String logoPath;
 
+    @Column(length = 1000)
+    private String description;
+
+    /** Stored file name only (see AvatarStorageService), never a path. */
+    @Column(name = "banner_path", length = 300)
+    private String bannerPath;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -80,6 +87,22 @@ public class CompanyEntity {
 
     public void setContactEmail(String contactEmail) {
         this.contactEmail = contactEmail;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getBannerPath() {
+        return bannerPath;
+    }
+
+    public void setBannerPath(String bannerPath) {
+        this.bannerPath = bannerPath;
     }
 
     public String getLogoPath() {

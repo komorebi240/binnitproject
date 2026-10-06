@@ -8,6 +8,7 @@ import com.company.project.common.TransactionHooks;
 import com.company.project.common.storage.AttachmentStorage;
 import com.company.project.common.exception.BusinessException;
 import com.company.project.common.exception.ResourceNotFoundException;
+import com.company.project.common.NotificationType;
 import com.company.project.modules.identity.domain.DepartmentEntity;
 import com.company.project.modules.identity.domain.PositionEntity;
 import com.company.project.modules.identity.domain.UserEntity;
@@ -15,11 +16,17 @@ import com.company.project.modules.identity.repository.DepartmentRepository;
 import com.company.project.modules.identity.repository.PositionRepository;
 import com.company.project.modules.identity.repository.UserRepository;
 import com.company.project.modules.tasks.domain.TaskAttachmentEntity;
+import com.company.project.modules.tasks.domain.TaskChecklistItemEntity;
 import com.company.project.modules.tasks.domain.TaskEntity;
+import com.company.project.modules.notifications.service.NotificationService;
+import com.company.project.modules.projects.domain.ProjectEntity;
+import com.company.project.modules.projects.service.ProjectAccessService;
 import com.company.project.modules.tasks.dto.request.CreateTaskRequest;
+import com.company.project.modules.tasks.dto.response.ChecklistItemResponse;
 import com.company.project.modules.tasks.dto.response.TaskAttachmentResponse;
 import com.company.project.modules.tasks.dto.response.TaskResponse;
 import com.company.project.modules.tasks.repository.TaskAttachmentRepository;
+import com.company.project.modules.tasks.repository.TaskChecklistItemRepository;
 import com.company.project.modules.tasks.repository.TaskRepository;
 import com.company.project.modules.tasks.service.DriveUrlPolicy;
 import com.company.project.modules.tasks.service.TaskService;
@@ -50,13 +57,17 @@ import java.util.stream.Collectors;
 public class TaskServiceImpl implements TaskService {
 
     private static final int MAX_ATTACHMENTS_PER_TASK = 10;
+    private static final int MAX_CHECKLIST_ITEMS = 30;
 
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
     private final PositionRepository positionRepository;
     private final TaskAttachmentRepository attachmentRepository;
+    private final TaskChecklistItemRepository checklistRepository;
     private final AttachmentStorage attachmentStorage;
+    private final NotificationService notificationService;
+    private final ProjectAccessService projectAccessService;
 
     public TaskServiceImpl(
             TaskRepository taskRepository,
@@ -64,14 +75,20 @@ public class TaskServiceImpl implements TaskService {
             DepartmentRepository departmentRepository,
             PositionRepository positionRepository,
             TaskAttachmentRepository attachmentRepository,
-            @Qualifier("taskAttachmentStorage") AttachmentStorage attachmentStorage
+            TaskChecklistItemRepository checklistRepository,
+            @Qualifier("taskAttachmentStorage") AttachmentStorage attachmentStorage,
+            NotificationService notificationService,
+            ProjectAccessService projectAccessService
     ) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.positionRepository = positionRepository;
         this.attachmentRepository = attachmentRepository;
+        this.checklistRepository = checklistRepository;
         this.attachmentStorage = attachmentStorage;
+        this.notificationService = notificationService;
+        this.projectAccessService = projectAccessService;
     }
 
     @Override
@@ -107,7 +124,10 @@ public class TaskServiceImpl implements TaskService {
         // to someone else still goes through the hierarchy check below.
         boolean isSelfAssignment = request.assigneeType() == AssigneeType.USER
                 && assigneeUserId.equals(caller.getUserId());
-        if (!isSelfAssignment) {
+        Long projectId = request.projectId();
+        if (projectId != null) {
+            assertCanAssignInProject(projectId, request.assigneeType(), assigneeUserId, isSelfAssignment, caller);
+        } else if (!isSelfAssignment) {
             assertCallerCanActOnAssignment(caller, request.assigneeType(), assigneeUserId, assigneeDepartmentId);
         }
 
@@ -117,7 +137,21 @@ public class TaskServiceImpl implements TaskService {
                 caller.getCompanyId(), request.title(), request.description(), request.assigneeType(),
                 assigneeUserId, assigneeDepartmentId, caller.getUserId(), priority, request.dueDate());
         newTask.changeDriveUrl(driveUrl);
+        newTask.assignToProject(projectId);
+        if (isSelfAssignment) {
+            // Nobody else has to agree to a task you gave yourself: it starts out accepted (checklist ticking included).
+            newTask.accept();
+        }
         TaskEntity saved = taskRepository.save(newTask);
+
+        List<String> checklist = request.checklist() == null ? List.of() : request.checklist();
+        for (int i = 0; i < checklist.size(); i++) {
+            checklistRepository.save(new TaskChecklistItemEntity(saved.getId(), checklist.get(i).trim(), i, caller.getUserId()));
+        }
+
+        if (!isSelfAssignment) {
+            notifyAssignees(saved, caller);
+        }
 
         return toResponses(List.of(saved), caller).get(0);
     }
@@ -144,12 +178,46 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<TaskResponse> listProjectTasks(Long projectId, UserPrincipal caller) {
+        projectAccessService.requireParticipant(projectId, caller);
+        return toResponses(taskRepository.findAllActiveByProjectId(projectId), caller);
+    }
+
+    /**
+     * A project task goes to a project member. Who may assign it: the project's managers (an executive or the owning
+     * department's head), or the head of the assignee's own department; anyone may take a task for themselves.
+     */
+    private void assertCanAssignInProject(
+            Long projectId, AssigneeType assigneeType, Long assigneeUserId, boolean selfAssignment, UserPrincipal caller) {
+        ProjectEntity project = projectAccessService.requireParticipant(projectId, caller);
+        if (assigneeType != AssigneeType.USER) {
+            throw new BusinessException(
+                    "PROJECT_TASK_NEEDS_PERSON", "A project task must be given to a person", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        if (!projectAccessService.isMember(projectId, assigneeUserId)) {
+            throw new BusinessException(
+                    "ASSIGNEE_NOT_IN_PROJECT", "That person is not a member of the project", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        if (selfAssignment || projectAccessService.canManage(project, caller)) {
+            return;
+        }
+        Long assigneeDepartmentId = positionRepository.findActiveByUserId(assigneeUserId)
+                .map(PositionEntity::getDepartmentId)
+                .orElse(null);
+        if (!projectAccessService.isHeadOf(caller, assigneeDepartmentId)) {
+            throw new AccessDeniedException("Only the project's managers or that person's department head can assign this task");
+        }
+    }
+
+    @Override
     @Transactional
     public TaskResponse acceptTask(Long taskId, UserPrincipal caller) {
         TaskEntity task = requireOwnCompanyTask(taskId, caller);
         assertCallerCanActOnTask(task, caller);
         requireStatus(task, TaskStatus.ASSIGNED, "accept");
         task.accept();
+        notifyAssigner(task, caller, NotificationType.TASK_ACCEPTED, "đã nhận việc");
         return toResponses(List.of(task), caller).get(0);
     }
 
@@ -160,6 +228,7 @@ public class TaskServiceImpl implements TaskService {
         assertCallerCanActOnTask(task, caller);
         requireStatus(task, TaskStatus.ASSIGNED, "decline");
         task.decline();
+        notifyAssigner(task, caller, NotificationType.TASK_DECLINED, "đã từ chối việc");
         return toResponses(List.of(task), caller).get(0);
     }
 
@@ -169,7 +238,13 @@ public class TaskServiceImpl implements TaskService {
         TaskEntity task = requireOwnCompanyTask(taskId, caller);
         assertCallerCanActOnTask(task, caller);
         requireStatus(task, TaskStatus.ACCEPTED, "complete");
+        // A task with a checklist finishes by ticking its last line, not by a manual shortcut.
+        if (checklistRepository.findAllByTaskIdOrderBySortOrderAscIdAsc(taskId).stream().anyMatch(item -> !item.isDone())) {
+            throw new BusinessException(
+                    "CHECKLIST_INCOMPLETE", "Tick every checklist item to complete this task", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
         task.complete();
+        notifyAssigner(task, caller, NotificationType.TASK_COMPLETED, "đã hoàn thành việc");
         return toResponses(List.of(task), caller).get(0);
     }
 
@@ -271,6 +346,108 @@ public class TaskServiceImpl implements TaskService {
         return toResponses(List.of(task), caller).get(0);
     }
 
+    @Override
+    @Transactional
+    public TaskResponse addChecklistItem(Long taskId, String text, UserPrincipal caller) {
+        TaskEntity task = requireVisibleTask(taskId, caller);
+        requireCanManage(task, caller);
+        requireOpenForChecklistEdit(task);
+        long count = checklistRepository.countByTaskId(taskId);
+        if (count >= MAX_CHECKLIST_ITEMS) {
+            throw new BusinessException(
+                    "TOO_MANY_CHECKLIST_ITEMS",
+                    "A checklist can have at most " + MAX_CHECKLIST_ITEMS + " items",
+                    HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        checklistRepository.save(new TaskChecklistItemEntity(taskId, text.trim(), (int) count, caller.getUserId()));
+        return toResponses(List.of(task), caller).get(0);
+    }
+
+    @Override
+    @Transactional
+    public TaskResponse setChecklistItemDone(Long taskId, Long itemId, boolean done, UserPrincipal caller) {
+        TaskEntity task = requireVisibleTask(taskId, caller);
+        requireCanManage(task, caller);
+        if (task.getStatus() != TaskStatus.ACCEPTED) {
+            throw new BusinessException(
+                    "INVALID_TASK_STATUS",
+                    "Items can be ticked only while the task is accepted and in progress",
+                    HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        TaskChecklistItemEntity item = requireChecklistItemOf(task, itemId);
+        item.setDone(done, caller.getUserId());
+        checklistRepository.saveAndFlush(item);
+        completeIfChecklistFinished(task, caller);
+        return toResponses(List.of(task), caller).get(0);
+    }
+
+    @Override
+    @Transactional
+    public TaskResponse removeChecklistItem(Long taskId, Long itemId, UserPrincipal caller) {
+        TaskEntity task = requireVisibleTask(taskId, caller);
+        requireCanManage(task, caller);
+        requireOpenForChecklistEdit(task);
+        checklistRepository.delete(requireChecklistItemOf(task, itemId));
+        checklistRepository.flush();
+        completeIfChecklistFinished(task, caller);
+        return toResponses(List.of(task), caller).get(0);
+    }
+
+    private void requireOpenForChecklistEdit(TaskEntity task) {
+        if (task.getStatus() != TaskStatus.ASSIGNED && task.getStatus() != TaskStatus.ACCEPTED) {
+            throw new BusinessException(
+                    "INVALID_TASK_STATUS",
+                    "The checklist of a " + task.getStatus() + " task cannot be changed",
+                    HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+    }
+
+    private TaskChecklistItemEntity requireChecklistItemOf(TaskEntity task, Long itemId) {
+        return checklistRepository.findById(itemId)
+                .filter(item -> item.getTaskId().equals(task.getId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Checklist item", itemId));
+    }
+
+    /** A non-empty checklist with every line ticked finishes an accepted task. */
+    private void completeIfChecklistFinished(TaskEntity task, UserPrincipal caller) {
+        if (task.getStatus() != TaskStatus.ACCEPTED) {
+            return;
+        }
+        List<TaskChecklistItemEntity> items = checklistRepository.findAllByTaskIdOrderBySortOrderAscIdAsc(task.getId());
+        if (!items.isEmpty() && items.stream().allMatch(TaskChecklistItemEntity::isDone)) {
+            task.complete();
+            notifyAssigner(task, caller, NotificationType.TASK_COMPLETED, "đã hoàn thành việc");
+        }
+    }
+
+    /** Tells whoever has to act on a freshly assigned task: the assignee, or a department's heads for a department task. */
+    private void notifyAssignees(TaskEntity task, UserPrincipal caller) {
+        List<Long> recipients = task.getAssigneeType() == AssigneeType.USER
+                ? List.of(task.getAssigneeUserId())
+                : positionRepository.findAllActiveByDepartmentId(task.getAssigneeDepartmentId()).stream()
+                        .filter(position -> position.getAuthorityLevel() == AuthorityLevel.DEPARTMENT_HEAD)
+                        .map(PositionEntity::getUserId)
+                        .toList();
+        for (Long recipientId : recipients) {
+            if (!recipientId.equals(caller.getUserId())) {
+                notificationService.notify(
+                        recipientId, NotificationType.TASK_ASSIGNED, "Bạn có việc mới",
+                        caller.getUsername() + " đã giao \"" + task.getTitle() + "\"", "TASK", task.getId());
+            }
+        }
+    }
+
+    /** Lets the person who assigned the task know how it went; nothing is sent for self-assigned work. */
+    private void notifyAssigner(TaskEntity task, UserPrincipal caller, NotificationType type, String verb) {
+        Long assignerId = task.getAssignedByUserId();
+        if (assignerId == null || assignerId.equals(caller.getUserId())) {
+            return;
+        }
+        notificationService.notify(
+                assignerId, type, "Cập nhật công việc",
+                caller.getUsername() + " " + verb + " \"" + task.getTitle() + "\"", "TASK", task.getId());
+    }
+
     private TaskAttachmentEntity requireAttachmentOf(TaskEntity task, Long attachmentId) {
         return attachmentRepository.findById(attachmentId)
                 .filter(a -> a.getTaskId().equals(task.getId()))
@@ -299,7 +476,7 @@ public class TaskServiceImpl implements TaskService {
 
     private void requireCanManage(TaskEntity task, UserPrincipal caller) {
         if (!canManage(task, caller)) {
-            throw new AccessDeniedException("You cannot change this task's attachments or Drive link");
+            throw new AccessDeniedException("You cannot change this task's attachments, Drive link or checklist");
         }
     }
 
@@ -436,6 +613,13 @@ public class TaskServiceImpl implements TaskService {
                                     a.getUploadedByUserId())));
         }
 
+        Map<Long, List<ChecklistItemResponse>> checklistByTask = new HashMap<>();
+        if (!tasks.isEmpty()) {
+            checklistRepository.findAllByTaskIdInOrderBySortOrderAscIdAsc(tasks.stream().map(TaskEntity::getId).toList()).forEach(i ->
+                    checklistByTask.computeIfAbsent(i.getTaskId(), k -> new java.util.ArrayList<>()).add(
+                            new ChecklistItemResponse(i.getId(), i.getText(), i.isDone())));
+        }
+
         Map<Long, String> userNames = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(UserEntity::getId, UserEntity::getFullName));
         Map<Long, String> departmentNames = departmentRepository.findAllById(departmentIds).stream()
@@ -461,6 +645,8 @@ public class TaskServiceImpl implements TaskService {
                         task.getCompletedAt(),
                         task.getDriveUrl(),
                         attachmentsByTask.getOrDefault(task.getId(), List.of()),
+                        checklistByTask.getOrDefault(task.getId(), List.of()),
+                        task.getProjectId(),
                         canManage(task, caller)))
                 .toList();
     }

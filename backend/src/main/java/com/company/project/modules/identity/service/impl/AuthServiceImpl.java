@@ -38,6 +38,9 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -167,8 +170,8 @@ public class AuthServiceImpl implements AuthService {
                     HttpStatus.SERVICE_UNAVAILABLE);
         }
 
-        userRepository.findByUsername(username)
-                .filter(u -> !u.isDeleted() && u.getEmail() != null)
+        findActiveByIdentifier(username)
+                .filter(u -> u.getEmail() != null)
                 .ifPresent(user -> {
                     // Invalidate any earlier unused code so only the latest OTP a user
                     // requested is ever valid.
@@ -186,12 +189,24 @@ public class AuthServiceImpl implements AuthService {
         // caller sees the exact same outcome as a real request (see AuthController).
     }
 
+    /**
+     * The reset screens accept a username or the account's email, because people often forget which
+     * username they chose. An email resolves only when exactly one active account uses it - never guess.
+     */
+    private Optional<UserEntity> findActiveByIdentifier(String identifier) {
+        String trimmed = identifier.trim();
+        Optional<UserEntity> byUsername = userRepository.findByUsername(trimmed).filter(u -> !u.isDeleted());
+        if (byUsername.isPresent() || !trimmed.contains("@")) {
+            return byUsername;
+        }
+        List<UserEntity> byEmail = userRepository.findAllActiveByEmail(trimmed.toLowerCase(Locale.ROOT));
+        return byEmail.size() == 1 ? Optional.of(byEmail.get(0)) : Optional.empty();
+    }
+
     @Override
     @Transactional
     public void confirmPasswordReset(String username, String otp, String newPassword) {
-        UserEntity user = userRepository.findByUsername(username)
-                .filter(u -> !u.isDeleted())
-                .orElseThrow(() -> invalidOtp());
+        UserEntity user = findActiveByIdentifier(username).orElseThrow(() -> invalidOtp());
 
         String candidateHash = hashOtp(otp);
         Instant now = Instant.now();

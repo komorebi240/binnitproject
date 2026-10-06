@@ -60,6 +60,27 @@ public class CompanyController {
         return ApiResponse.success(organizationService.uploadCompanyLogo(file, caller));
     }
 
+    @PostMapping(value = "/me/banner", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('EXECUTIVE')")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<CompanyResponse> uploadBanner(
+            @RequestParam MultipartFile file, @AuthenticationPrincipal UserPrincipal caller) {
+        rateLimitGuard.enforce("company-banner:" + caller.getUserId(), 10, Duration.ofHours(1));
+        return ApiResponse.success(organizationService.uploadCompanyBanner(file, caller));
+    }
+
+    /** Same visibility as the logo: any member of this company, never another company's banner. */
+    @GetMapping("/me/banner")
+    public ResponseEntity<InputStreamResource> getBanner(@AuthenticationPrincipal UserPrincipal caller) {
+        AvatarStorageService.Resolved banner = organizationService.getCompanyBannerFile(caller);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(banner.contentType()))
+                .header(HttpHeaders.CACHE_CONTROL, "private, max-age=300")
+                .header("X-Content-Type-Options", "nosniff")
+                .contentLength(banner.sizeBytes())
+                .body(new InputStreamResource(banner.data()));
+    }
+
     /** Same visibility as the company profile: any member of this company (never another company's logo). */
     @GetMapping("/me/logo")
     public ResponseEntity<InputStreamResource> getLogo(@AuthenticationPrincipal UserPrincipal caller) {

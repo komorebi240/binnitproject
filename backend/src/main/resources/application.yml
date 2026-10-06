@@ -84,6 +84,11 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    mail:
+      # An unreachable or unconfigured SMTP server must not turn the whole app's health DOWN
+      # (email is an optional integration, CLAUDE.md section 35).
+      enabled: false
 
 springdoc:
   swagger-ui:

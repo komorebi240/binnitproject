@@ -1,9 +1,11 @@
 package com.company.project.modules.identity.service.impl;
 
 import com.company.project.common.AuthorityLevel;
+import com.company.project.common.SecureTokens;
 import com.company.project.common.exception.BusinessException;
 import com.company.project.common.exception.ResourceNotFoundException;
 import com.company.project.modules.identity.domain.DepartmentEntity;
+import com.company.project.modules.identity.domain.EmailChangeRequestEntity;
 import com.company.project.modules.identity.domain.PositionEntity;
 import com.company.project.modules.identity.domain.TeamEntity;
 import com.company.project.modules.identity.domain.UserEntity;
@@ -11,18 +13,25 @@ import com.company.project.modules.identity.dto.request.CreateUserRequest;
 import com.company.project.modules.identity.dto.request.UpdatePositionRequest;
 import com.company.project.modules.identity.dto.response.UserSummaryResponse;
 import com.company.project.modules.identity.repository.DepartmentRepository;
+import com.company.project.modules.identity.repository.EmailChangeRequestRepository;
 import com.company.project.modules.identity.repository.PositionRepository;
 import com.company.project.modules.identity.repository.TeamRepository;
 import com.company.project.modules.identity.repository.UserRepository;
 import com.company.project.modules.identity.service.AvatarStorageService;
 import com.company.project.modules.identity.service.UserManagementService;
 import com.company.project.security.UserPrincipal;
+import com.company.project.modules.identity.service.AuthService;
+import com.company.project.modules.identity.service.EmailService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -36,12 +45,19 @@ import java.util.function.Function;
 @Service
 public class UserManagementServiceImpl implements UserManagementService {
 
+    private static final int EMAIL_CHANGE_OTP_DIGITS = 6;
+    private static final int EMAIL_CHANGE_OTP_TTL_MINUTES = 15;
+    private static final int MAX_EMAIL_CHANGE_ATTEMPTS = 5;
+
     private final UserRepository userRepository;
     private final PositionRepository positionRepository;
     private final DepartmentRepository departmentRepository;
     private final TeamRepository teamRepository;
     private final PasswordEncoder passwordEncoder;
     private final AvatarStorageService avatarStorageService;
+    private final AuthService authService;
+    private final EmailService emailService;
+    private final EmailChangeRequestRepository emailChangeRepository;
 
     public UserManagementServiceImpl(
             UserRepository userRepository,
@@ -49,7 +65,10 @@ public class UserManagementServiceImpl implements UserManagementService {
             DepartmentRepository departmentRepository,
             TeamRepository teamRepository,
             PasswordEncoder passwordEncoder,
-            AvatarStorageService avatarStorageService
+            AvatarStorageService avatarStorageService,
+            AuthService authService,
+            EmailService emailService,
+            EmailChangeRequestRepository emailChangeRepository
     ) {
         this.userRepository = userRepository;
         this.positionRepository = positionRepository;
@@ -57,6 +76,9 @@ public class UserManagementServiceImpl implements UserManagementService {
         this.teamRepository = teamRepository;
         this.passwordEncoder = passwordEncoder;
         this.avatarStorageService = avatarStorageService;
+        this.authService = authService;
+        this.emailService = emailService;
+        this.emailChangeRepository = emailChangeRepository;
     }
 
     @Override
@@ -259,6 +281,91 @@ public class UserManagementServiceImpl implements UserManagementService {
     }
 
     /** Checked before deleting a user - can the caller manage someone holding this position? */
+    @Override
+    @Transactional
+    public void sendPasswordReset(Long userId, UserPrincipal caller) {
+        ManagedUser managed = requireManagedUser(userId, caller);
+        if (managed.user().getEmail() == null || managed.user().getEmail().isBlank()) {
+            throw new BusinessException(
+                    "NO_EMAIL", "This user has no email address on file", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        authService.requestPasswordReset(managed.user().getUsername());
+    }
+
+    @Override
+    @Transactional
+    public void requestEmailChange(Long userId, String newEmail, UserPrincipal caller) {
+        ManagedUser managed = requireManagedUser(userId, caller);
+        String email = newEmail.trim().toLowerCase();
+        if (email.equalsIgnoreCase(managed.user().getEmail())) {
+            throw new BusinessException("SAME_EMAIL", "That is already this user's email", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        if (!emailService.isConfigured()) {
+            throw new BusinessException(
+                    "EMAIL_SERVICE_UNAVAILABLE", "Email is not available right now", HttpStatus.SERVICE_UNAVAILABLE);
+        }
+        // Only the latest code is ever valid.
+        emailChangeRepository.findOpenByUserId(userId).forEach(EmailChangeRequestEntity::markConsumed);
+
+        String otp = SecureTokens.randomNumericCode(EMAIL_CHANGE_OTP_DIGITS);
+        emailChangeRepository.save(new EmailChangeRequestEntity(
+                userId, email, SecureTokens.sha256Hex(otp),
+                Instant.now().plus(EMAIL_CHANGE_OTP_TTL_MINUTES, ChronoUnit.MINUTES), caller.getUserId()));
+        emailService.sendEmailChangeOtp(email, otp);
+    }
+
+    /** {@code noRollbackFor}: a wrong code throws, but the failed-attempt counter must still be saved. */
+    @Override
+    @Transactional(noRollbackFor = BusinessException.class)
+    public UserSummaryResponse confirmEmailChange(Long userId, String otp, UserPrincipal caller) {
+        ManagedUser managed = requireManagedUser(userId, caller);
+        EmailChangeRequestEntity request = emailChangeRepository.findOpenByUserId(userId).stream()
+                .findFirst()
+                .orElseThrow(UserManagementServiceImpl::invalidEmailChangeCode);
+        if (!request.getExpiresAt().isAfter(Instant.now()) || request.getAttempts() >= MAX_EMAIL_CHANGE_ATTEMPTS) {
+            throw invalidEmailChangeCode();
+        }
+        if (!MessageDigest.isEqual(
+                request.getOtpHash().getBytes(StandardCharsets.UTF_8),
+                SecureTokens.sha256Hex(otp).getBytes(StandardCharsets.UTF_8))) {
+            request.recordFailedAttempt();
+            throw invalidEmailChangeCode();
+        }
+
+        String previousEmail = managed.user().getEmail();
+        managed.user().setEmail(request.getNewEmail());
+        request.markConsumed();
+        if (previousEmail != null && !previousEmail.isBlank()) {
+            emailService.sendEmailChangedNotice(previousEmail, request.getNewEmail());
+        }
+        return toSummary(managed.user(), managed.position());
+    }
+
+    private static BusinessException invalidEmailChangeCode() {
+        return new BusinessException(
+                "INVALID_OTP", "The code is wrong or has expired", HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
+    private record ManagedUser(UserEntity user, PositionEntity position) {
+    }
+
+    /** The target of an account action: same company, never yourself, and within the caller's authority. */
+    private ManagedUser requireManagedUser(Long userId, UserPrincipal caller) {
+        if (userId.equals(caller.getUserId())) {
+            throw new BusinessException(
+                    "CANNOT_MANAGE_SELF", "Use your own settings to change your own account", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        UserEntity target = userRepository.findActiveById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        if (!target.getCompanyId().equals(caller.getCompanyId())) {
+            throw new ResourceNotFoundException("User", userId);
+        }
+        PositionEntity position = positionRepository.findActiveByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        assertCallerCanManage(caller, position);
+        return new ManagedUser(target, position);
+    }
+
     private void assertCallerCanManage(UserPrincipal caller, PositionEntity target) {
         switch (caller.getAuthorityLevel()) {
             case EXECUTIVE -> {

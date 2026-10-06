@@ -79,6 +79,19 @@ class RegistrationServiceImplTest {
     }
 
     @Test
+    void requestOtp_turnsAwayAnEmailThatAlreadyHasAnAccount() {
+        when(emailService.isConfigured()).thenReturn(true);
+        UserEntity existing = new UserEntity(1L, "boss", "hash", "Boss", EMAIL);
+        when(userRepository.findAllActiveByEmail(EMAIL)).thenReturn(List.of(existing));
+
+        assertThatThrownBy(() -> service.requestOtp("  Admin@ACME.test "))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("already belongs");
+        verify(verificationRepository, never()).save(any());
+        verify(emailService, never()).sendRegistrationOtp(any(), any());
+    }
+
+    @Test
     void requestOtp_storesOnlyAHashAndEmailsThePlainCode() {
         when(emailService.isConfigured()).thenReturn(true);
 

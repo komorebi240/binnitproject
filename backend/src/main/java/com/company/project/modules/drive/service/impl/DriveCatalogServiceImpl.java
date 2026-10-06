@@ -8,12 +8,15 @@ import com.company.project.modules.identity.repository.DepartmentRepository;
 import com.company.project.modules.drive.domain.DepartmentDriveFolderEntity;
 import com.company.project.modules.drive.dto.request.RegisterFolderRequest;
 import com.company.project.modules.drive.dto.response.CatalogFolderResponse;
+import com.company.project.modules.drive.dto.response.FolderShareResult;
 import com.company.project.modules.drive.repository.DepartmentDriveFolderRepository;
 import com.company.project.modules.drive.service.DriveCatalogService;
 import com.company.project.modules.drive.service.DriveConnectionService;
 import com.company.project.modules.drive.service.GoogleDriveClient;
 import com.company.project.modules.drive.service.GoogleFolderMetadata;
 import com.company.project.security.UserPrincipal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -28,6 +31,7 @@ import java.util.stream.Collectors;
 @Service
 public class DriveCatalogServiceImpl implements DriveCatalogService {
 
+    private static final Logger log = LoggerFactory.getLogger(DriveCatalogServiceImpl.class);
     private static final Pattern FOLDER_URL_PATTERN = Pattern.compile("folders/([a-zA-Z0-9_-]+)");
 
     private final DepartmentDriveFolderRepository catalogRepository;
@@ -82,6 +86,53 @@ public class DriveCatalogServiceImpl implements DriveCatalogService {
         return folders.stream()
                 .map(f -> toResponse(f, departmentNames.get(f.getDepartmentId())))
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CatalogFolderResponse requireShareableFolder(Long catalogFolderId, UserPrincipal caller) {
+        DepartmentDriveFolderEntity folder = catalogRepository.findActiveById(catalogFolderId)
+                .filter(f -> f.getCompanyId().equals(caller.getCompanyId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Folder", catalogFolderId));
+        boolean allowed = caller.getAuthorityLevel() == AuthorityLevel.EXECUTIVE
+                || (caller.getAuthorityLevel() == AuthorityLevel.DEPARTMENT_HEAD
+                        && folder.getDepartmentId().equals(caller.getDepartmentId()));
+        if (!allowed) {
+            throw new AccessDeniedException("Only that folder's owning department head or an executive may share it");
+        }
+        String departmentName = departmentRepository.findActiveById(folder.getDepartmentId())
+                .map(DepartmentEntity::getName)
+                .orElse(null);
+        return toResponse(folder, departmentName);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public FolderShareResult grantReaderAccess(Long catalogFolderId, List<Long> userIds) {
+        DepartmentDriveFolderEntity folder = catalogRepository.findActiveById(catalogFolderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Folder", catalogFolderId));
+        int granted = 0;
+        int notConnected = 0;
+        int failed = 0;
+        String ownerToken = null;
+        for (Long userId : userIds) {
+            try {
+                String email = driveConnectionService.getConnectedEmail(userId);
+                if (ownerToken == null) {
+                    ownerToken = driveConnectionService.getValidAccessToken(folder.getConnectionUserId());
+                }
+                googleDriveClient.grantReaderPermission(folder.getGoogleFolderId(), email, ownerToken);
+                granted++;
+            } catch (BusinessException e) {
+                if ("DRIVE_NOT_CONNECTED".equals(e.getCode())) {
+                    notConnected++;
+                } else {
+                    failed++;
+                    log.warn("Could not share catalog folder {} with user {}: {}", catalogFolderId, userId, e.getCode());
+                }
+            }
+        }
+        return new FolderShareResult(granted, notConnected, failed);
     }
 
     private Long resolveTargetDepartment(RegisterFolderRequest request, UserPrincipal caller) {

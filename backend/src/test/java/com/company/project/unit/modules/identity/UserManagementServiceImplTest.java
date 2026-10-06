@@ -15,6 +15,13 @@ import com.company.project.modules.identity.service.AvatarStorageService;
 import com.company.project.modules.identity.service.impl.UserManagementServiceImpl;
 import com.company.project.security.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
+import com.company.project.common.SecureTokens;
+import com.company.project.modules.identity.domain.EmailChangeRequestEntity;
+import com.company.project.modules.identity.repository.EmailChangeRequestRepository;
+import com.company.project.modules.identity.service.AuthService;
+import com.company.project.modules.identity.service.EmailService;
+import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -56,6 +63,12 @@ class UserManagementServiceImplTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private AvatarStorageService avatarStorageService;
+    @Mock
+    private AuthService authService;
+    @Mock
+    private EmailService emailService;
+    @Mock
+    private EmailChangeRequestRepository emailChangeRepository;
 
     private UserManagementServiceImpl service;
 
@@ -63,7 +76,7 @@ class UserManagementServiceImplTest {
     void setUp() {
         service = new UserManagementServiceImpl(
                 userRepository, positionRepository, departmentRepository, teamRepository, passwordEncoder,
-                avatarStorageService);
+                avatarStorageService, authService, emailService, emailChangeRepository);
     }
 
     private UserPrincipal principal(AuthorityLevel level, Long departmentId, Long teamId) {
@@ -253,6 +266,134 @@ class UserManagementServiceImplTest {
         assertThat(oldPosition.isDeleted()).isTrue();
         assertThat(response.authorityLevel()).isEqualTo(AuthorityLevel.DEPARTMENT_HEAD);
         assertThat(response.departmentId()).isEqualTo(DEPT_SALES);
+    }
+
+
+    // ---- staff account recovery (password reset by email, confirmed email change) ----
+
+    private UserEntity staff(Long id, String email) {
+        UserEntity user = new UserEntity(COMPANY_A, "staff" + id, "hash", "Staff " + id, email);
+        setId(user, id);
+        when(userRepository.findActiveById(id)).thenReturn(Optional.of(user));
+        when(positionRepository.findActiveByUserId(id))
+                .thenReturn(Optional.of(new PositionEntity(id, AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null, null)));
+        return user;
+    }
+
+    @Test
+    void sendPasswordReset_startsTheEmailResetFlowForTheTarget() {
+        UserPrincipal executive = principal(AuthorityLevel.EXECUTIVE, null, null);
+        staff(42L, "staff@example.com");
+
+        service.sendPasswordReset(42L, executive);
+
+        verify(authService).requestPasswordReset("staff42");
+    }
+
+    @Test
+    void sendPasswordReset_refusesAUserWithoutAnEmail() {
+        UserPrincipal executive = principal(AuthorityLevel.EXECUTIVE, null, null);
+        staff(42L, null);
+
+        assertThatThrownBy(() -> service.sendPasswordReset(42L, executive))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("no email");
+        verify(authService, never()).requestPasswordReset(any());
+    }
+
+    @Test
+    void sendPasswordReset_cannotTargetYourself() {
+        UserPrincipal executive = principal(AuthorityLevel.EXECUTIVE, null, null);
+
+        assertThatThrownBy(() -> service.sendPasswordReset(executive.getUserId(), executive))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("own settings");
+    }
+
+    @Test
+    void sendPasswordReset_departmentHeadCannotTouchAnotherDepartment() {
+        UserPrincipal deptHead = principal(AuthorityLevel.DEPARTMENT_HEAD, DEPT_SALES, null);
+        staff(42L, "staff@example.com");
+
+        assertThatThrownBy(() -> service.sendPasswordReset(42L, deptHead))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(authService, never()).requestPasswordReset(any());
+    }
+
+    @Test
+    void requestEmailChange_sendsTheCodeToTheNewAddressOnly() {
+        UserPrincipal executive = principal(AuthorityLevel.EXECUTIVE, null, null);
+        UserEntity target = staff(42L, "old@example.com");
+        when(emailService.isConfigured()).thenReturn(true);
+        when(emailChangeRepository.findOpenByUserId(42L)).thenReturn(List.of());
+
+        service.requestEmailChange(42L, " New@Example.com ", executive);
+
+        verify(emailService).sendEmailChangeOtp(org.mockito.ArgumentMatchers.eq("new@example.com"), any());
+        assertThat(target.getEmail()).isEqualTo("old@example.com");
+    }
+
+    @Test
+    void requestEmailChange_rejectsTheSameEmail() {
+        UserPrincipal executive = principal(AuthorityLevel.EXECUTIVE, null, null);
+        staff(42L, "same@example.com");
+
+        assertThatThrownBy(() -> service.requestEmailChange(42L, "SAME@example.com", executive))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("already");
+    }
+
+    @Test
+    void confirmEmailChange_rightCodeChangesTheEmailAndWarnsTheOldAddress() {
+        UserPrincipal executive = principal(AuthorityLevel.EXECUTIVE, null, null);
+        UserEntity target = staff(42L, "old@example.com");
+        EmailChangeRequestEntity pending = new EmailChangeRequestEntity(
+                42L, "new@example.com", SecureTokens.sha256Hex("123456"), Instant.now().plusSeconds(600), 1L);
+        when(emailChangeRepository.findOpenByUserId(42L)).thenReturn(List.of(pending));
+
+        service.confirmEmailChange(42L, "123456", executive);
+
+        assertThat(target.getEmail()).isEqualTo("new@example.com");
+        verify(emailService).sendEmailChangedNotice("old@example.com", "new@example.com");
+    }
+
+    @Test
+    void confirmEmailChange_wrongCodeCountsAnAttemptAndKeepsTheOldEmail() {
+        UserPrincipal executive = principal(AuthorityLevel.EXECUTIVE, null, null);
+        UserEntity target = staff(42L, "old@example.com");
+        EmailChangeRequestEntity pending = new EmailChangeRequestEntity(
+                42L, "new@example.com", SecureTokens.sha256Hex("123456"), Instant.now().plusSeconds(600), 1L);
+        when(emailChangeRepository.findOpenByUserId(42L)).thenReturn(List.of(pending));
+
+        assertThatThrownBy(() -> service.confirmEmailChange(42L, "000000", executive))
+                .isInstanceOf(BusinessException.class);
+
+        assertThat(pending.getAttempts()).isEqualTo(1);
+        assertThat(target.getEmail()).isEqualTo("old@example.com");
+    }
+
+    @Test
+    void confirmEmailChange_expiredOrExhaustedCodeIsRejectedEvenIfRight() {
+        UserPrincipal executive = principal(AuthorityLevel.EXECUTIVE, null, null);
+        UserEntity target = staff(42L, "old@example.com");
+        EmailChangeRequestEntity expired = new EmailChangeRequestEntity(
+                42L, "new@example.com", SecureTokens.sha256Hex("123456"), Instant.now().minusSeconds(1), 1L);
+        when(emailChangeRepository.findOpenByUserId(42L)).thenReturn(List.of(expired));
+
+        assertThatThrownBy(() -> service.confirmEmailChange(42L, "123456", executive))
+                .isInstanceOf(BusinessException.class);
+        assertThat(target.getEmail()).isEqualTo("old@example.com");
+
+        EmailChangeRequestEntity exhausted = new EmailChangeRequestEntity(
+                42L, "new@example.com", SecureTokens.sha256Hex("123456"), Instant.now().plusSeconds(600), 1L);
+        for (int i = 0; i < 5; i++) {
+            exhausted.recordFailedAttempt();
+        }
+        when(emailChangeRepository.findOpenByUserId(42L)).thenReturn(List.of(exhausted));
+
+        assertThatThrownBy(() -> service.confirmEmailChange(42L, "123456", executive))
+                .isInstanceOf(BusinessException.class);
+        assertThat(target.getEmail()).isEqualTo("old@example.com");
     }
 
     private static void setId(Object entity, Long id) {

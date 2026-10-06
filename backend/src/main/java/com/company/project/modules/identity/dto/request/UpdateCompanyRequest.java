@@ -11,6 +11,9 @@ public record UpdateCompanyRequest(
 
         @Email(message = "contactEmail must be a valid address")
         @Size(max = 200, message = "contactEmail must be at most 200 characters")
-        String contactEmail
+        String contactEmail,
+
+        @Size(max = 1000, message = "description must be at most 1000 characters")
+        String description
 ) {
 }

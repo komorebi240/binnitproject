@@ -98,6 +98,10 @@ public class TaskEntity {
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
 
+    /** Set when the task belongs to a cross-department project (see the projects module); null for ordinary tasks. */
+    @Column(name = "project_id")
+    private Long projectId;
+
     protected TaskEntity() {
         // JPA
     }
@@ -214,6 +218,14 @@ public class TaskEntity {
 
     public Long getAssigneeDepartmentId() {
         return assigneeDepartmentId;
+    }
+
+    public Long getProjectId() {
+        return projectId;
+    }
+
+    public void assignToProject(Long projectId) {
+        this.projectId = projectId;
     }
 
     public Long getAssignedByUserId() {

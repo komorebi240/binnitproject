@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * No companyId/assignedByUserId - the company is always the caller's own, and the assigner is
@@ -33,6 +34,20 @@ public record CreateTaskRequest(
         LocalDate dueDate,
 
         @Size(max = 500, message = "driveUrl must be at most 500 characters")
-        String driveUrl
+        String driveUrl,
+
+        /** Optional checklist lines created together with the task. */
+        @Size(max = 30, message = "a checklist can have at most 30 items")
+        List<@NotBlank(message = "checklist items must not be blank") @Size(max = 200, message = "checklist item must be at most 200 characters") String> checklist,
+
+        /** Optional: makes this a task of a cross-department project (the assignee must be one of its members). */
+        Long projectId
 ) {
+
+    /** An ordinary task, outside any project. */
+    public CreateTaskRequest(
+            String title, String description, AssigneeType assigneeType, Long assigneeUserId, Long assigneeDepartmentId,
+            TaskPriority priority, LocalDate dueDate, String driveUrl, List<String> checklist) {
+        this(title, description, assigneeType, assigneeUserId, assigneeDepartmentId, priority, dueDate, driveUrl, checklist, null);
+    }
 }

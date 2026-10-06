@@ -4,7 +4,9 @@ import com.company.project.common.ApiResponse;
 import com.company.project.common.RateLimiter;
 import com.company.project.common.exception.BusinessException;
 import com.company.project.common.storage.AttachmentDownloads;
+import com.company.project.modules.tasks.dto.request.AddChecklistItemRequest;
 import com.company.project.modules.tasks.dto.request.CreateTaskRequest;
+import com.company.project.modules.tasks.dto.request.SetChecklistItemDoneRequest;
 import com.company.project.modules.tasks.dto.request.UpdateDriveUrlRequest;
 import com.company.project.modules.tasks.dto.response.TaskResponse;
 import com.company.project.modules.tasks.service.TaskService;
@@ -55,6 +57,12 @@ public class TaskController {
     public ApiResponse<TaskResponse> create(
             @Valid @RequestBody CreateTaskRequest request, @AuthenticationPrincipal UserPrincipal caller) {
         return ApiResponse.success(taskService.createTask(request, caller));
+    }
+
+    @GetMapping("/project/{projectId}")
+    public ApiResponse<List<TaskResponse>> listProjectTasks(
+            @PathVariable Long projectId, @AuthenticationPrincipal UserPrincipal caller) {
+        return ApiResponse.success(taskService.listProjectTasks(projectId, caller));
     }
 
     @GetMapping
@@ -116,6 +124,30 @@ public class TaskController {
     public ApiResponse<TaskResponse> removeAttachment(
             @PathVariable Long id, @PathVariable Long attachmentId, @AuthenticationPrincipal UserPrincipal caller) {
         return ApiResponse.success(taskService.removeAttachment(id, attachmentId, caller));
+    }
+
+    @PostMapping("/{id}/checklist")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<TaskResponse> addChecklistItem(
+            @PathVariable Long id,
+            @Valid @RequestBody AddChecklistItemRequest request,
+            @AuthenticationPrincipal UserPrincipal caller) {
+        return ApiResponse.success(taskService.addChecklistItem(id, request.text(), caller));
+    }
+
+    @PatchMapping("/{id}/checklist/{itemId}")
+    public ApiResponse<TaskResponse> setChecklistItemDone(
+            @PathVariable Long id,
+            @PathVariable Long itemId,
+            @Valid @RequestBody SetChecklistItemDoneRequest request,
+            @AuthenticationPrincipal UserPrincipal caller) {
+        return ApiResponse.success(taskService.setChecklistItemDone(id, itemId, request.done(), caller));
+    }
+
+    @DeleteMapping("/{id}/checklist/{itemId}")
+    public ApiResponse<TaskResponse> removeChecklistItem(
+            @PathVariable Long id, @PathVariable Long itemId, @AuthenticationPrincipal UserPrincipal caller) {
+        return ApiResponse.success(taskService.removeChecklistItem(id, itemId, caller));
     }
 
     @PatchMapping("/{id}/drive-url")

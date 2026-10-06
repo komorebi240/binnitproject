@@ -16,6 +16,10 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     boolean existsByEmployeeCode(String employeeCode);
 
+    /** {@code email} must already be lower-case (callers normalise it). */
+    @Query("select u from UserEntity u where lower(u.email) = :email and u.deleted = false")
+    List<UserEntity> findAllActiveByEmail(@Param("email") String email);
+
     @Query("select u from UserEntity u where u.id = :id and u.deleted = false")
     Optional<UserEntity> findActiveById(@Param("id") Long id);
 

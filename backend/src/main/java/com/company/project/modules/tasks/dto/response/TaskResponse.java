@@ -27,6 +27,9 @@ public record TaskResponse(
         Instant completedAt,
         String driveUrl,
         List<TaskAttachmentResponse> attachments,
+        List<ChecklistItemResponse> checklist,
+        /** The project this task belongs to, or null. */
+        Long projectId,
         /** Whether the caller may add/remove files and change the Drive link (UI hint; the server re-checks). */
         boolean canManage
 ) {

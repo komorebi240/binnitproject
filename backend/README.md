@@ -829,3 +829,51 @@ A missing/blank body is a 400. Tests: 165 passing (new: wrong password, correct 
 
 curl as binmit1: no body 400, blank 400, wrong password 422 and the user stays listed, employee 403, anonymous 401, correct password 204 and
 the user is gone from `/users`, deleting yourself 422, other company's executive 404, 6th attempt in a window 429.
+
+## Phase 27 - task checklist, department look, staff account recovery
+
+* **Task checklist** (`V24__task_checklist.sql`, table `task_checklist_items`): `POST /tasks/{id}/checklist {text}`, `PATCH /tasks/{id}/checklist/{itemId} {done}`,
+  `DELETE /tasks/{id}/checklist/{itemId}`; `CreateTaskRequest.checklist` (<= 30 lines, each <= 200 chars) creates lines together with the task and `TaskResponse.checklist`
+  lists them. Rules in `TaskServiceImpl`: whoever `canManage` the task may add/tick/remove (404 for anyone who cannot even see it); lines can be added/removed while the task is
+  ASSIGNED or ACCEPTED, but only **ticked while ACCEPTED**; ticking the last open line (or removing the last open one) **completes the task**; the manual `POST /complete` is refused
+  with `CHECKLIST_INCOMPLETE` while a line is open, so a task with a checklist can only finish through the checklist. Tasks without lines still use the manual button.
+* **Department look** (`V25__department_appearance.sql`: `departments.color`, `departments.icon`): `PATCH /departments/{id}` (executive, or the head of that department; 403 otherwise,
+  404 across companies) replaces name, description, colour and icon; `POST /departments` accepts colour/icon too. Colour and icon must be one of the preset keys in
+  `DepartmentAppearance` (400 `INVALID_APPEARANCE` otherwise; blank = default look); a name used by another active department of the company is a 409.
+* **Staff account recovery** (`V26__email_change_requests.sql`): for EXECUTIVE/DEPARTMENT_HEAD/TEAM_LEAD within their management scope (same rule as delete/lock; never yourself):
+  `POST /users/{id}/password-reset` emails the staff member the normal reset code (the same flow as "forgot password", so the manager never sees or sets a password; 422 if the user has no email);
+  `POST /users/{id}/email-change {email}` mails a 6-digit code to the **new** address and `POST /users/{id}/email-change/confirm {otp}` applies it (code: SHA-256 only in the database,
+  15 minutes, 5 attempts, only the latest request counts, the old address gets a notice mail). Rate limits: reset 10 per manager and 3 per target / 15 min; email change 10 per manager / 15 min and
+  5 per target / hour; confirm 20 per manager / 15 min.
+* **Health fix**: `management.health.mail.enabled=false`. With the mail indicator on, `/actuator/health` answered 503 whenever SMTP was unconfigured or unreachable although the app was fine.
+* Local run: `run-local.ps1` at the repository root starts the backend and frontend (settings in the git-ignored `backend/.env.local`, template `backend/.env.example`).
+
+Verified (2026-10-03, this machine): `mvn test` 187 tests pass (22 new: checklist auto-complete/lock/permissions, department edit permissions/conflict/preset validation, reset and email change
+including wrong, expired and exhausted codes). Against the real database (Flyway applied V24-V26): created a task with a 2-line checklist, ticking before accept -> 422, manual complete with open lines -> 422,
+ticking both lines -> task DONE, adding a line to a DONE task -> 422, another company -> 404; department patch with colour/icon -> 200, unknown colour -> 400, employee -> 403; password reset by an
+employee -> 403, by an executive on themselves -> 422, email change for an unknown user -> 404.
+Not tested: actual delivery of the reset / email-change mails (only the rejections were called, so no mail was sent to the seed users' addresses).
+
+## Phase 28 (wave 1)
+
+* **Task notifications** (`NotificationType` TASK_ASSIGNED / TASK_ACCEPTED / TASK_DECLINED / TASK_COMPLETED, no schema change): the assignee (or a department's heads) is notified when a task is assigned to someone else; the assigner is notified when it is accepted, declined or completed (including completion by ticking the last checklist line). Self-assigned work sends nothing.
+* **Calendar**: an event that ends before it starts is rejected (`INVALID_EVENT_RANGE`, 422); `endAt` already existed, so business trips need no migration.
+* **Registration**: `POST /auth/register/request-otp` answers `EMAIL_ALREADY_REGISTERED` (409) when an active account already uses the address (still rate-limited per IP and per address).
+* **Password reset**: `forgot-password` / `reset-password` accept a username or the account's email in the existing `username` field; an email resolves only when exactly one active account has it, and the response stays identical for unknown accounts.
+
+## Phase 28 (wave 2) - company profile
+
+* Migration `V27__company_profile_banner.sql`: `companies.description` (1000 chars) and `companies.banner_path` (stored file name only, like `logo_path`).
+* `PATCH /companies/me` now also takes `description` (full replace: blank clears it); `POST /companies/me/banner` (executive only, 2MB, rate-limited 10/hour, same image validation as the logo) and `GET /companies/me/banner` (any member of that company). `CompanyResponse` gained `description` and `bannerUrl`.
+
+## Phase 28 (wave 3) - cross-department projects
+
+Module `modules/projects`; migration `V28__create_projects.sql` (`projects`, `project_departments`, `project_members`, `project_folders`, `project_messages`, and `tasks.project_id`).
+
+* **Flow**: an executive (any department) or a department head (own department) creates a project and may invite other departments. The invited department's head (or an executive) accepts or declines; after accepting, that head adds people **of their own department**. Members share the project's tasks, chat and Drive folders. A declined department can be invited again.
+* **Rules live in `ProjectAccessService`** (used by the project screens and by the task module): `canManage` = executive or head of the owning department; participant = member or manager; `canView` = participant or head of any department in the project (so an invitation can be answered). Another company's project, or one the caller cannot see, is always 404; a viewer who may not work in it gets 403.
+* **Tasks**: `CreateTaskRequest.projectId` (optional). A project task must go to a member; managers may assign to anyone in the project, a head to their own people, anyone to themselves. `GET /tasks/project/{id}` lists them for participants. `TaskResponse.projectId` added.
+* **Drive**: `POST /projects/{id}/folders` links a folder from the department catalog. Only someone who may decide access to that folder (executive or its department's head) can link it (`DriveCatalogService.requireShareableFolder`); linking and adding a member then grant reader access through the folder owner's Drive connection (`grantReaderAccess`, best effort per person: people without a Drive connection are counted, not failed). Unlinking does not revoke Google permissions.
+* **Chat**: `GET/POST /projects/{id}/messages` (last 200 lines, polling; participants only; 60 messages/minute per user).
+* **Notifications**: `PROJECT_INVITED` (heads of the invited department), `PROJECT_RESPONDED` (project creator), `PROJECT_MEMBER_ADDED`.
+* Verified against the dev SQL Server with a scripted end-to-end run (create, invite, 404 before invitation, accept once, add own people only, chat, project tasks, leave, delete) as well as unit tests (`ProjectServiceImplTest`, `ProjectAccessServiceImplTest`, new cases in `TaskServiceImplTest`). Linking a folder needs a real Google Drive connection and was not exercised end to end.

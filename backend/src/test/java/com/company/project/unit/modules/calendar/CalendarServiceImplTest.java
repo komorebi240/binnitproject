@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -68,6 +69,19 @@ class CalendarServiceImplTest {
 
     private CreateCalendarEventRequest request() {
         return new CreateCalendarEventRequest("Họp", null, CalendarEventType.MEETING, Instant.now(), null);
+    }
+
+    @Test
+    void createOwnEvent_rejectsATripThatEndsBeforeItStarts() {
+        UserPrincipal owner = principal(2L, AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, TEAM_BACKEND);
+        Instant start = Instant.parse("2026-10-09T00:00:00Z");
+        CreateCalendarEventRequest swapped = new CreateCalendarEventRequest(
+                "Ha Noi", null, CalendarEventType.BUSINESS_TRIP, start, start.minusSeconds(86_400));
+
+        assertThatThrownBy(() -> service.createOwnEvent(swapped, owner))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("cannot end before");
+        verify(calendarEventRepository, never()).save(any());
     }
 
     @Test

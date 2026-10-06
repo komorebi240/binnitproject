@@ -11,6 +11,8 @@ import com.company.project.modules.identity.domain.UserEntity;
 import com.company.project.modules.identity.dto.request.CreateDepartmentRequest;
 import com.company.project.modules.identity.dto.request.CreateTeamRequest;
 import com.company.project.modules.identity.dto.request.UpdateCompanyRequest;
+import com.company.project.modules.identity.dto.request.UpdateDepartmentRequest;
+import com.company.project.modules.identity.service.DepartmentAppearance;
 import com.company.project.modules.identity.dto.response.CompanyResponse;
 import com.company.project.modules.identity.dto.response.DepartmentMemberResponse;
 import com.company.project.modules.identity.dto.response.DepartmentResponse;
@@ -79,6 +81,9 @@ public class OrganizationServiceImpl implements OrganizationService {
         company.setContactEmail(request.contactEmail() == null || request.contactEmail().isBlank()
                 ? null
                 : request.contactEmail().trim());
+        company.setDescription(request.description() == null || request.description().isBlank()
+                ? null
+                : request.description().trim());
         return toResponse(company);
     }
 
@@ -104,6 +109,28 @@ public class OrganizationServiceImpl implements OrganizationService {
         return avatarStorageService.load(company.getLogoPath());
     }
 
+    @Override
+    @Transactional
+    public CompanyResponse uploadCompanyBanner(MultipartFile file, UserPrincipal caller) {
+        requireExecutive(caller, "Only an executive can change the company banner");
+        CompanyEntity company = requireOwnCompany(caller);
+
+        String previousBanner = company.getBannerPath();
+        company.setBannerPath(avatarStorageService.store(file));
+        avatarStorageService.delete(previousBanner);
+        return toResponse(company);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AvatarStorageService.Resolved getCompanyBannerFile(UserPrincipal caller) {
+        CompanyEntity company = requireOwnCompany(caller);
+        if (company.getBannerPath() == null) {
+            throw new ResourceNotFoundException("Company banner", company.getId());
+        }
+        return avatarStorageService.load(company.getBannerPath());
+    }
+
     private void requireExecutive(UserPrincipal caller, String message) {
         if (caller.getAuthorityLevel() != AuthorityLevel.EXECUTIVE) {
             throw new AccessDeniedException(message);
@@ -119,15 +146,47 @@ public class OrganizationServiceImpl implements OrganizationService {
         String logoUrl = company.getLogoPath() == null
                 ? null
                 : "/companies/me/logo?v=" + Integer.toHexString(company.getLogoPath().hashCode());
-        return new CompanyResponse(company.getId(), company.getName(), company.getContactEmail(), logoUrl);
+        String bannerUrl = company.getBannerPath() == null
+                ? null
+                : "/companies/me/banner?v=" + Integer.toHexString(company.getBannerPath().hashCode());
+        return new CompanyResponse(
+                company.getId(), company.getName(), company.getContactEmail(), company.getDescription(), logoUrl, bannerUrl);
     }
 
     @Override
     @Transactional
     public DepartmentResponse createDepartment(CreateDepartmentRequest request, UserPrincipal caller) {
         DepartmentEntity entity = new DepartmentEntity(caller.getCompanyId(), request.name(), request.description());
+        entity.updateDetails(
+                request.name(), request.description(),
+                DepartmentAppearance.normalizeColor(request.color()), DepartmentAppearance.normalizeIcon(request.icon()));
         DepartmentEntity saved = departmentRepository.save(entity);
         return toResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public DepartmentResponse updateDepartment(Long departmentId, UpdateDepartmentRequest request, UserPrincipal caller) {
+        DepartmentEntity department = requireOwnCompanyDepartment(departmentId, caller);
+        boolean isOwnDepartmentHead = caller.getAuthorityLevel() == AuthorityLevel.DEPARTMENT_HEAD
+                && departmentId.equals(caller.getDepartmentId());
+        if (caller.getAuthorityLevel() != AuthorityLevel.EXECUTIVE && !isOwnDepartmentHead) {
+            throw new AccessDeniedException("Only an executive or this department's head can edit it");
+        }
+
+        String name = request.name().trim();
+        boolean nameTaken = departmentRepository.findAllActiveByCompanyId(caller.getCompanyId()).stream()
+                .anyMatch(d -> !d.getId().equals(departmentId) && d.getName().equalsIgnoreCase(name));
+        if (nameTaken) {
+            throw new BusinessException(
+                    "DEPARTMENT_NAME_TAKEN", "Another department already uses this name", HttpStatus.CONFLICT);
+        }
+        String description = request.description() == null || request.description().isBlank()
+                ? null : request.description().trim();
+        department.updateDetails(
+                name, description,
+                DepartmentAppearance.normalizeColor(request.color()), DepartmentAppearance.normalizeIcon(request.icon()));
+        return toResponse(department);
     }
 
     @Override
@@ -247,7 +306,9 @@ public class OrganizationServiceImpl implements OrganizationService {
     }
 
     private DepartmentResponse toResponse(DepartmentEntity entity) {
-        return new DepartmentResponse(entity.getId(), entity.getName(), entity.getDescription(), entity.getCompanyId());
+        return new DepartmentResponse(
+                entity.getId(), entity.getName(), entity.getDescription(), entity.getCompanyId(),
+                entity.getColor(), entity.getIcon());
     }
 
     private TeamResponse toResponse(TeamEntity entity) {

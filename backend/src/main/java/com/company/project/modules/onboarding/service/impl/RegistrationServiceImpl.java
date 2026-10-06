@@ -65,6 +65,12 @@ public class RegistrationServiceImpl implements RegistrationService {
                     "EMAIL_SERVICE_UNAVAILABLE", "Registration by email is not available right now", HttpStatus.SERVICE_UNAVAILABLE);
         }
         String normalized = normalize(email);
+        // Registering creates a brand-new company, so an address that already belongs to an account is turned away
+        // up front (the endpoint is rate-limited per IP and per address, which limits probing).
+        if (!userRepository.findAllActiveByEmail(normalized).isEmpty()) {
+            throw new BusinessException(
+                    "EMAIL_ALREADY_REGISTERED", "This email already belongs to an account", HttpStatus.CONFLICT);
+        }
 
         // Only the newest code is ever valid.
         verificationRepository.findOpenByEmail(normalized).forEach(RegistrationVerificationEntity::markConsumed);

@@ -24,6 +24,17 @@ public interface UserManagementService {
     UserSummaryResponse setActive(Long userId, boolean active, UserPrincipal caller);
 
     /**
+     * Emails the staff member a password-reset code (the same flow as "forgot password") so they choose
+     * their own new password; the manager never sees one. Same authority as managing that user.
+     */
+    void sendPasswordReset(Long userId, UserPrincipal caller);
+
+    /** Sends a code to {@code newEmail}; the email only changes once {@link #confirmEmailChange} gets that code. */
+    void requestEmailChange(Long userId, String newEmail, UserPrincipal caller);
+
+    UserSummaryResponse confirmEmailChange(Long userId, String otp, UserPrincipal caller);
+
+    /**
      * Whether the caller may grant {@code level} at this department/team (the same rule as creating
      * a user), and the department/team resolved for it. Throws 403/404/422 exactly like createUser.
      */

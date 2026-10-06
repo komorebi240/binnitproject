@@ -15,6 +15,9 @@ public interface TaskService {
 
     List<TaskResponse> listTasks(UserPrincipal caller);
 
+    /** Every task of a project, for the project's members (and its managers). */
+    List<TaskResponse> listProjectTasks(Long projectId, UserPrincipal caller);
+
     TaskResponse acceptTask(Long taskId, UserPrincipal caller);
 
     TaskResponse declineTask(Long taskId, UserPrincipal caller);
@@ -41,6 +44,14 @@ public interface TaskService {
 
     /** A null/blank link clears it; anything but an https Google Drive/Docs link is rejected. */
     TaskResponse updateDriveUrl(Long taskId, String driveUrl, UserPrincipal caller);
+
+    /** Whoever can manage the task may add, tick and remove checklist lines while it is open. */
+    TaskResponse addChecklistItem(Long taskId, String text, UserPrincipal caller);
+
+    /** Ticking the last open line completes the task (it must have been accepted first). */
+    TaskResponse setChecklistItemDone(Long taskId, Long itemId, boolean done, UserPrincipal caller);
+
+    TaskResponse removeChecklistItem(Long taskId, Long itemId, UserPrincipal caller);
 
     record AttachmentDownload(InputStream data, long sizeBytes, String fileName, String contentType, boolean image) {
     }

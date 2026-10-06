@@ -142,6 +142,33 @@ class AuthServiceImplTest {
     }
 
     @Test
+    void requestPasswordReset_acceptsTheAccountEmailInPlaceOfTheUsername() {
+        UserEntity user = new UserEntity(COMPANY_A, "caller", "hashed", "Caller", "caller@example.local");
+        setId(user, 1L);
+        when(emailService.isConfigured()).thenReturn(true);
+        when(userRepository.findAllActiveByEmail("caller@example.local")).thenReturn(List.of(user));
+        when(passwordResetOtpRepository.findAllUnusedByUserId(1L)).thenReturn(List.of());
+
+        service.requestPasswordReset("  Caller@Example.local ");
+
+        verify(emailService).sendPasswordResetOtp(org.mockito.ArgumentMatchers.eq("caller@example.local"),
+                org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    void requestPasswordReset_anEmailSharedByTwoAccountsSendsNothing() {
+        UserEntity first = new UserEntity(COMPANY_A, "one", "hashed", "One", "same@example.local");
+        UserEntity second = new UserEntity(COMPANY_A, "two", "hashed", "Two", "same@example.local");
+        when(emailService.isConfigured()).thenReturn(true);
+        when(userRepository.findAllActiveByEmail("same@example.local")).thenReturn(List.of(first, second));
+
+        service.requestPasswordReset("same@example.local");
+
+        org.mockito.Mockito.verify(emailService, org.mockito.Mockito.never())
+                .sendPasswordResetOtp(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
     void confirmPasswordReset_wrongOtpIsRejected() {
         UserEntity user = new UserEntity(COMPANY_A, "caller", "hashed-old", "Caller", "caller@example.local");
         setId(user, 1L);

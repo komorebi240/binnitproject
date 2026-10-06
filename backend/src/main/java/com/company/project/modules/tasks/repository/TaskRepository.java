@@ -47,6 +47,9 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
     List<TaskEntity> findAllActiveForTeamScope(
             @Param("memberUserIds") List<Long> memberUserIds, @Param("callerId") Long callerId);
 
+    @Query("select t from TaskEntity t where t.projectId = :projectId and t.deleted = false order by t.createdAt desc")
+    List<TaskEntity> findAllActiveByProjectId(@Param("projectId") Long projectId);
+
     /** Tasks personally assigned (not department-wide) to a user since a given instant - used by KpiServiceImpl. */
     @Query("""
             select t from TaskEntity t

@@ -14,6 +14,12 @@ public record CreateDepartmentRequest(
         String name,
 
         @Size(max = 500, message = "description must be at most 500 characters")
-        String description
+        String description,
+
+        @Size(max = 20, message = "color must be at most 20 characters")
+        String color,
+
+        @Size(max = 30, message = "icon must be at most 30 characters")
+        String icon
 ) {
 }

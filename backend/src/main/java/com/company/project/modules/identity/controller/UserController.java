@@ -2,8 +2,10 @@ package com.company.project.modules.identity.controller;
 
 import com.company.project.common.ApiResponse;
 import com.company.project.common.RateLimitGuard;
+import com.company.project.modules.identity.dto.request.ConfirmEmailChangeRequest;
 import com.company.project.modules.identity.dto.request.CreateUserRequest;
 import com.company.project.modules.identity.dto.request.DeleteUserRequest;
+import com.company.project.modules.identity.dto.request.RequestEmailChangeRequest;
 import com.company.project.modules.identity.dto.request.SetActiveRequest;
 import com.company.project.modules.identity.dto.request.UpdatePositionRequest;
 import com.company.project.modules.identity.dto.response.UserSummaryResponse;
@@ -81,6 +83,38 @@ public class UserController {
             @Valid @RequestBody UpdatePositionRequest request,
             @AuthenticationPrincipal UserPrincipal caller) {
         return ApiResponse.success(userManagementService.updatePosition(id, request, caller));
+    }
+
+    /** Emails the staff member a reset code; they set their own new password. */
+    @PostMapping("/{id}/password-reset")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyAuthority('EXECUTIVE','DEPARTMENT_HEAD','TEAM_LEAD')")
+    public void sendPasswordReset(@PathVariable Long id, @AuthenticationPrincipal UserPrincipal caller) {
+        rateLimitGuard.enforce("staff-password-reset:caller:" + caller.getUserId(), 10, Duration.ofMinutes(15));
+        rateLimitGuard.enforce("staff-password-reset:user:" + id, 3, Duration.ofMinutes(15));
+        userManagementService.sendPasswordReset(id, caller);
+    }
+
+    @PostMapping("/{id}/email-change")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyAuthority('EXECUTIVE','DEPARTMENT_HEAD','TEAM_LEAD')")
+    public void requestEmailChange(
+            @PathVariable Long id,
+            @Valid @RequestBody RequestEmailChangeRequest request,
+            @AuthenticationPrincipal UserPrincipal caller) {
+        rateLimitGuard.enforce("staff-email-change:caller:" + caller.getUserId(), 10, Duration.ofMinutes(15));
+        rateLimitGuard.enforce("staff-email-change:user:" + id, 5, Duration.ofHours(1));
+        userManagementService.requestEmailChange(id, request.email(), caller);
+    }
+
+    @PostMapping("/{id}/email-change/confirm")
+    @PreAuthorize("hasAnyAuthority('EXECUTIVE','DEPARTMENT_HEAD','TEAM_LEAD')")
+    public ApiResponse<UserSummaryResponse> confirmEmailChange(
+            @PathVariable Long id,
+            @Valid @RequestBody ConfirmEmailChangeRequest request,
+            @AuthenticationPrincipal UserPrincipal caller) {
+        rateLimitGuard.enforce("staff-email-change-confirm:caller:" + caller.getUserId(), 20, Duration.ofMinutes(15));
+        return ApiResponse.success(userManagementService.confirmEmailChange(id, request.otp(), caller));
     }
 
     @PatchMapping("/{id}/status")

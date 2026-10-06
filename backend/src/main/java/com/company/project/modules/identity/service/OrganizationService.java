@@ -3,6 +3,7 @@ package com.company.project.modules.identity.service;
 import com.company.project.modules.identity.dto.request.CreateDepartmentRequest;
 import com.company.project.modules.identity.dto.request.CreateTeamRequest;
 import com.company.project.modules.identity.dto.request.UpdateCompanyRequest;
+import com.company.project.modules.identity.dto.request.UpdateDepartmentRequest;
 import com.company.project.modules.identity.dto.response.CompanyResponse;
 import com.company.project.modules.identity.dto.response.DepartmentMemberResponse;
 import com.company.project.modules.identity.dto.response.DepartmentResponse;
@@ -26,7 +27,16 @@ public interface OrganizationService {
     /** Any member of the company; 404 when no logo is set. */
     AvatarStorageService.Resolved getCompanyLogoFile(UserPrincipal caller);
 
+    /** EXECUTIVE only. */
+    CompanyResponse uploadCompanyBanner(MultipartFile file, UserPrincipal caller);
+
+    /** Any member of the caller's own company. */
+    AvatarStorageService.Resolved getCompanyBannerFile(UserPrincipal caller);
+
     DepartmentResponse createDepartment(CreateDepartmentRequest request, UserPrincipal caller);
+
+    /** An executive, or the head of that very department, may rename it and change its look. */
+    DepartmentResponse updateDepartment(Long departmentId, UpdateDepartmentRequest request, UserPrincipal caller);
 
     List<DepartmentResponse> listDepartments(UserPrincipal caller);
 

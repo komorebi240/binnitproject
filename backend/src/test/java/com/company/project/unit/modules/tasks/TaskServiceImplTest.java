@@ -7,6 +7,7 @@ import com.company.project.common.TaskStatus;
 import com.company.project.common.storage.AttachmentStorage;
 import com.company.project.common.exception.BusinessException;
 import com.company.project.common.exception.ResourceNotFoundException;
+import com.company.project.common.NotificationType;
 import com.company.project.modules.identity.domain.DepartmentEntity;
 import com.company.project.modules.identity.domain.PositionEntity;
 import com.company.project.modules.identity.domain.UserEntity;
@@ -14,9 +15,14 @@ import com.company.project.modules.identity.repository.DepartmentRepository;
 import com.company.project.modules.identity.repository.PositionRepository;
 import com.company.project.modules.identity.repository.UserRepository;
 import com.company.project.modules.tasks.domain.TaskAttachmentEntity;
+import com.company.project.modules.tasks.domain.TaskChecklistItemEntity;
 import com.company.project.modules.tasks.domain.TaskEntity;
+import com.company.project.modules.notifications.service.NotificationService;
+import com.company.project.modules.projects.domain.ProjectEntity;
+import com.company.project.modules.projects.service.ProjectAccessService;
 import com.company.project.modules.tasks.dto.request.CreateTaskRequest;
 import com.company.project.modules.tasks.repository.TaskAttachmentRepository;
+import com.company.project.modules.tasks.repository.TaskChecklistItemRepository;
 import com.company.project.modules.tasks.repository.TaskRepository;
 import com.company.project.modules.tasks.service.impl.TaskServiceImpl;
 import com.company.project.security.UserPrincipal;
@@ -34,6 +40,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -63,15 +72,22 @@ class TaskServiceImplTest {
     private PositionRepository positionRepository;
     @Mock
     private TaskAttachmentRepository attachmentRepository;
+
+    @Mock
+    private TaskChecklistItemRepository checklistRepository;
     @Mock
     private AttachmentStorage attachmentStorage;
+    @Mock
+    private NotificationService notificationService;
+    @Mock
+    private ProjectAccessService projectAccessService;
 
     private TaskServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new TaskServiceImpl(
-                taskRepository, userRepository, departmentRepository, positionRepository, attachmentRepository, attachmentStorage);
+                taskRepository, userRepository, departmentRepository, positionRepository, attachmentRepository, checklistRepository, attachmentStorage, notificationService, projectAccessService);
     }
 
     private UserPrincipal principal(AuthorityLevel level, Long departmentId, Long teamId) {
@@ -88,7 +104,7 @@ class TaskServiceImplTest {
     void createTask_departmentHeadCannotAssignToOtherDepartmentMember() {
         UserPrincipal deptHead = principal(AuthorityLevel.DEPARTMENT_HEAD, DEPT_ENGINEERING, null);
         CreateTaskRequest request = new CreateTaskRequest(
-                "Do the thing", null, AssigneeType.USER, EMPLOYEE_IN_SALES, null, null, null, null);
+                "Do the thing", null, AssigneeType.USER, EMPLOYEE_IN_SALES, null, null, null, null, null);
 
         UserEntity targetUser = new UserEntity(COMPANY_A, "salesperson", "hash", "Sales Person", null);
         setId(targetUser, EMPLOYEE_IN_SALES);
@@ -104,7 +120,7 @@ class TaskServiceImplTest {
     void createTask_teamLeadCannotAssignToWholeDepartment() {
         UserPrincipal teamLead = principal(AuthorityLevel.TEAM_LEAD, DEPT_ENGINEERING, TEAM_BACKEND);
         CreateTaskRequest request = new CreateTaskRequest(
-                "Do the thing", null, AssigneeType.DEPARTMENT, null, DEPT_ENGINEERING, null, null, null);
+                "Do the thing", null, AssigneeType.DEPARTMENT, null, DEPT_ENGINEERING, null, null, null, null);
 
         DepartmentEntity department = new DepartmentEntity(COMPANY_A, "Engineering");
         setId(department, DEPT_ENGINEERING);
@@ -118,7 +134,7 @@ class TaskServiceImplTest {
     void createTask_executiveCanAssignToAnyDepartmentInOwnCompany() {
         UserPrincipal executive = principal(AuthorityLevel.EXECUTIVE, null, null);
         CreateTaskRequest request = new CreateTaskRequest(
-                "Ship it", "details", AssigneeType.DEPARTMENT, null, DEPT_SALES, TaskPriority.HIGH, null, null);
+                "Ship it", "details", AssigneeType.DEPARTMENT, null, DEPT_SALES, TaskPriority.HIGH, null, null, null);
 
         DepartmentEntity department = new DepartmentEntity(COMPANY_A, "Sales");
         setId(department, DEPT_SALES);
@@ -140,7 +156,7 @@ class TaskServiceImplTest {
     void createTask_employeeCanAssignTaskToThemselves() {
         UserPrincipal employee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
         CreateTaskRequest request = new CreateTaskRequest(
-                "My own task", null, AssigneeType.USER, employee.getUserId(), null, null, null, null);
+                "My own task", null, AssigneeType.USER, employee.getUserId(), null, null, null, null, null);
 
         UserEntity self = new UserEntity(COMPANY_A, "me", "hash", "Me", null);
         setId(self, employee.getUserId());
@@ -154,6 +170,161 @@ class TaskServiceImplTest {
         var response = service.createTask(request, employee);
 
         assertThat(response.assigneeUserId()).isEqualTo(employee.getUserId());
+        assertThat(response.status()).isEqualTo(TaskStatus.ACCEPTED);
+    }
+
+    @Test
+    void createTask_selfAssignedTaskNeedsNoAcceptanceAndItsChecklistCanBeTickedAtOnce() {
+        UserPrincipal employee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        CreateTaskRequest request = new CreateTaskRequest(
+                "My own task", null, AssigneeType.USER, employee.getUserId(), null, null, null, null, List.of("Only step"));
+        UserEntity self = new UserEntity(COMPANY_A, "me", "hash", "Me", null);
+        setId(self, employee.getUserId());
+        when(userRepository.findActiveById(employee.getUserId())).thenReturn(Optional.of(self));
+        when(taskRepository.save(any())).thenAnswer(inv -> {
+            TaskEntity t = inv.getArgument(0);
+            setId(t, 89L);
+            when(taskRepository.findActiveById(89L)).thenReturn(Optional.of(t));
+            return t;
+        });
+        TaskChecklistItemEntity item = checklistItem(31L, 89L, false);
+        when(checklistRepository.findById(31L)).thenReturn(Optional.of(item));
+        when(checklistRepository.findAllByTaskIdOrderBySortOrderAscIdAsc(89L)).thenReturn(List.of(item));
+
+        service.createTask(request, employee);
+        var afterTick = service.setChecklistItemDone(89L, 31L, true, employee);
+
+        assertThat(afterTick.status()).isEqualTo(TaskStatus.DONE);
+    }
+
+    @Test
+    void createTask_taskGivenToSomeoneElseStillWaitsForThemToAccept() {
+        UserPrincipal executive = principal(AuthorityLevel.EXECUTIVE, null, null);
+        CreateTaskRequest request = new CreateTaskRequest(
+                "For you", null, AssigneeType.USER, EMPLOYEE_IN_ENGINEERING, null, null, null, null, null);
+        when(userRepository.findActiveById(EMPLOYEE_IN_ENGINEERING)).thenReturn(Optional.of(activeUser(COMPANY_A)));
+        when(taskRepository.save(any())).thenAnswer(inv -> {
+            TaskEntity t = inv.getArgument(0);
+            setId(t, 90L);
+            return t;
+        });
+
+        var response = service.createTask(request, executive);
+
+        assertThat(response.status()).isEqualTo(TaskStatus.ASSIGNED);
+    }
+
+    private ProjectEntity project() {
+        ProjectEntity project = new ProjectEntity(COMPANY_A, "Launch", null, DEPT_ENGINEERING, 1L);
+        setId(project, 50L);
+        return project;
+    }
+
+    private CreateTaskRequest projectTask(Long assigneeUserId) {
+        return new CreateTaskRequest(
+                "Part of the launch", null, AssigneeType.USER, assigneeUserId, null, null, null, null, null, 50L);
+    }
+
+    @Test
+    void createTask_projectTaskMustGoToAProjectMember() {
+        UserPrincipal head = principal(AuthorityLevel.DEPARTMENT_HEAD, DEPT_ENGINEERING, null);
+        when(userRepository.findActiveById(EMPLOYEE_IN_ENGINEERING)).thenReturn(Optional.of(activeUser(COMPANY_A)));
+        when(projectAccessService.requireParticipant(50L, head)).thenReturn(project());
+        when(projectAccessService.isMember(50L, EMPLOYEE_IN_ENGINEERING)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.createTask(projectTask(EMPLOYEE_IN_ENGINEERING), head))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("not a member");
+        verify(taskRepository, never()).save(any());
+    }
+
+    @Test
+    void createTask_projectManagerCanAssignAndTheTaskRemembersTheProject() {
+        UserPrincipal head = principal(AuthorityLevel.DEPARTMENT_HEAD, DEPT_ENGINEERING, null);
+        ProjectEntity project = project();
+        when(userRepository.findActiveById(EMPLOYEE_IN_ENGINEERING)).thenReturn(Optional.of(activeUser(COMPANY_A)));
+        when(projectAccessService.requireParticipant(50L, head)).thenReturn(project);
+        when(projectAccessService.isMember(50L, EMPLOYEE_IN_ENGINEERING)).thenReturn(true);
+        when(projectAccessService.canManage(project, head)).thenReturn(true);
+        when(taskRepository.save(any())).thenAnswer(inv -> {
+            TaskEntity t = inv.getArgument(0);
+            setId(t, 92L);
+            return t;
+        });
+
+        var response = service.createTask(projectTask(EMPLOYEE_IN_ENGINEERING), head);
+
+        assertThat(response.projectId()).isEqualTo(50L);
+    }
+
+    @Test
+    void createTask_aMemberWhoDoesNotManageCannotAssignToSomeoneElse() {
+        UserPrincipal employee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        ProjectEntity project = project();
+        when(userRepository.findActiveById(EMPLOYEE_IN_ENGINEERING)).thenReturn(Optional.of(activeUser(COMPANY_A)));
+        when(projectAccessService.requireParticipant(50L, employee)).thenReturn(project);
+        when(projectAccessService.isMember(50L, EMPLOYEE_IN_ENGINEERING)).thenReturn(true);
+        when(projectAccessService.canManage(project, employee)).thenReturn(false);
+        when(positionRepository.findActiveByUserId(EMPLOYEE_IN_ENGINEERING)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.createTask(projectTask(EMPLOYEE_IN_ENGINEERING), employee))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void listProjectTasks_checksMembershipFirst() {
+        UserPrincipal outsider = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        when(projectAccessService.requireParticipant(50L, outsider)).thenThrow(new AccessDeniedException("no"));
+
+        assertThatThrownBy(() -> service.listProjectTasks(50L, outsider)).isInstanceOf(AccessDeniedException.class);
+        verify(taskRepository, never()).findAllActiveByProjectId(any());
+    }
+
+    @Test
+    void createTask_notifiesTheAssignee() {
+        UserPrincipal executive = principal(AuthorityLevel.EXECUTIVE, null, null);
+        CreateTaskRequest request = new CreateTaskRequest(
+                "For you", null, AssigneeType.USER, EMPLOYEE_IN_ENGINEERING, null, null, null, null, null);
+        when(userRepository.findActiveById(EMPLOYEE_IN_ENGINEERING)).thenReturn(Optional.of(activeUser(COMPANY_A)));
+        when(taskRepository.save(any())).thenAnswer(inv -> {
+            TaskEntity t = inv.getArgument(0);
+            setId(t, 91L);
+            return t;
+        });
+
+        service.createTask(request, executive);
+
+        verify(notificationService).notify(
+                eq(EMPLOYEE_IN_ENGINEERING), eq(NotificationType.TASK_ASSIGNED), anyString(), anyString(), eq("TASK"), eq(91L));
+    }
+
+    @Test
+    void createTask_selfAssignedTaskSendsNoNotification() {
+        UserPrincipal employee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        CreateTaskRequest request = new CreateTaskRequest(
+                "Mine", null, AssigneeType.USER, employee.getUserId(), null, null, null, null, null);
+        UserEntity self = new UserEntity(COMPANY_A, "me", "hash", "Me", null);
+        setId(self, employee.getUserId());
+        when(userRepository.findActiveById(employee.getUserId())).thenReturn(Optional.of(self));
+        when(taskRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.createTask(request, employee);
+
+        verify(notificationService, never()).notify(anyLong(), any(), anyString(), anyString(), anyString(), any());
+    }
+
+    @Test
+    void acceptTask_tellsTheAssigner() {
+        UserPrincipal assignee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        TaskEntity task = new TaskEntity(
+                COMPANY_A, "Do it", null, AssigneeType.USER, assignee.getUserId(), null, 2L, TaskPriority.MEDIUM, null);
+        setId(task, 7L);
+        when(taskRepository.findActiveById(7L)).thenReturn(Optional.of(task));
+
+        service.acceptTask(7L, assignee);
+
+        verify(notificationService).notify(
+                eq(2L), eq(NotificationType.TASK_ACCEPTED), anyString(), anyString(), eq("TASK"), eq(7L));
     }
 
     @Test
@@ -481,7 +652,7 @@ class TaskServiceImplTest {
     void createTask_rejectsABadDriveLinkBeforeSavingAnything() {
         UserPrincipal employee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
         CreateTaskRequest request = new CreateTaskRequest(
-                "Mine", null, AssigneeType.USER, employee.getUserId(), null, null, null, "http://drive.google.com/insecure");
+                "Mine", null, AssigneeType.USER, employee.getUserId(), null, null, null, "http://drive.google.com/insecure", null);
         UserEntity self = new UserEntity(COMPANY_A, "me", "hash", "Me", null);
         setId(self, employee.getUserId());
         when(userRepository.findActiveById(employee.getUserId())).thenReturn(Optional.of(self));
@@ -498,5 +669,105 @@ class TaskServiceImplTest {
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    // ---- checklist ----
+
+    private TaskChecklistItemEntity checklistItem(Long id, Long taskId, boolean done) {
+        TaskChecklistItemEntity item = new TaskChecklistItemEntity(taskId, "Step " + id, id.intValue(), OTHER_USER);
+        setId(item, id);
+        if (done) {
+            item.setDone(true, 1L);
+        }
+        return item;
+    }
+
+    @Test
+    void setChecklistItemDone_tickingTheLastOpenItemCompletesTheTask() {
+        UserPrincipal assignee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        TaskEntity task = userTask(5L, OTHER_USER, assignee.getUserId(), COMPANY_A);
+        task.accept();
+        TaskChecklistItemEntity first = checklistItem(11L, 5L, true);
+        TaskChecklistItemEntity last = checklistItem(12L, 5L, false);
+        when(checklistRepository.findById(12L)).thenReturn(Optional.of(last));
+        when(checklistRepository.findAllByTaskIdOrderBySortOrderAscIdAsc(5L)).thenReturn(List.of(first, last));
+
+        var response = service.setChecklistItemDone(5L, 12L, true, assignee);
+
+        assertThat(response.status()).isEqualTo(TaskStatus.DONE);
+    }
+
+    @Test
+    void setChecklistItemDone_withItemsStillOpenKeepsTheTaskAccepted() {
+        UserPrincipal assignee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        TaskEntity task = userTask(5L, OTHER_USER, assignee.getUserId(), COMPANY_A);
+        task.accept();
+        TaskChecklistItemEntity first = checklistItem(11L, 5L, false);
+        TaskChecklistItemEntity second = checklistItem(12L, 5L, false);
+        when(checklistRepository.findById(11L)).thenReturn(Optional.of(first));
+        when(checklistRepository.findAllByTaskIdOrderBySortOrderAscIdAsc(5L)).thenReturn(List.of(first, second));
+
+        var response = service.setChecklistItemDone(5L, 11L, true, assignee);
+
+        assertThat(response.status()).isEqualTo(TaskStatus.ACCEPTED);
+    }
+
+    @Test
+    void setChecklistItemDone_beforeTheTaskIsAcceptedFails() {
+        UserPrincipal assignee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        userTask(5L, OTHER_USER, assignee.getUserId(), COMPANY_A);
+
+        assertThatThrownBy(() -> service.setChecklistItemDone(5L, 11L, true, assignee))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("accepted");
+    }
+
+    @Test
+    void setChecklistItemDone_byAnUnrelatedEmployeeIsNotFound() {
+        UserPrincipal stranger = new UserPrincipal(
+                UNRELATED_USER, "stranger", null, COMPANY_A, AuthorityLevel.EMPLOYEE, DEPT_SALES, null, true);
+        userTask(5L, OTHER_USER, 1L, COMPANY_A).accept();
+
+        assertThatThrownBy(() -> service.setChecklistItemDone(5L, 11L, true, stranger))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void completeTask_withAnOpenChecklistItemIsRejected() {
+        UserPrincipal assignee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        TaskEntity task = userTask(5L, OTHER_USER, assignee.getUserId(), COMPANY_A);
+        task.accept();
+        when(checklistRepository.findAllByTaskIdOrderBySortOrderAscIdAsc(5L))
+                .thenReturn(List.of(checklistItem(11L, 5L, false)));
+
+        assertThatThrownBy(() -> service.completeTask(5L, assignee))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("checklist");
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.ACCEPTED);
+    }
+
+    @Test
+    void removeChecklistItem_removingTheOnlyOpenItemCompletesTheTask() {
+        UserPrincipal assignee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        TaskEntity task = userTask(5L, OTHER_USER, assignee.getUserId(), COMPANY_A);
+        task.accept();
+        TaskChecklistItemEntity done = checklistItem(11L, 5L, true);
+        TaskChecklistItemEntity open = checklistItem(12L, 5L, false);
+        when(checklistRepository.findById(12L)).thenReturn(Optional.of(open));
+        when(checklistRepository.findAllByTaskIdOrderBySortOrderAscIdAsc(5L)).thenReturn(List.of(done));
+
+        var response = service.removeChecklistItem(5L, 12L, assignee);
+
+        assertThat(response.status()).isEqualTo(TaskStatus.DONE);
+    }
+
+    @Test
+    void addChecklistItem_isRejectedOnACancelledTask() {
+        UserPrincipal assigner = principal(AuthorityLevel.EXECUTIVE, null, null);
+        TaskEntity task = userTask(5L, assigner.getUserId(), OTHER_USER, COMPANY_A);
+        task.cancel();
+
+        assertThatThrownBy(() -> service.addChecklistItem(5L, "New step", assigner))
+                .isInstanceOf(BusinessException.class);
     }
 }
