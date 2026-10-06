@@ -22,6 +22,9 @@ const config: Config = {
         primary: {
           DEFAULT: withOpacity("--color-primary"),
           foreground: withOpacity("--color-primary-foreground"),
+          // Brand colour for TEXT and icons on light or glass surfaces: `primary` itself is a fill colour, too pale
+          // for text on some themes (pink) and too dark on others (dark).
+          text: withOpacity("--color-primary-text"),
         },
         // Gradient end stop for brand surfaces (buttons, active nav) - `from-primary to-primaryEnd`.
         // Degenerate (equal to primary) on the gray/pink themes, which stay flat on purpose (see
@@ -36,7 +39,23 @@ const config: Config = {
         danger: {
           DEFAULT: withOpacity("--color-danger"),
           foreground: withOpacity("--color-danger-foreground"),
+          text: withOpacity("--color-danger-text"),
         },
+        // Text tones: fg (main) > fg-soft > fg-muted > fg-faint. Borders: line, line-strong.
+        fg: {
+          DEFAULT: withOpacity("--color-fg"),
+          soft: withOpacity("--color-fg-soft"),
+          muted: withOpacity("--color-fg-muted"),
+          faint: withOpacity("--color-fg-faint"),
+        },
+        line: {
+          DEFAULT: withOpacity("--color-line"),
+          strong: withOpacity("--color-line-strong"),
+        },
+        // Status colours: the base for dots, bars and tints (bg-success/10), `text` for readable text on those tints.
+        success: { DEFAULT: withOpacity("--color-success"), text: withOpacity("--color-success-text") },
+        warning: { DEFAULT: withOpacity("--color-warning"), text: withOpacity("--color-warning-text") },
+        info: { DEFAULT: withOpacity("--color-info"), text: withOpacity("--color-info-text") },
       },
       // Orbit brand typeface pairing - see app/globals.css for why (applied globally there via
       // element selectors on body/h1-h3); exposed here too so `font-sans`/`font-heading`

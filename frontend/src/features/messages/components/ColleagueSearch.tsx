@@ -6,7 +6,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Highlight } from "@/components/ui/Highlight";
 import { matchesAllWords } from "@/lib/textMatch";
 import type { UserProfile } from "@/features/auth/types";
-import { useDepartmentMembers } from "@/features/organization/hooks/useOrganization";
+import type { PresenceStatus } from "@/features/auth/types";
+import { useDepartmentMembers, useUsers } from "@/features/organization/hooks/useOrganization";
 
 const MAX_RESULTS = 6;
 
@@ -15,15 +16,32 @@ interface ColleagueSearchProps {
   onPick: (userId: number, fullName: string) => void;
 }
 
-/** Finds people of the user's own department to start a chat with, without leaving Messages. */
+interface Person {
+  userId: number;
+  fullName: string;
+  title: string | null;
+  email: string | null;
+  avatarUrl: string | null;
+  presenceStatus: PresenceStatus;
+}
+
+/**
+ * Finds people to start a chat with, without leaving Messages: the user's own department, or - for an
+ * executive, who belongs to no department - everyone in the company.
+ */
 export function ColleagueSearch({ currentUser, onPick }: ColleagueSearchProps) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
+  const companyWide = currentUser.departmentId == null && currentUser.authorityLevel === "EXECUTIVE";
   const { data: members } = useDepartmentMembers(currentUser.departmentId);
+  const { data: users } = useUsers(companyWide);
 
-  if (currentUser.departmentId == null) return null;
+  if (currentUser.departmentId == null && !companyWide) return null;
 
-  const colleagues = (members ?? [])
+  const people: Person[] = companyWide
+    ? (users ?? []).filter((u) => u.active).map((u) => ({ userId: u.id, fullName: u.fullName, title: u.title, email: null, avatarUrl: u.avatarUrl, presenceStatus: u.presenceStatus }))
+    : (members ?? []);
+  const colleagues = people
     .filter((m) => m.userId !== currentUser.userId)
     .filter((m) => matchesAllWords(`${m.fullName} ${m.email ?? ""}`, query))
     .slice(0, MAX_RESULTS);
@@ -38,21 +56,21 @@ export function ColleagueSearch({ currentUser, onPick }: ColleagueSearchProps) {
   return (
     <div className="flex flex-col gap-1">
       <label className="relative block">
-        <span className="sr-only">Tìm đồng nghiệp cùng phòng ban</span>
-        <MagnifyingGlass size={14} aria-hidden className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
+        <span className="sr-only">{companyWide ? "Tìm người trong công ty" : "Tìm đồng nghiệp cùng phòng ban"}</span>
+        <MagnifyingGlass size={14} aria-hidden className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-fg-faint" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => window.setTimeout(() => setFocused(false), 150)}
-          placeholder={`Tìm người ở ${currentUser.departmentName ?? "phòng ban"}...`}
-          className="w-full rounded border border-gray-200 bg-white py-1.5 pl-7 pr-2 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          placeholder={companyWide ? "Tìm người trong công ty..." : `Tìm người ở ${currentUser.departmentName ?? "phòng ban"}...`}
+          className="w-full rounded border border-line bg-surface py-1.5 pl-7 pr-2 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         />
       </label>
       {showList && (
-        <ul className="flex flex-col gap-0.5 rounded border border-gray-100 bg-white p-1">
+        <ul className="flex flex-col gap-0.5 rounded border border-line/60 bg-surface p-1">
           {colleagues.length === 0 ? (
-            <li className="px-2 py-2 text-center text-xs text-gray-400">Không có ai phù hợp</li>
+            <li className="px-2 py-2 text-center text-xs text-fg-faint">Không có ai phù hợp</li>
           ) : (
             colleagues.map((m) => (
               <li key={m.userId}>
@@ -67,10 +85,10 @@ export function ColleagueSearch({ currentUser, onPick }: ColleagueSearchProps) {
                 >
                   <Avatar avatarUrl={m.avatarUrl} fullName={m.fullName} presenceStatus={m.presenceStatus} size="sm" />
                   <span className="min-w-0">
-                    <span className="block truncate font-medium text-gray-900">
+                    <span className="block truncate font-medium text-fg">
                       <Highlight text={m.fullName} query={query} />
                     </span>
-                    {m.title && <span className="block truncate text-xs text-gray-500">{m.title}</span>}
+                    {m.title && <span className="block truncate text-xs text-fg-muted">{m.title}</span>}
                   </span>
                 </button>
               </li>

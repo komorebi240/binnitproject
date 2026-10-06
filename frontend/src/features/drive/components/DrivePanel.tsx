@@ -13,17 +13,17 @@ export function DrivePanel({ currentUser }: DrivePanelProps) {
   return (
     <section className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Google Drive</h2>
+        <h2 className="text-lg font-semibold text-fg">Google Drive</h2>
         <ConnectDriveButton />
       </div>
 
       <div>
-        <h3 className="mb-2 text-sm font-semibold text-gray-700">Danh mục folder theo phòng ban</h3>
+        <h3 className="mb-2 text-sm font-semibold text-fg-soft">Danh mục folder theo phòng ban</h3>
         <FolderCatalog currentUser={currentUser} />
       </div>
 
       <div>
-        <h3 className="mb-2 text-sm font-semibold text-gray-700">Yêu cầu truy cập chéo phòng ban</h3>
+        <h3 className="mb-2 text-sm font-semibold text-fg-soft">Yêu cầu truy cập chéo phòng ban</h3>
         <AccessRequestPanel currentUser={currentUser} />
       </div>
     </section>

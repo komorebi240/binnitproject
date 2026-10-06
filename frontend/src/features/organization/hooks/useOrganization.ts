@@ -92,8 +92,8 @@ export function useTeamMembers(teamId: number) {
   });
 }
 
-export function useUsers() {
-  return useQuery({ queryKey: USERS_KEY, queryFn: api.listUsers });
+export function useUsers(enabled = true) {
+  return useQuery({ queryKey: USERS_KEY, queryFn: api.listUsers, enabled });
 }
 
 export function useCreateUser() {

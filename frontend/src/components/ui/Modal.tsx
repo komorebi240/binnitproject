@@ -27,21 +27,21 @@ export function Modal({ title, onClose, children, widthClassName = "max-w-lg" }:
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
-      <button type="button" aria-label="Đóng" onClick={onClose} className="absolute inset-0 cursor-default bg-black/40" />
+      <button type="button" aria-label="Đóng" onClick={onClose} className="absolute inset-0 cursor-default bg-black/45" />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`animate-fade-in relative flex max-h-[90vh] w-full flex-col gap-4 overflow-y-auto rounded-lg bg-white p-6 shadow-xl ${widthClassName}`}
+        className={`glass-window animate-fade-in relative flex max-h-[90vh] w-full flex-col gap-4 overflow-y-auto rounded-lg p-6 ${widthClassName}`}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+          <h3 className="text-base font-semibold text-fg">{title}</h3>
           <button
             type="button"
             onClick={onClose}
             aria-label="Đóng"
-            className="flex h-8 w-8 items-center justify-center rounded text-gray-400 transition-colors duration-150 hover:bg-surface-muted hover:text-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            className="flex h-8 w-8 items-center justify-center rounded text-fg-faint transition-colors duration-150 hover:bg-surface-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             <X size={18} aria-hidden />
           </button>

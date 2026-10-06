@@ -11,9 +11,9 @@ const GOOD_FROM = 70;
 const MAX_SCORE = 100;
 
 function tierOf(score: number): { tone: "success" | "warning" | "danger"; barClassName: string } {
-  if (score >= GOOD_FROM) return { tone: "success", barClassName: "bg-green-500" };
-  if (score >= WARNING_FROM) return { tone: "warning", barClassName: "bg-yellow-500" };
-  return { tone: "danger", barClassName: "bg-red-500" };
+  if (score >= GOOD_FROM) return { tone: "success", barClassName: "bg-success" };
+  if (score >= WARNING_FROM) return { tone: "warning", barClassName: "bg-warning" };
+  return { tone: "danger", barClassName: "bg-danger" };
 }
 
 function ScoreMeter({ score }: { score: number }) {
@@ -27,7 +27,7 @@ function ScoreMeter({ score }: { score: number }) {
         aria-valuemax={MAX_SCORE}
         aria-valuenow={clamped}
         aria-valuetext={`${clamped} trên ${MAX_SCORE}`}
-        className="relative h-2 rounded-full bg-gray-200"
+        className="relative h-2 rounded-full bg-line"
       >
         <div
           className={`h-full rounded-full transition-[width] duration-500 ${tierOf(clamped).barClassName}`}
@@ -37,12 +37,12 @@ function ScoreMeter({ score }: { score: number }) {
           <span
             key={mark}
             aria-hidden
-            className="absolute top-0 h-full w-px bg-white"
+            className="absolute top-0 h-full w-px bg-surface"
             style={{ left: `${mark}%` }}
           />
         ))}
       </div>
-      <div aria-hidden className="relative mt-1 h-4 text-[11px] text-gray-400">
+      <div aria-hidden className="relative mt-1 h-4 text-[11px] text-fg-faint">
         <span className="absolute left-0">0</span>
         {[WARNING_FROM, GOOD_FROM].map((mark) => (
           <span key={mark} className="absolute -translate-x-1/2" style={{ left: `${mark}%` }}>
@@ -68,17 +68,17 @@ function Metric({
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <p className="text-xs font-medium text-gray-500">{label}</p>
-      <p className="text-xl font-semibold tabular-nums text-gray-900">{value}</p>
+      <p className="text-xs font-medium text-fg-muted">{label}</p>
+      <p className="text-xl font-semibold tabular-nums text-fg">{value}</p>
       {percent !== undefined && (
-        <div className="h-1 rounded-full bg-gray-200" aria-hidden>
+        <div className="h-1 rounded-full bg-line" aria-hidden>
           <div
             className="h-full rounded-full bg-primary"
             style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
           />
         </div>
       )}
-      <p className="text-xs text-gray-500">{caption}</p>
+      <p className="text-xs text-fg-muted">{caption}</p>
     </div>
   );
 }
@@ -112,16 +112,16 @@ export function UserKpiPanel({ userId }: UserKpiPanelProps) {
   return (
     <section aria-label={`KPI của ${summary.fullName}`} className="flex flex-col gap-5">
       <div className="flex items-baseline justify-between gap-3">
-        <h4 className="text-sm font-semibold text-gray-900">KPI {period.toLowerCase()}</h4>
-        <p className="truncate text-xs text-gray-500">{summary.fullName}</p>
+        <h4 className="text-sm font-semibold text-fg">KPI {period.toLowerCase()}</h4>
+        <p className="truncate text-xs text-fg-muted">{summary.fullName}</p>
       </div>
 
       {summary.totalAssigned === 0 ? (
-        <div className="rounded border border-dashed border-gray-300 px-4 py-8 text-center">
-          <p className="text-sm font-medium text-gray-700">
+        <div className="rounded border border-dashed border-line-strong px-4 py-8 text-center">
+          <p className="text-sm font-medium text-fg-soft">
             Chưa có việc nào được giao trong {period.toLowerCase()}
           </p>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-fg-muted">
             KPI được tính từ các việc giao trong tháng, nên chưa có điểm để hiển thị.
           </p>
         </div>
@@ -130,17 +130,17 @@ export function UserKpiPanel({ userId }: UserKpiPanelProps) {
           <div className="flex flex-col gap-3">
             <div className="flex items-end justify-between gap-3">
               <p className="flex items-baseline gap-1.5">
-                <span className="text-4xl font-semibold tabular-nums text-gray-900">
+                <span className="text-4xl font-semibold tabular-nums text-fg">
                   {summary.kpiScore}
                 </span>
-                <span className="text-sm text-gray-500">/ {MAX_SCORE} điểm</span>
+                <span className="text-sm text-fg-muted">/ {MAX_SCORE} điểm</span>
               </p>
               {summary.incentiveLabel && <Badge tone={tier.tone}>{summary.incentiveLabel}</Badge>}
             </div>
             <ScoreMeter score={summary.kpiScore} />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 border-t border-gray-200 pt-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 border-t border-line pt-4 sm:grid-cols-3">
             <Metric
               label="Việc được giao"
               value={String(summary.totalAssigned)}

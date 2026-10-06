@@ -1,41 +1,33 @@
 import { useId } from "react";
-import { LOGO, OrbitGradientDefs, OrbitLogoMark, WORD_TEXT_CLASS } from "./orbitLogo";
+import { LOGO, logoHeightFor, OrbitLogoDefs, OrbitLogoMark, OrbitWord } from "./orbitLogo";
 
 interface OrbitWordmarkProps {
+  /** Width in px; the height follows from the logo's proportions. Keep it at 96 px or more (see docs/brand/README.md). */
   width: number;
-  height: number;
   className?: string;
 }
 
 /**
- * Orbit logo + wordmark as inline SVG. Inline (not an <img>) so the text really uses the brand font
- * - an SVG loaded through <img> cannot reach the page's web fonts - and so its colour follows the
- * theme through CSS (see `.orbit-wordmark-text` in globals.css) instead of needing a second file.
+ * The Orbit logo lockup (mark + wordmark) as inline SVG. Inline so its colours follow the theme through CSS variables
+ * (see `--logo-*` in globals.css) instead of needing a second file per theme; all shapes are paths, so it does not
+ * depend on any font being loaded.
  */
-export function OrbitWordmark({ width, height, className }: OrbitWordmarkProps) {
-  const gradientId = `orbit-gradient-${useId().replace(/:/g, "")}`;
-  const { text } = LOGO;
+export function OrbitWordmark({ width, className }: OrbitWordmarkProps) {
+  const id = `orbit-logo-${useId().replace(/:/g, "")}`;
 
   return (
     <svg
       role="img"
       aria-label="Orbit"
       width={width}
-      height={height}
+      height={logoHeightFor(width)}
       viewBox={`0 0 ${LOGO.width} ${LOGO.height}`}
       className={className}
+      style={{ overflow: "visible" }}
     >
-      <OrbitGradientDefs id={gradientId} />
-      <OrbitLogoMark gradientId={gradientId} />
-      <text
-        className={WORD_TEXT_CLASS}
-        x={text.x}
-        y={text.baseline}
-        fontSize={text.fontSize}
-        letterSpacing={text.letterSpacing}
-      >
-        {text.word}
-      </text>
+      <OrbitLogoDefs id={id} />
+      <OrbitLogoMark id={id} />
+      <OrbitWord />
     </svg>
   );
 }

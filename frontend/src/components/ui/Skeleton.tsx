@@ -10,13 +10,13 @@ interface SkeletonProps {
  */
 export function Skeleton({ rows = 3 }: SkeletonProps) {
   return (
-    <div className="animate-pulse overflow-hidden rounded border border-gray-200">
+    <div className="animate-pulse overflow-hidden rounded border border-line">
       <div className="h-9 bg-surface-muted" />
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 border-t border-gray-100 px-4 py-3">
-          <div className="h-4 w-1/3 rounded bg-gray-200" />
-          <div className="h-4 w-1/4 rounded bg-gray-200" />
-          <div className="h-4 w-1/5 rounded bg-gray-200" />
+        <div key={i} className="flex items-center gap-4 border-t border-line/60 px-4 py-3">
+          <div className="h-4 w-1/3 rounded bg-line" />
+          <div className="h-4 w-1/4 rounded bg-line" />
+          <div className="h-4 w-1/5 rounded bg-line" />
         </div>
       ))}
     </div>

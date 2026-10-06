@@ -17,10 +17,10 @@ export function CompanyBadge() {
       title={`Giới thiệu ${company.name}`}
       aria-label={`Giới thiệu ${company.name}`}
       data-tour="company"
-      className="ml-3 hidden min-w-0 items-center gap-2 rounded border-l border-gray-200 pl-3 text-left transition-colors duration-150 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary md:flex"
+      className="ml-3 hidden min-w-0 items-center gap-2 rounded border-l border-line pl-3 text-left transition-colors duration-150 hover:text-primary-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary md:flex"
     >
       <CompanyLogo name={company.name} logoUrl={company.logoUrl} />
-      <span className="max-w-[12rem] truncate text-sm font-medium text-gray-700">{company.name}</span>
+      <span className="max-w-[12rem] truncate text-sm font-medium text-fg-soft">{company.name}</span>
     </button>
   );
 }

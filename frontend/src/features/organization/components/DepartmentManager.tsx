@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus } from "@phosphor-icons/react";
 import { useTabs } from "@/components/layout/TabsContext";
+import { AnimatedList } from "@/components/ui/AnimatedList";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
@@ -58,24 +59,24 @@ export function DepartmentManager({ currentUser }: DepartmentManagerProps) {
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold text-gray-900">Phòng ban</h2>
+      <h2 className="text-lg font-semibold text-fg">Phòng ban</h2>
 
       {(departments ?? []).length === 0 && !isExecutive ? (
         <EmptyState title="Chưa có phòng ban nào" />
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 [.pane-narrow_&]:sm:grid-cols-2 [.pane-narrow_&]:md:grid-cols-2">
+        <AnimatedList as="div" className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 [.pane-narrow_&]:sm:grid-cols-2 [.pane-narrow_&]:md:grid-cols-2">
           {(departments ?? []).map((department) => (
             <button
               key={department.id}
               type="button"
               onClick={() => navigateActiveTab(`/dashboard/departments/${department.id}`)}
-              className="card-interactive flex aspect-square flex-col justify-between rounded border border-gray-200 bg-white p-4 text-left shadow-sm hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              className="card-interactive flex aspect-square flex-col justify-between rounded glass-card p-4 text-left hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
               <DepartmentAvatar department={department} />
               <div>
-                <p className="font-semibold text-gray-900">{department.name}</p>
+                <p className="font-semibold text-fg">{department.name}</p>
                 {department.description && (
-                  <p className="line-clamp-2 text-xs text-gray-500">{department.description}</p>
+                  <p className="line-clamp-2 text-xs text-fg-muted">{department.description}</p>
                 )}
               </div>
             </button>
@@ -85,17 +86,17 @@ export function DepartmentManager({ currentUser }: DepartmentManagerProps) {
             <button
               type="button"
               onClick={() => setCreating(true)}
-              className="flex aspect-square flex-col items-center justify-center gap-1 rounded border border-dashed border-gray-300 text-gray-400 transition-all duration-150 hover:border-primary hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              className="flex aspect-square flex-col items-center justify-center gap-1 rounded border border-dashed border-line-strong text-fg-faint transition-all duration-150 hover:border-primary hover:text-primary-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
               <Plus size={28} aria-hidden />
               <span className="text-xs">Tạo phòng ban</span>
             </button>
           )}
-        </div>
+        </AnimatedList>
       )}
 
       {isExecutive && creating && (
-        <form onSubmit={handleCreate} className="flex max-w-md flex-col gap-3 rounded border border-gray-200 p-4">
+        <form onSubmit={handleCreate} className="flex max-w-md flex-col gap-3 rounded border border-line p-4">
           <Input label="Tên phòng ban" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           <Input
             label="Mô tả (tuỳ chọn)"

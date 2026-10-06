@@ -2,12 +2,13 @@
 
 import { useEffect, useId, useRef } from "react";
 import {
-  CAP_HEIGHT_RATIO,
   LOGO,
-  OrbitGradientDefs,
+  logoHeightFor,
+  OrbitLogoDefs,
   OrbitLogoMark,
-  WORD_TEXT_CLASS,
+  OrbitWord,
 } from "@/components/brand/orbitLogo";
+import { gsap } from "@/lib/motion";
 import {
   frameAt,
   INTRO_DURATION,
@@ -17,62 +18,19 @@ import {
 } from "../introTimeline";
 
 interface OrbitIntroLogoProps {
+  /** Width in px of the finished logo; the height follows from its proportions. */
   width: number;
-  height: number;
   /** Called once, when the letters are in place (also when the user skips the intro). */
   onComplete: () => void;
 }
 
-const FONT_WAIT_MS = 1200;
-const CAP_HALF = (LOGO.text.fontSize * CAP_HEIGHT_RATIO) / 2;
-const LETTERS = LOGO.text.word.split("");
 const SKIP_EVENTS = ["keydown", "pointerdown"] as const;
 
-/** Slots used before the real glyph positions are measured (and if measuring is impossible). */
-const FALLBACK_ADVANCE = 24.5;
-const FALLBACK_HALF_WIDTH = 11;
-const FALLBACK_TARGETS: LetterTarget[] = LETTERS.map((_, i) => ({
-  x: LOGO.text.x + i * FALLBACK_ADVANCE + FALLBACK_HALF_WIDTH,
-  y: LOGO.text.baseline - CAP_HALF,
+/** Where each capital of the finished word sits (its centre): the intro ends exactly there, so it lands on the real logo. */
+const TARGETS: LetterTarget[] = LOGO.letters.map((letter) => ({
+  x: letter.x + letter.width / 2,
+  y: letter.y + letter.height / 2,
 }));
-
-interface MeasuredWord {
-  targets: LetterTarget[];
-  halfWidths: number[];
-}
-
-/**
- * Where each letter of the finished word really sits, read from the browser's own layout of the
- * (invisible) reference text. Because the letters end on these exact positions, the animation lands
- * on the real wordmark with no jump, whatever font the browser ended up using.
- */
-function measureWord(reference: SVGTextElement | null): MeasuredWord | null {
-  if (!reference) return null;
-  try {
-    if (reference.getNumberOfChars() !== LETTERS.length) return null;
-    const targets: LetterTarget[] = [];
-    const halfWidths: number[] = [];
-    for (let i = 0; i < LETTERS.length; i++) {
-      const start = reference.getStartPositionOfChar(i).x;
-      const end = reference.getEndPositionOfChar(i).x;
-      const halfWidth = Math.max(0, (end - start) / 2);
-      halfWidths.push(halfWidth);
-      targets.push({ x: start + halfWidth, y: LOGO.text.baseline - CAP_HALF });
-    }
-    return { targets, halfWidths };
-  } catch {
-    return null; // not laid out (e.g. display: none): keep the fallback slots
-  }
-}
-
-/** Gives the web font a moment to arrive so the measured positions are those of the final font. */
-async function waitForBrandFont(): Promise<void> {
-  if (typeof document === "undefined" || !("fonts" in document)) return;
-  const loaded = document.fonts
-    .load(`700 ${LOGO.text.fontSize}px "Space Grotesk"`, LOGO.text.word)
-    .catch(() => undefined);
-  await Promise.race([loaded, new Promise((resolve) => window.setTimeout(resolve, FONT_WAIT_MS))]);
-}
 
 function logoTransform(frame: IntroFrame): string {
   const { cx, cy } = LOGO.planet;
@@ -91,27 +49,27 @@ function guideTransform(frame: IntroFrame): string {
 }
 
 /**
- * The login intro: the letters of ORBIT circle the planet logo, then are pushed out to form the word
- * beside it, exactly as in the static wordmark. The motion itself is `frameAt` (introTimeline.ts);
- * this component only applies each frame straight to the SVG attributes (no React re-renders at 60 fps).
+ * The login intro: the letters of ORBIT circle the planet, then are pushed out to form the word beside it, exactly as in
+ * the static logo. The motion itself is `frameAt` (introTimeline.ts); this component only applies each frame straight to
+ * the SVG attributes (no React re-renders at 60 fps); a GSAP tween supplies the time. The letters are paths, so the
+ * intro needs no font and starts at once.
  * Any key press or click skips to the finished logo.
  */
-export function OrbitIntroLogo({ width, height, onComplete }: OrbitIntroLogoProps) {
-  const gradientId = `orbit-gradient-${useId().replace(/:/g, "")}`;
+export function OrbitIntroLogo({ width, onComplete }: OrbitIntroLogoProps) {
+  const id = `orbit-logo-${useId().replace(/:/g, "")}`;
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
   const stageRef = useRef<SVGGElement>(null);
   const logoRef = useRef<SVGGElement>(null);
   const guideRef = useRef<SVGGElement>(null);
-  const wordRef = useRef<SVGTextElement>(null);
+  const wordRef = useRef<SVGGElement>(null);
   const backRefs = useRef<(SVGGElement | null)[]>([]);
   const frontRefs = useRef<(SVGGElement | null)[]>([]);
 
   useEffect(() => {
     let finished = false;
-    let rafId = 0;
-    let targets = FALLBACK_TARGETS;
+    let clockTween: gsap.core.Tween | null = null;
 
     function apply(frame: IntroFrame) {
       stageRef.current?.setAttribute("transform", stageTransform(frame));
@@ -140,10 +98,10 @@ export function OrbitIntroLogo({ width, height, onComplete }: OrbitIntroLogoProp
     function finish() {
       if (finished) return;
       finished = true;
-      cancelAnimationFrame(rafId);
+      clockTween?.kill();
       removeSkipListeners();
-      apply(frameAt(INTRO_DURATION, targets));
-      // Hand over to the real word: same glyphs in the same places, now one text node again.
+      apply(frameAt(INTRO_DURATION, TARGETS));
+      // Hand over to the real word: same letters in the same places, now one group again.
       backRefs.current.forEach((node) => node?.setAttribute("opacity", "0"));
       frontRefs.current.forEach((node) => node?.setAttribute("opacity", "0"));
       guideRef.current?.setAttribute("opacity", "0");
@@ -157,44 +115,30 @@ export function OrbitIntroLogo({ width, height, onComplete }: OrbitIntroLogoProp
 
     SKIP_EVENTS.forEach((name) => window.addEventListener(name, skip));
 
-    void waitForBrandFont().then(() => {
-      if (finished) return;
-      const measured = measureWord(wordRef.current);
-      if (measured) {
-        targets = measured.targets;
-        measured.halfWidths.forEach((half, i) => {
-          for (const group of [backRefs.current[i], frontRefs.current[i]]) {
-            group?.firstElementChild?.setAttribute("x", String(-half));
-          }
-        });
-      }
-
-      const startedAt = performance.now();
-      const tick = (now: number) => {
-        if (finished) return;
-        const frame = frameAt((now - startedAt) / 1000, targets);
-        if (frame.done) {
-          finish();
-          return;
-        }
-        apply(frame);
-        rafId = requestAnimationFrame(tick);
-      };
-      rafId = requestAnimationFrame(tick);
+    // One GSAP tween is the clock: it runs `clock.t` from 0 to the intro's length in real time (and its ticker
+    // keeps the pace steady if the tab was busy), and every update draws the frame for that moment.
+    const clock = { t: 0 };
+    clockTween = gsap.to(clock, {
+      t: INTRO_DURATION,
+      duration: INTRO_DURATION,
+      ease: "none",
+      onUpdate: () => apply(frameAt(clock.t, TARGETS)),
+      onComplete: finish,
     });
 
     return () => {
       finished = true;
-      cancelAnimationFrame(rafId);
+      clockTween?.kill();
       removeSkipListeners();
     };
   }, []);
 
   // First frame (also what the server renders): planet in the middle, letters not yet visible.
-  const initial = frameAt(0, FALLBACK_TARGETS);
+  const initial = frameAt(0, TARGETS);
   const orbitCenterY = LOGO.planet.cy + ORBIT.centerYOffset;
 
-  const letterGroup = (kind: "back" | "front", letter: string, index: number) => {
+  const letterGroup = (kind: "back" | "front", index: number) => {
+    const letter = LOGO.letters[index]!;
     const frame = initial.letters[index]!;
     return (
       <g
@@ -206,14 +150,11 @@ export function OrbitIntroLogo({ width, height, onComplete }: OrbitIntroLogoProp
         transform={`translate(${frame.x} ${frame.y}) scale(${frame.scale})`}
         opacity={0}
       >
-        <text
-          className={WORD_TEXT_CLASS}
-          x={-FALLBACK_HALF_WIDTH}
-          y={CAP_HALF}
-          fontSize={LOGO.text.fontSize}
-        >
-          {letter}
-        </text>
+        <path
+          className="orbit-logo-word"
+          transform={`translate(${-letter.width / 2} ${-letter.height / 2})`}
+          d={letter.d}
+        />
       </g>
     );
   };
@@ -223,11 +164,11 @@ export function OrbitIntroLogo({ width, height, onComplete }: OrbitIntroLogoProp
       role="img"
       aria-label="Orbit"
       width={width}
-      height={height}
+      height={logoHeightFor(width)}
       viewBox={`0 0 ${LOGO.width} ${LOGO.height}`}
       style={{ overflow: "visible" }}
     >
-      <OrbitGradientDefs id={gradientId} />
+      <OrbitLogoDefs id={id} />
 
       <g ref={stageRef} transform={stageTransform(initial)}>
         <g
@@ -242,34 +183,26 @@ export function OrbitIntroLogo({ width, height, onComplete }: OrbitIntroLogoProp
             rx={ORBIT.rx}
             ry={ORBIT.ry}
             fill="none"
-            stroke="#A5B4FC"
+            stroke="#818CF8"
             strokeWidth={1}
             strokeDasharray="3 5"
             transform={`rotate(${ORBIT.tilt} ${LOGO.planet.cx} ${orbitCenterY})`}
           />
         </g>
 
-        {LETTERS.map((letter, i) => letterGroup("back", letter, i))}
+        {LOGO.letters.map((_, i) => letterGroup("back", i))}
 
         <g ref={logoRef} transform={logoTransform(initial)}>
-          <OrbitLogoMark gradientId={gradientId} />
+          <OrbitLogoMark id={id} />
         </g>
 
-        {LETTERS.map((letter, i) => letterGroup("front", letter, i))}
+        {LOGO.letters.map((_, i) => letterGroup("front", i))}
       </g>
 
-      {/* Invisible until the end: measured for the letters' final slots, then shown as the finished word. */}
-      <text
-        ref={wordRef}
-        className={WORD_TEXT_CLASS}
-        x={LOGO.text.x}
-        y={LOGO.text.baseline}
-        fontSize={LOGO.text.fontSize}
-        letterSpacing={LOGO.text.letterSpacing}
-        opacity={0}
-      >
-        {LOGO.text.word}
-      </text>
+      {/* Invisible until the end, then shown as the finished word. */}
+      <g ref={wordRef} opacity={0}>
+        <OrbitWord />
+      </g>
     </svg>
   );
 }

@@ -78,12 +78,12 @@ export function TaskChecklist({ task }: { task: Task }) {
   return (
     <section className="flex flex-col gap-2" aria-label="Checklist">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium text-gray-500">
+        <p className="text-xs font-medium text-fg-muted">
           Checklist{total > 0 ? ` (${done}/${total})` : ""}
         </p>
         {total > 0 && (
           <div
-            className="h-1.5 w-24 overflow-hidden rounded bg-gray-200"
+            className="h-1.5 w-24 overflow-hidden rounded bg-line"
             role="progressbar"
             aria-valuemin={0}
             aria-valuemax={total}
@@ -98,7 +98,7 @@ export function TaskChecklist({ task }: { task: Task }) {
       </div>
 
       {total > 0 && task.status === "ASSIGNED" && (
-        <p className="text-xs text-gray-500">Nhận việc xong mới tick được các mục.</p>
+        <p className="text-xs text-fg-muted">Nhận việc xong mới tick được các mục.</p>
       )}
 
       {total > 0 && (
@@ -106,7 +106,7 @@ export function TaskChecklist({ task }: { task: Task }) {
           {task.checklist.map((item) => (
             <li
               key={item.id}
-              className="flex items-center gap-2 rounded border border-gray-200 px-2.5 py-1.5"
+              className="flex items-center gap-2 rounded border border-line px-2.5 py-1.5"
             >
               <input
                 type="checkbox"
@@ -117,7 +117,7 @@ export function TaskChecklist({ task }: { task: Task }) {
                 className="h-4 w-4 shrink-0 accent-primary disabled:cursor-not-allowed"
               />
               <span
-                className={`min-w-0 flex-1 break-words text-sm ${item.done ? "text-gray-400 line-through" : "text-gray-900"}`}
+                className={`min-w-0 flex-1 break-words text-sm ${item.done ? "text-fg-faint line-through" : "text-fg"}`}
               >
                 {item.text}
               </span>
@@ -132,7 +132,7 @@ export function TaskChecklist({ task }: { task: Task }) {
                   }
                   disabled={removeItem.isPending}
                   aria-label={`Xoá mục ${item.text}`}
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-400 hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-fg-faint hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
                 >
                   <X size={14} aria-hidden />
                 </button>
@@ -150,7 +150,7 @@ export function TaskChecklist({ task }: { task: Task }) {
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Thêm một bước..."
             aria-label="Mục checklist mới"
-            className="min-w-0 flex-1 rounded border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            className="min-w-0 flex-1 rounded border border-line bg-surface px-2.5 py-1.5 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           />
           <Button
             type="submit"

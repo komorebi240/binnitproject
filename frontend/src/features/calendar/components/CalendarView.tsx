@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { PlusButton } from "@/components/ui/PlusButton";
@@ -22,8 +23,8 @@ import { CalendarEventFields } from "./CalendarEventFields";
 const TYPE_DOT: Record<CalendarEventType, string> = {
   MEETING: "bg-primary",
   DEADLINE: "bg-danger",
-  BUSINESS_TRIP: "bg-yellow-500",
-  OTHER: "bg-gray-400",
+  BUSINESS_TRIP: "bg-warning",
+  OTHER: "bg-fg-faint",
 };
 
 const WEEKDAY_LABELS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
@@ -48,11 +49,11 @@ function buildMonthGrid(monthDate: Date): Date[] {
 
 function EventRow({ event, onDelete, deleting }: { event: CalendarEvent; onDelete: () => void; deleting: boolean }) {
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 px-3 py-2 text-sm">
+    <li className="flex flex-wrap items-center justify-between gap-2 rounded border border-line px-3 py-2 text-sm">
       <span className="flex min-w-0 items-center gap-2">
         <Badge tone={event.status === "PENDING" ? "warning" : "neutral"}>{TYPE_LABELS[event.eventType]}</Badge>
         <span className="truncate">{event.title}</span>
-        <span className="shrink-0 text-gray-500">{formatSpan(event)}</span>
+        <span className="shrink-0 text-fg-muted">{formatSpan(event)}</span>
       </span>
       <Button variant="danger" onClick={onDelete} loading={deleting}>
         Xoá
@@ -110,19 +111,18 @@ export function CalendarView() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold text-gray-900">Lịch của tôi</h2>
+        <h2 className="text-lg font-semibold text-fg">Lịch của tôi</h2>
         <PlusButton label="Thêm sự kiện" onClick={() => setCreating(true)} />
       </div>
 
       {pendingEvents.length > 0 && (
-        <section className="flex flex-col gap-2 rounded border border-yellow-200 bg-yellow-50 p-4">
-          <p className="text-sm font-medium text-gray-900">Sự kiện chờ bạn xác nhận</p>
+        <Alert tone="warning" title="Sự kiện chờ bạn xác nhận" className="p-4">
           {pendingEvents.map((e) => (
             <div key={e.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span>
                 {e.title} - {formatSpan(e)}
                 {e.createdByName && !e.createdBySelf && (
-                  <span className="text-gray-500"> (thêm bởi {e.createdByName})</span>
+                  <span className="opacity-80"> (thêm bởi {e.createdByName})</span>
                 )}
               </span>
               <div className="flex gap-2">
@@ -135,7 +135,7 @@ export function CalendarView() {
               </div>
             </div>
           ))}
-        </section>
+        </Alert>
       )}
 
       <section className="flex flex-col gap-3">
@@ -146,7 +146,7 @@ export function CalendarView() {
           >
             ←
           </Button>
-          <p className="text-sm font-semibold text-gray-900">
+          <p className="text-sm font-semibold text-fg">
             Tháng {monthDate.getMonth() + 1}/{monthDate.getFullYear()}
           </p>
           <Button
@@ -157,9 +157,9 @@ export function CalendarView() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-7 gap-px overflow-hidden rounded border border-gray-200 bg-gray-200 text-xs">
+        <div className="grid grid-cols-7 gap-px overflow-hidden rounded border border-line bg-line text-xs">
           {WEEKDAY_LABELS.map((label) => (
-            <div key={label} className="bg-surface-muted px-2 py-1 text-center font-medium text-gray-500">
+            <div key={label} className="bg-surface-muted/70 px-2 py-1 text-center font-medium text-fg-muted">
               {label}
             </div>
           ))}
@@ -173,7 +173,7 @@ export function CalendarView() {
                 key={day.toISOString()}
                 onClick={() => setSelectedDay(day)}
                 aria-label={`Ngày ${day.getDate()}/${day.getMonth() + 1}${dayEvents.length > 0 ? `, ${dayEvents.length} sự kiện` : ""}`}
-                className={`min-h-20 bg-white p-1 text-left transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${isCurrentMonth ? "" : "bg-gray-50 text-gray-300"}`}
+                className={`min-h-20 bg-surface/60 p-1 text-left transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${isCurrentMonth ? "" : "bg-surface-muted/40 text-fg-faint"}`}
               >
                 <span
                   className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${isToday ? "bg-primary text-primary-foreground" : ""}`}
@@ -182,12 +182,12 @@ export function CalendarView() {
                 </span>
                 <span className="mt-1 flex flex-col gap-0.5">
                   {dayEvents.slice(0, 3).map((e) => (
-                    <span key={e.id} className="flex items-center gap-1 truncate text-[11px] text-gray-700">
+                    <span key={e.id} className="flex items-center gap-1 truncate text-[11px] text-fg-soft">
                       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${TYPE_DOT[e.eventType]}`} />
                       {e.title}
                     </span>
                   ))}
-                  {dayEvents.length > 3 && <span className="text-[11px] text-gray-400">+{dayEvents.length - 3} nữa</span>}
+                  {dayEvents.length > 3 && <span className="text-[11px] text-fg-faint">+{dayEvents.length - 3} nữa</span>}
                 </span>
               </button>
             );
@@ -196,9 +196,9 @@ export function CalendarView() {
       </section>
 
       <section className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-gray-700">Sự kiện sắp tới</p>
+        <p className="text-sm font-medium text-fg-soft">Sự kiện sắp tới</p>
         {coming.length === 0 ? (
-          <p className="text-sm text-gray-400">Không có sự kiện sắp tới</p>
+          <p className="text-sm text-fg-faint">Không có sự kiện sắp tới</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
             {coming.map((e) => (
@@ -214,7 +214,7 @@ export function CalendarView() {
           onClose={() => setSelectedDay(null)}
         >
           {selectedEvents.length === 0 ? (
-            <p className="text-sm text-gray-400">Không có sự kiện trong ngày này</p>
+            <p className="text-sm text-fg-faint">Không có sự kiện trong ngày này</p>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {selectedEvents.map((e) => (

@@ -71,7 +71,7 @@ export function KpiConfigForm({ currentUser }: KpiConfigFormProps) {
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold text-gray-900">Công thức KPI &amp; Insentive</h2>
+      <h2 className="text-lg font-semibold text-fg">Công thức KPI &amp; Insentive</h2>
 
       <form onSubmit={handleSaveWeight} className="flex max-w-sm flex-col gap-3">
         <Input
@@ -82,7 +82,7 @@ export function KpiConfigForm({ currentUser }: KpiConfigFormProps) {
           value={completionPercent}
           onChange={(e) => setCompletionPercent(Number(e.target.value))}
         />
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-fg-muted">
           KPI = {completionPercent}% × tỷ lệ hoàn thành + {100 - completionPercent}% × tỷ lệ đúng hạn
         </p>
         <Button type="submit" loading={updateConfig.isPending}>
@@ -91,7 +91,7 @@ export function KpiConfigForm({ currentUser }: KpiConfigFormProps) {
       </form>
 
       <form onSubmit={handleSaveTiers} className="flex flex-col gap-3">
-        <p className="text-sm font-medium text-gray-700">Bảng insentive theo mức KPI</p>
+        <p className="text-sm font-medium text-fg-soft">Bảng insentive theo mức KPI</p>
         {tiers.map((tier, index) => (
           <div key={index} className="flex items-center gap-2">
             <Input

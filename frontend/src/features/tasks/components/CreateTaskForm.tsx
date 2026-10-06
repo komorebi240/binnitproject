@@ -131,8 +131,8 @@ export function CreateTaskForm({ currentUser, onDone }: CreateTaskFormProps) {
             required
           />
           {selectedAssigneeId && (
-            <div className="rounded border border-gray-200 bg-surface-muted p-2 text-xs text-gray-600">
-              <p className="mb-1 font-medium text-gray-700">Việc hiện tại của người này:</p>
+            <div className="rounded border border-line bg-surface-muted p-2 text-xs text-fg-soft">
+              <p className="mb-1 font-medium text-fg-soft">Việc hiện tại của người này:</p>
               {selectedAssigneeOpenTasks.length === 0 ? (
                 <p>Chưa có việc nào đang mở.</p>
               ) : (

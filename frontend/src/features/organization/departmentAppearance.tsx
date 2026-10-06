@@ -116,7 +116,7 @@ export function DepartmentAppearancePicker({
     <div className="flex flex-col gap-3">
       {showPresets && (
         <div>
-          <p className="mb-1 text-sm font-medium text-gray-700">Gợi ý nhanh</p>
+          <p className="mb-1 text-sm font-medium text-fg-soft">Gợi ý nhanh</p>
           <div className="flex flex-wrap gap-1.5">
             {DEPARTMENT_PRESETS.map((preset) => (
               <button
@@ -125,7 +125,7 @@ export function DepartmentAppearancePicker({
                 onClick={() =>
                   onChange({ name: preset.name, color: preset.color, icon: preset.icon })
                 }
-                className="rounded-full border border-gray-200 px-2.5 py-1 text-xs text-gray-700 transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                className="rounded-full border border-line px-2.5 py-1 text-xs text-fg-soft transition-colors duration-150 hover:border-primary hover:text-primary-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               >
                 {preset.name}
               </button>
@@ -135,14 +135,14 @@ export function DepartmentAppearancePicker({
       )}
 
       <div>
-        <p className="mb-1 text-sm font-medium text-gray-700">Màu</p>
+        <p className="mb-1 text-sm font-medium text-fg-soft">Màu</p>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Màu phòng ban">
           <button
             type="button"
             onClick={() => onChange({ ...value, color: "" })}
             aria-pressed={value.color === ""}
             className={`rounded-full border px-2.5 py-1 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
-              value.color === "" ? "border-primary text-primary" : "border-gray-200 text-gray-600"
+              value.color === "" ? "border-primary text-primary-text" : "border-line text-fg-soft"
             }`}
           >
             Mặc định
@@ -164,14 +164,14 @@ export function DepartmentAppearancePicker({
       </div>
 
       <div>
-        <p className="mb-1 text-sm font-medium text-gray-700">Biểu tượng</p>
+        <p className="mb-1 text-sm font-medium text-fg-soft">Biểu tượng</p>
         <div className="flex flex-wrap gap-2" role="group" aria-label="Biểu tượng phòng ban">
           <button
             type="button"
             onClick={() => onChange({ ...value, icon: "" })}
             aria-pressed={value.icon === ""}
             className={`rounded-full border px-2.5 py-1 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
-              value.icon === "" ? "border-primary text-primary" : "border-gray-200 text-gray-600"
+              value.icon === "" ? "border-primary text-primary-text" : "border-line text-fg-soft"
             }`}
           >
             Chữ cái đầu
@@ -188,8 +188,8 @@ export function DepartmentAppearancePicker({
                 title={label}
                 className={`flex h-8 w-8 items-center justify-center rounded border transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
                   value.icon === key
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-gray-200 text-gray-600 hover:border-primary"
+                    ? "border-primary bg-primary/10 text-primary-text"
+                    : "border-line text-fg-soft hover:border-primary"
                 }`}
               >
                 <IconComponent size={18} aria-hidden />
@@ -207,7 +207,7 @@ export function DepartmentAppearancePicker({
             icon: value.icon || null,
           }}
         />
-        <p className="text-xs text-gray-500">Xem trước</p>
+        <p className="text-xs text-fg-muted">Xem trước</p>
       </div>
     </div>
   );

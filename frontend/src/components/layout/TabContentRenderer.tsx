@@ -65,7 +65,7 @@ function TabPage({ tab }: { tab: Tab }) {
     case "/dashboard/messages":
       return (
         <>
-          <h1 className="mb-4 text-lg font-semibold text-gray-900">Tin nhắn</h1>
+          <h1 className="mb-4 text-lg font-semibold text-fg">Tin nhắn</h1>
           {currentUser.systemAccount && <BroadcastComposer />}
           <Suspense fallback={null}>
             <MessengerView

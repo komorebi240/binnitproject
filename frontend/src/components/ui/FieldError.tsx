@@ -21,7 +21,7 @@ export function FieldError({ id, message }: { id: string; message: string }) {
   );
 }
 
-type NativeField = HTMLInputElement | HTMLSelectElement;
+type NativeField = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
 /**
  * Replaces the browser's own validation bubble (English, unstyled) with a Vietnamese message shown under the

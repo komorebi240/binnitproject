@@ -163,7 +163,7 @@ export function FloatingWindow({
       role="dialog"
       aria-label={title}
       onPointerDownCapture={onActivate}
-      className="animate-fade-in fixed flex flex-col rounded-lg border border-gray-200 bg-white shadow-xl"
+      className="glass-window animate-fade-in fixed flex flex-col rounded-lg"
       style={{
         left: geometry.x,
         top: geometry.y,
@@ -172,7 +172,7 @@ export function FloatingWindow({
         zIndex,
       }}
     >
-      <div className="flex items-center gap-1 border-b border-gray-100 px-2 py-1.5">
+      <div className="flex items-center gap-1 border-b border-line/60 px-2 py-1.5">
         <div
           role="button"
           tabIndex={0}
@@ -182,8 +182,8 @@ export function FloatingWindow({
           {...pointerHandlers({ kind: "move" })}
           className="flex min-w-0 flex-1 cursor-grab touch-none select-none items-center gap-1 rounded active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         >
-          <DotsSixVertical size={16} className="shrink-0 text-gray-400" aria-hidden />
-          <span className="truncate text-sm font-semibold text-gray-900">{title}</span>
+          <DotsSixVertical size={16} className="shrink-0 text-fg-faint" aria-hidden />
+          <span className="truncate text-sm font-semibold text-fg">{title}</span>
         </div>
         <button
           type="button"
@@ -191,7 +191,7 @@ export function FloatingWindow({
           title={collapsed ? "Mở ra" : "Thu gọn"}
           aria-label={collapsed ? "Mở ra" : "Thu gọn"}
           aria-expanded={!collapsed}
-          className="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-surface-muted hover:text-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          className="flex h-6 w-6 items-center justify-center rounded text-fg-faint hover:bg-surface-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         >
           {collapsed ? <CaretUp size={14} aria-hidden /> : <Minus size={14} aria-hidden />}
         </button>
@@ -210,7 +210,7 @@ export function FloatingWindow({
           >
             {edge === "se" && (
               <svg
-                className="pointer-events-none absolute bottom-1.5 right-1.5 text-gray-400"
+                className="pointer-events-none absolute bottom-1.5 right-1.5 text-fg-faint"
                 width="10"
                 height="10"
                 viewBox="0 0 10 10"

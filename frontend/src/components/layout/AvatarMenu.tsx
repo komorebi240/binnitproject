@@ -11,16 +11,16 @@ import type { PresenceStatus, UserProfile } from "@/features/auth/types";
 import { useTabs } from "./TabsContext";
 
 const STATUS_OPTIONS: { value: PresenceStatus; dotClassName: string }[] = [
-  { value: "ONLINE", dotClassName: "bg-green-500" },
-  { value: "LIMITED", dotClassName: "bg-yellow-500" },
-  { value: "DO_NOT_DISTURB", dotClassName: "bg-red-500" },
+  { value: "ONLINE", dotClassName: "bg-success" },
+  { value: "LIMITED", dotClassName: "bg-warning" },
+  { value: "DO_NOT_DISTURB", dotClassName: "bg-danger" },
 ];
 
 const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
 const ITEM_CLASS_NAME =
-  "flex w-full items-center gap-2.5 rounded px-2.5 py-2 text-left text-sm text-gray-700 transition-colors duration-150 hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-none disabled:opacity-50";
+  "flex w-full items-center gap-2.5 rounded px-2.5 py-2 text-left text-sm text-fg-soft transition-colors duration-150 hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-none disabled:opacity-50";
 
 /**
  * The avatar in the header opens a small menu with the four things people reach for most: set their
@@ -124,13 +124,13 @@ export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
           <div
             ref={menuRef}
             role="menu"
-            className="animate-pop-in absolute right-0 top-11 z-30 w-64 origin-top-right rounded-lg border border-gray-200 bg-white p-1.5 shadow-lg"
+            className="animate-pop-in absolute right-0 top-11 z-30 glass w-64 origin-top-right rounded-lg p-1.5"
           >
-            <div className="flex items-center gap-2.5 border-b border-gray-100 px-2.5 pb-2.5 pt-1.5">
+            <div className="flex items-center gap-2.5 border-b border-line/60 px-2.5 pb-2.5 pt-1.5">
               <Avatar avatarUrl={currentUser.avatarUrl} fullName={currentUser.fullName} size="md" />
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-gray-900">{currentUser.fullName}</p>
-                <p className="truncate text-xs text-gray-500">{currentUser.title ?? currentUser.companyName}</p>
+                <p className="truncate text-sm font-semibold text-fg">{currentUser.fullName}</p>
+                <p className="truncate text-xs text-fg-muted">{currentUser.title ?? currentUser.companyName}</p>
               </div>
             </div>
 
@@ -143,12 +143,12 @@ export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
                 className={ITEM_CLASS_NAME}
               >
                 <span
-                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_OPTIONS.find((s) => s.value === currentUser.presenceStatus)?.dotClassName ?? "bg-green-500"}`}
+                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_OPTIONS.find((s) => s.value === currentUser.presenceStatus)?.dotClassName ?? "bg-success"}`}
                   aria-hidden
                 />
                 <span className="flex-1">Trạng thái</span>
-                <span className="max-w-[7.5rem] truncate text-xs text-gray-500">{STATUS_LABELS[currentUser.presenceStatus]}</span>
-                <CaretDown size={12} aria-hidden className={`shrink-0 text-gray-400 transition-transform duration-200 ${statusOpen ? "rotate-180" : ""}`} />
+                <span className="max-w-[7.5rem] truncate text-xs text-fg-muted">{STATUS_LABELS[currentUser.presenceStatus]}</span>
+                <CaretDown size={12} aria-hidden className={`shrink-0 text-fg-faint transition-transform duration-200 ${statusOpen ? "rotate-180" : ""}`} />
               </button>
 
               {/* grid-rows 0fr -> 1fr animates the height without measuring it */}
@@ -166,7 +166,7 @@ export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
                           tabIndex={statusOpen ? 0 : -1}
                           onClick={() => handleStatus(option.value)}
                           disabled={updatePresence.isPending}
-                          className={`${ITEM_CLASS_NAME} ${selected ? "bg-surface-muted font-medium text-gray-900" : ""}`}
+                          className={`${ITEM_CLASS_NAME} ${selected ? "bg-surface-muted font-medium text-fg" : ""}`}
                         >
                           <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${option.dotClassName}`} aria-hidden />
                           <span className="flex-1 text-xs">{STATUS_LABELS[option.value]}</span>
@@ -186,7 +186,7 @@ export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
                 }}
                 className={ITEM_CLASS_NAME}
               >
-                <GearSix size={16} aria-hidden className="shrink-0 text-gray-500" />
+                <GearSix size={16} aria-hidden className="shrink-0 text-fg-muted" />
                 Cài đặt
               </button>
 
@@ -200,11 +200,11 @@ export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
                 }}
                 className={ITEM_CLASS_NAME}
               >
-                <Camera size={16} aria-hidden className="shrink-0 text-gray-500" />
+                <Camera size={16} aria-hidden className="shrink-0 text-fg-muted" />
                 {uploadAvatar.isPending ? "Đang tải ảnh..." : "Đổi ảnh đại diện"}
               </button>
 
-              <button type="button" role="menuitem" disabled={logout.isPending} onClick={handleLogout} className={ITEM_CLASS_NAME.replace("text-gray-700", "text-danger")}>
+              <button type="button" role="menuitem" disabled={logout.isPending} onClick={handleLogout} className={ITEM_CLASS_NAME.replace("text-fg-soft", "text-danger")}>
                 <SignOut size={16} aria-hidden className="shrink-0" />
                 Đăng xuất
               </button>

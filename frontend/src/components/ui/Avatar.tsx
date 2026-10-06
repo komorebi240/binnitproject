@@ -16,9 +16,9 @@ const DOT_SIZE_CLASSES = {
 } as const;
 
 const STATUS_CLASSES: Record<PresenceStatus, string> = {
-  ONLINE: "bg-green-500",
-  LIMITED: "bg-yellow-500",
-  DO_NOT_DISTURB: "bg-red-500",
+  ONLINE: "bg-success",
+  LIMITED: "bg-warning",
+  DO_NOT_DISTURB: "bg-danger",
 };
 
 export const STATUS_LABELS: Record<PresenceStatus, string> = {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Megaphone } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import { useBroadcastMessage } from "../hooks/useMessages";
@@ -33,20 +34,21 @@ export function BroadcastComposer() {
 
   return (
     <div className="mb-4 flex flex-col gap-2 rounded-lg border border-primary/30 bg-surface-muted p-4 shadow-sm">
-      <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-        <Megaphone size={18} className="text-primary" aria-hidden />
+      <div className="flex items-center gap-2 text-sm font-semibold text-fg">
+        <Megaphone size={18} className="text-primary-text" aria-hidden />
         Gửi thông báo tới tất cả người dùng
       </div>
-      <textarea
+      <Textarea
+        label="Nội dung thông báo"
+        hideLabel
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder="Nội dung thông báo..."
         rows={2}
-        className="rounded border border-gray-300 bg-white px-3 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       />
       {confirming ? (
         <div className="flex items-center gap-2">
-          <p className="text-xs text-gray-600">Gửi tới TẤT CẢ người dùng trong toàn hệ thống?</p>
+          <p className="text-xs text-fg-soft">Gửi tới TẤT CẢ người dùng trong toàn hệ thống?</p>
           <Button onClick={handleSend} loading={broadcast.isPending}>
             Xác nhận gửi
           </Button>

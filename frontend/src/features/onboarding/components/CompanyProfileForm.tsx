@@ -19,7 +19,7 @@ export function CompanyProfileForm({ currentUser }: { currentUser: UserProfile }
 
   return (
     <section className="flex flex-col gap-3" data-tour="company-profile">
-      <h2 className="text-lg font-semibold text-gray-900">Thông tin công ty</h2>
+      <h2 className="text-lg font-semibold text-fg">Thông tin công ty</h2>
 
       <div className="flex items-center gap-3">
         <CompanyLogo name={company?.name ?? currentUser.companyName} logoUrl={company?.logoUrl ?? null} size="lg" />
@@ -33,7 +33,7 @@ export function CompanyProfileForm({ currentUser }: { currentUser: UserProfile }
               </Button>
             )}
           </div>
-          <span className="text-xs text-gray-400">PNG, JPEG, WebP · tối đa 2MB</span>
+          <span className="text-xs text-fg-faint">PNG, JPEG, WebP · tối đa 2MB</span>
         </div>
       </div>
 

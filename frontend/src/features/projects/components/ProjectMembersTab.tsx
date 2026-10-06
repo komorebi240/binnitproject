@@ -42,9 +42,9 @@ function AddMemberDialog({ project, onClose }: { project: ProjectDetail; onClose
         />
       )}
       {isLoading ? (
-        <p className="py-4 text-center text-sm text-gray-400">Đang tải...</p>
+        <p className="py-4 text-center text-sm text-fg-faint">Đang tải...</p>
       ) : candidates.length === 0 ? (
-        <p className="py-4 text-center text-sm text-gray-500">Mọi người của phòng ban này đã ở trong dự án.</p>
+        <p className="py-4 text-center text-sm text-fg-muted">Mọi người của phòng ban này đã ở trong dự án.</p>
       ) : (
         <ul className="flex max-h-72 flex-col gap-1 overflow-y-auto">
           {candidates.map((person) => (
@@ -52,8 +52,8 @@ function AddMemberDialog({ project, onClose }: { project: ProjectDetail; onClose
               <span className="flex min-w-0 items-center gap-2.5">
                 <Avatar avatarUrl={person.avatarUrl} fullName={person.fullName} presenceStatus={person.presenceStatus} size="sm" />
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-gray-900">{person.fullName}</span>
-                  {person.title && <span className="block truncate text-xs text-gray-500">{person.title}</span>}
+                  <span className="block truncate text-sm font-medium text-fg">{person.fullName}</span>
+                  {person.title && <span className="block truncate text-xs text-fg-muted">{person.title}</span>}
                 </span>
               </span>
               <Button variant="secondary" onClick={() => handleAdd(person.userId, person.fullName)} disabled={addMember.isPending}>
@@ -83,12 +83,12 @@ function MemberRow({ member, project, currentUser }: { member: ProjectMember; pr
   }
 
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 px-3 py-2">
+    <li className="flex flex-wrap items-center justify-between gap-2 rounded border border-line px-3 py-2">
       <span className="flex min-w-0 items-center gap-2.5">
         <Avatar avatarUrl={member.avatarUrl} fullName={member.fullName} presenceStatus={member.presenceStatus} size="sm" />
         <span className="min-w-0">
-          <span className="block truncate text-sm font-medium text-gray-900">{member.fullName}</span>
-          <span className="block truncate text-xs text-gray-500">
+          <span className="block truncate text-sm font-medium text-fg">{member.fullName}</span>
+          <span className="block truncate text-xs text-fg-muted">
             {member.title ?? "Thành viên"} · {member.departmentName ?? "Điều hành"}
             {member.email ? ` · ${member.email}` : ""}
           </span>
@@ -127,7 +127,7 @@ export function ProjectMembersTab({ project, currentUser }: { project: ProjectDe
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold text-gray-900">Thành viên ({project.members.length})</h2>
+        <h2 className="text-base font-semibold text-fg">Thành viên ({project.members.length})</h2>
         {canAdd && (
           <Button variant="secondary" onClick={() => setAdding(true)}>
             Thêm người
@@ -143,7 +143,7 @@ export function ProjectMembersTab({ project, currentUser }: { project: ProjectDe
       ) : (
         [...groups.entries()].map(([departmentName, members]) => (
           <div key={departmentName} className="flex flex-col gap-1.5">
-            <h3 className="text-sm font-medium text-gray-600">{departmentName}</h3>
+            <h3 className="text-sm font-medium text-fg-soft">{departmentName}</h3>
             <ul className="flex flex-col gap-1.5">
               {members.map((member) => (
                 <MemberRow key={member.userId} member={member} project={project} currentUser={currentUser} />

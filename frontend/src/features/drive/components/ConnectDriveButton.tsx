@@ -18,14 +18,14 @@ export function ConnectDriveButton() {
   }
 
   if (isLoading) {
-    return <p className="text-sm text-gray-500">Đang tải...</p>;
+    return <p className="text-sm text-fg-muted">Đang tải...</p>;
   }
 
   if (status?.connected) {
     return (
       <div className="flex items-center gap-2">
         <Badge tone="success">Đã kết nối</Badge>
-        <span className="text-sm text-gray-600">{status.googleEmail}</span>
+        <span className="text-sm text-fg-soft">{status.googleEmail}</span>
       </div>
     );
   }

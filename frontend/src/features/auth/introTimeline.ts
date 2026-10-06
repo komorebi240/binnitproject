@@ -20,9 +20,9 @@ export const ORBIT = {
   rx: 66,
   ry: 22,
   /** Same slant as the logo's own ring. */
-  tilt: -18,
-  /** Orbit centre sits a little below the planet centre, like the ring does. */
-  centerYOffset: 3,
+  tilt: LOGO.ring.tilt,
+  /** Same centre as the logo's own ring: the planet's. */
+  centerYOffset: 0,
 } as const;
 
 /** The planet starts at the horizontal middle of the logo box and ends at its place on the left. */

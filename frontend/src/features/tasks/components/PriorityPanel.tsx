@@ -19,9 +19,9 @@ const PRIORITY_TONE: Record<TaskPriority, "danger" | "warning" | "neutral"> = {
  * tinted columns (each status reads as "its own zone" at a glance, not just a colored label on
  * an otherwise flat list). White item cards sit on top of the tint for contrast. */
 const PRIORITY_TINT_CLASSES: Record<TaskPriority, string> = {
-  HIGH: "bg-red-50",
-  MEDIUM: "bg-amber-50",
-  LOW: "bg-gray-50",
+  HIGH: "bg-danger/10",
+  MEDIUM: "bg-warning/10",
+  LOW: "bg-surface-muted/40",
 };
 
 interface PriorityPanelProps {
@@ -57,13 +57,13 @@ export function PriorityPanel({ currentUser, open, onClose }: PriorityPanelProps
             onClick={onClose}
             className="flex-1 bg-black/20"
           />
-          <div className="animate-fade-in flex w-full max-w-sm flex-col gap-4 overflow-y-auto border-l border-gray-200 bg-white p-4 shadow-lg">
+          <div className="glass-window animate-fade-in flex w-full max-w-sm flex-col gap-4 overflow-y-auto p-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-900">Việc cần làm theo ưu tiên</h2>
+              <h2 className="text-sm font-semibold text-fg">Việc cần làm theo ưu tiên</h2>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded text-sm text-gray-500 hover:text-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                className="rounded text-sm text-fg-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               >
                 Đóng
               </button>
@@ -75,10 +75,10 @@ export function PriorityPanel({ currentUser, open, onClose }: PriorityPanelProps
                 <div key={priority} className={`flex flex-col gap-2 rounded-lg p-3 ${PRIORITY_TINT_CLASSES[priority]}`}>
                   <div className="flex items-center gap-2">
                     <Badge tone={PRIORITY_TONE[priority]}>{PRIORITY_LABELS[priority]}</Badge>
-                    <span className="text-xs text-gray-400">{items.length}</span>
+                    <span className="text-xs text-fg-faint">{items.length}</span>
                   </div>
                   {items.length === 0 ? (
-                    <p className="text-xs text-gray-400">Không có việc nào</p>
+                    <p className="text-xs text-fg-faint">Không có việc nào</p>
                   ) : (
                     <ul className="flex flex-col gap-1.5">
                       {items.map((task) => (
@@ -86,7 +86,7 @@ export function PriorityPanel({ currentUser, open, onClose }: PriorityPanelProps
                           <button
                             type="button"
                             onClick={() => setDetailTaskId(task.id)}
-                            className="block w-full rounded bg-white px-2.5 py-1.5 text-left text-sm text-gray-800 shadow-sm transition-shadow duration-150 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                            className="block w-full rounded bg-surface/70 px-2.5 py-1.5 text-left text-sm text-fg shadow-sm transition-shadow duration-150 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                           >
                             {task.title}
                           </button>

@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Columns, Plus, X } from "@phosphor-icons/react";
 import { useTabs, type Tab } from "./TabsContext";
 import { applySubsetOrder, reorder } from "@/lib/tabDrag";
+import { prefersReducedMotion, useGSAP } from "@/lib/motion";
+import { Flip } from "@/lib/motionFlip";
 import { sideOf } from "@/lib/tabSplit";
 import { describeTab } from "./tabMeta";
 import { useTabDrag, type DragView, type StripId } from "./useTabDrag";
@@ -11,9 +13,9 @@ import { useTabDrag, type DragView, type StripId } from "./useTabDrag";
 type ChipState = "focused" | "partner" | "idle";
 
 const CHIP_STATE_CLASSES: Record<ChipState, string> = {
-  focused: "border-gray-200 bg-surface text-gray-900",
-  partner: "border-gray-200 bg-surface/60 text-gray-700",
-  idle: "border-transparent text-gray-500 hover:bg-white/60",
+  focused: "border-line bg-surface text-fg",
+  partner: "border-line bg-surface/60 text-fg-soft",
+  idle: "border-transparent text-fg-muted hover:bg-white/60",
 };
 
 type ChipMotion = "enter" | "exit" | undefined;
@@ -104,6 +106,7 @@ function TabChip({
   return (
     <div
       ref={drag.chipRef}
+      data-tab-chip
       style={drag.style}
       {...drag.handlers}
       className={`group flex max-w-[180px] shrink-0 select-none items-center gap-1.5 rounded-t-lg border border-b-0 px-3 py-2 text-sm transition-[transform,color,background-color,border-color] duration-150 ${motion ? CHIP_MOTION_CLASSES[motion] : ""} ${CHIP_STATE_CLASSES[state]}`}
@@ -118,7 +121,7 @@ function TabChip({
           onClick={onClose}
           data-no-drag
           aria-label={`Đóng tab ${label}`}
-          className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-gray-400 opacity-0 transition-opacity duration-150 hover:bg-gray-200 hover:text-gray-700 focus-visible:opacity-100 group-hover:opacity-100"
+          className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-fg-faint opacity-0 transition-opacity duration-150 hover:bg-line hover:text-fg-soft focus-visible:opacity-100 group-hover:opacity-100"
         >
           <X size={11} weight="bold" aria-hidden />
         </button>
@@ -166,7 +169,7 @@ function NewTabButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       title="Mở tab mới"
       aria-label="Mở tab mới"
-      className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center self-center rounded text-gray-500 transition-colors duration-150 hover:bg-white/60 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center self-center rounded text-fg-muted transition-colors duration-150 hover:bg-white/60 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
     >
       <Plus size={16} aria-hidden />
     </button>
@@ -183,7 +186,7 @@ function SplitToggle({ split, onClick }: { split: boolean; onClick: () => void }
       aria-pressed={split}
       data-tour="split-screen"
       className={`mb-0.5 ml-auto hidden h-7 shrink-0 items-center gap-1.5 self-center rounded px-2 text-xs font-medium transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary md:flex ${
-        split ? "bg-primary/10 text-primary" : "text-gray-500 hover:bg-white/60 hover:text-gray-900"
+        split ? "bg-primary/10 text-primary-text" : "text-fg-muted hover:bg-white/60 hover:text-fg"
       }`}
     >
       <Columns size={16} aria-hidden />
@@ -218,8 +221,25 @@ export function TabBar() {
     reorderTabs,
     moveTabToPane,
   } = useTabs();
-  const { motionOf, requestClose } = useTabMotion(tabs, closeTab);
-  const barClassName = "flex items-stretch border-b border-gray-200 bg-surface-muted";
+  // When a tab closes, the chips after it slide into the gap (GSAP Flip) instead of jumping. Drags have
+  // their own gliding in useTabDrag, so only closing is handled here. There is one tab bar on screen.
+  const closedLayoutRef = useRef<ReturnType<typeof Flip.getState> | null>(null);
+  const { motionOf, requestClose } = useTabMotion(tabs, (id) => {
+    closedLayoutRef.current = Flip.getState("[data-tab-chip]");
+    closeTab(id);
+  });
+  const tabsSignature = tabs.map((t) => t.id).join(",");
+  useGSAP(
+    () => {
+      const before = closedLayoutRef.current;
+      closedLayoutRef.current = null;
+      if (!before) return;
+      if (prefersReducedMotion()) return;
+      Flip.from(before, { targets: "[data-tab-chip]", duration: 0.25, ease: "power2.out" });
+    },
+    { dependencies: [tabsSignature] },
+  );
+  const barClassName = "glass-bar flex items-stretch border-b";
 
   const allIds = tabs.map((t) => t.id);
 
@@ -306,7 +326,7 @@ export function TabBar() {
             ref={dnd.registerStrip(strip)}
             // Below md only the focused pane is shown, so only its strip is too.
             className={`min-w-0 flex-1 items-center gap-1 overflow-x-auto px-2 pt-2 transition-colors duration-150 ${isRight ? "md:flex-1 md:basis-0" : "md:flex-none md:basis-[var(--split-left)]"} ${isFocused ? "flex" : "hidden md:flex"} ${
-              isRight ? "" : "md:border-r md:border-gray-200"
+              isRight ? "" : "md:border-r md:border-line"
             } ${dropTarget ? "bg-primary/10 ring-2 ring-inset ring-primary/40" : ""}`}
           >
             {stripIdsFor(strip).map((id, index) => {

@@ -91,7 +91,7 @@ export function Sidebar({ currentUserAuthorityLevel }: SidebarProps) {
   return (
     <nav
       aria-label="Điều hướng chính"
-      className={`flex gap-1 overflow-x-auto border-b border-gray-200 bg-white p-2 md:flex-none md:flex-col md:overflow-x-hidden md:border-b-0 md:border-r md:transition-[width,padding] md:duration-300 md:ease-in-out
+      className={`glass-bar flex gap-1 overflow-x-auto border-b p-2 md:flex-none md:flex-col md:overflow-x-hidden md:border-b-0 md:border-r md:transition-[width,padding] md:duration-300 md:ease-in-out
         ${collapsed ? "md:w-16 md:p-2" : "md:w-56 md:p-4"}`}
     >
       <button
@@ -99,7 +99,7 @@ export function Sidebar({ currentUserAuthorityLevel }: SidebarProps) {
         onClick={toggleCollapsed}
         title={collapsed ? "Mở rộng" : "Thu gọn"}
         aria-label={collapsed ? "Mở rộng điều hướng" : "Thu gọn điều hướng"}
-        className="mb-1 hidden items-center justify-center gap-1 rounded px-3 py-2 text-sm text-gray-500 transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary md:flex"
+        className="mb-1 hidden items-center justify-center gap-1 rounded px-3 py-2 text-sm text-fg-muted transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary md:flex"
       >
         {collapsed ? <CaretRight size={16} /> : <CaretLeft size={16} />}
         <span className={`${LABEL_TRANSITION} ${collapsed ? "md:max-w-0 md:opacity-0" : "md:max-w-24 md:opacity-100"}`}>Thu gọn</span>
@@ -119,7 +119,7 @@ export function Sidebar({ currentUserAuthorityLevel }: SidebarProps) {
             className={`flex items-center gap-2 whitespace-nowrap rounded px-3 py-2 text-left text-sm font-medium transition-all duration-150
               focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary
               ${collapsed ? "md:justify-center" : ""}
-              ${isActive ? "gradient-surface bg-gradient-to-r from-primary to-primaryEnd text-primary-foreground shadow-sm" : `text-gray-700 hover:bg-surface-muted ${collapsed ? "" : "hover:pl-4"}`}`}
+              ${isActive ? "glass-button bg-gradient-to-r from-primary to-primaryEnd text-primary-foreground" : `text-fg-soft hover:bg-surface-muted ${collapsed ? "" : "hover:pl-4"}`}`}
           >
             <Icon size={18} weight={isActive ? "fill" : "regular"} aria-hidden className="shrink-0" />
             <span className={`${LABEL_TRANSITION} ${collapsed ? "md:max-w-0 md:opacity-0" : "md:max-w-40 md:opacity-100"}`}>{item.label}</span>

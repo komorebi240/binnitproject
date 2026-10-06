@@ -34,8 +34,8 @@ export function RecoveryEmailForm({ currentUser }: RecoveryEmailFormProps) {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold text-gray-900">Email khôi phục mật khẩu</h2>
-      <p className="text-sm text-gray-500">
+      <h2 className="text-lg font-semibold text-fg">Email khôi phục mật khẩu</h2>
+      <p className="text-sm text-fg-muted">
         Email này nhận mã OTP khi bạn dùng chức năng &quot;Quên mật khẩu&quot; ở màn hình đăng nhập.
       </p>
       <form onSubmit={handleSubmit} className="flex max-w-sm flex-col gap-3">

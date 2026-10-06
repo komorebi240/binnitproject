@@ -2,12 +2,20 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Alert } from "@/components/ui/Alert";
+import { AnimatedCheck } from "@/components/ui/AnimatedCheck";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { StepProgress } from "@/components/ui/StepProgress";
+import { StepTransition } from "@/components/ui/StepTransition";
 import { ApiRequestError } from "@/lib/api/client";
 import { uploadCompanyLogo } from "../api/onboardingApi";
 import { onboardingErrorMessage } from "../errors";
-import { useRegisterCompany, useRequestRegistrationOtp, useVerifyRegistrationOtp } from "../hooks/useOnboarding";
+import {
+  useRegisterCompany,
+  useRequestRegistrationOtp,
+  useVerifyRegistrationOtp,
+} from "../hooks/useOnboarding";
 import { LOGO_ACCEPT, MAX_LOGO_BYTES } from "../types";
 
 type Step = "email" | "otp" | "company" | "account";
@@ -21,34 +29,6 @@ const STEPS: { id: Step; label: string }[] = [
 
 const RESEND_COOLDOWN_SECONDS = 60;
 const LOGO_TYPES = LOGO_ACCEPT.split(",");
-
-function StepIndicator({ current }: { current: Step }) {
-  const currentIndex = STEPS.findIndex((s) => s.id === current);
-  return (
-    <ol className="flex w-full max-w-sm items-center justify-between text-xs" aria-label="Các bước đăng ký">
-      {STEPS.map((step, index) => {
-        const done = index < currentIndex;
-        const active = index === currentIndex;
-        return (
-          <li key={step.id} className="flex flex-1 flex-col items-center gap-1" aria-current={active ? "step" : undefined}>
-            <span
-              className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold transition-colors duration-150 ${
-                active
-                  ? "gradient-surface border-transparent bg-gradient-to-r from-primary to-primaryEnd text-primary-foreground"
-                  : done
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-gray-300 text-gray-400"
-              }`}
-            >
-              {done ? "✓" : index + 1}
-            </span>
-            <span className={active ? "font-medium text-gray-900" : "text-gray-500"}>{step.label}</span>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
 
 /**
  * Four steps: verify the admin's email by OTP, describe the company (name, contact email, logo),
@@ -190,150 +170,209 @@ export function RegisterWizard() {
     router.push("/dashboard");
   }
 
+  if (finishing) {
+    return (
+      <div
+        className="flex w-full flex-col items-center gap-3 py-6 text-center"
+        role="status"
+      >
+        <AnimatedCheck label="Đã tạo doanh nghiệp" />
+        <h2 className="text-lg font-semibold text-fg">Doanh nghiệp đã sẵn sàng!</h2>
+        <p className="text-sm text-fg-muted">Đang đưa bạn vào Orbit...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex w-full max-w-sm flex-col items-center gap-5">
-      <StepIndicator current={step} />
+    <div className="flex w-full flex-col items-center gap-5">
+      <StepProgress steps={STEPS} currentId={step} label="Các bước đăng ký" />
 
-      {step === "email" && (
-        <form onSubmit={sendOtp} className="flex w-full flex-col gap-4">
-          <p className="text-sm text-gray-500">
-            Nhập email của người sẽ là quản trị viên. Chúng tôi gửi mã xác minh tới địa chỉ này trước khi tạo doanh nghiệp.
-          </p>
-          <Input label="Email quản trị viên" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
-          <Button type="submit" loading={requestOtp.isPending}>
-            Gửi mã xác minh
-          </Button>
-        </form>
-      )}
-
-      {step === "otp" && (
-        <form onSubmit={handleVerify} className="flex w-full flex-col gap-4">
-          {infoMessage && (
-            <p role="status" className="rounded bg-green-50 px-3 py-2 text-sm text-green-800">
-              {infoMessage}
+      <StepTransition
+        stepKey={step}
+        index={STEPS.findIndex((s) => s.id === step)}
+        className="w-full"
+      >
+        {step === "email" && (
+          <form onSubmit={sendOtp} className="flex w-full flex-col gap-4">
+            <p className="text-sm text-fg-muted">
+              Nhập email của người sẽ là quản trị viên. Chúng tôi gửi mã xác minh tới địa chỉ này
+              trước khi tạo doanh nghiệp.
             </p>
-          )}
-          <Input
-            label={`Mã gồm 6 chữ số gửi tới ${email}`}
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            required
-          />
-          <Button type="submit" loading={verifyOtp.isPending} disabled={otp.length !== 6}>
-            Xác minh
-          </Button>
-          <div className="flex items-center justify-between text-sm">
-            <button
-              type="button"
-              onClick={() => {
-                setStep("email");
-                setErrorMessage(null);
-              }}
-              className="text-gray-500 hover:underline"
-            >
-              Đổi email
-            </button>
-            <button
-              type="button"
-              onClick={sendOtp}
-              disabled={cooldown > 0 || requestOtp.isPending}
-              className="text-gray-500 hover:underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-60"
-            >
-              {cooldown > 0 ? `Gửi lại mã (${cooldown}s)` : "Gửi lại mã"}
-            </button>
-          </div>
-        </form>
-      )}
+            <Input
+              label="Email quản trị viên"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              required
+            />
+            <Button type="submit" loading={requestOtp.isPending}>
+              Gửi mã xác minh
+            </Button>
+          </form>
+        )}
 
-      {step === "company" && (
-        <form onSubmit={handleCompanyNext} className="flex w-full flex-col gap-4">
-          <Input label="Tên doanh nghiệp" value={companyName} onChange={(e) => setCompanyName(e.target.value)} maxLength={200} required />
-          <Input
-            label="Email doanh nghiệp (tuỳ chọn)"
-            type="email"
-            placeholder={email}
-            value={contactEmail}
-            onChange={(e) => setContactEmail(e.target.value)}
-          />
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-gray-700">Logo doanh nghiệp (tuỳ chọn)</span>
-            <div className="flex items-center gap-3">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-dashed border-gray-300 bg-surface-muted text-xs text-gray-400">
-                {logoPreview ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- local blob: preview
-                  <img src={logoPreview} alt="Xem trước logo" className="h-full w-full object-cover" />
-                ) : (
-                  "Logo"
-                )}
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <input ref={logoInputRef} type="file" accept={LOGO_ACCEPT} onChange={handlePickLogo} className="hidden" aria-label="Chọn logo" />
-                <Button type="button" variant="secondary" onClick={() => logoInputRef.current?.click()}>
-                  {logo ? "Đổi ảnh" : "Chọn ảnh"}
-                </Button>
-                {logo && (
-                  <button type="button" onClick={() => setLogo(null)} className="text-left text-xs text-gray-500 hover:underline">
-                    Bỏ ảnh
-                  </button>
-                )}
-                <span className="text-xs text-gray-400">PNG, JPEG, WebP · tối đa 2MB</span>
+        {step === "otp" && (
+          <form onSubmit={handleVerify} className="flex w-full flex-col gap-4">
+            {infoMessage && <Alert tone="success">{infoMessage}</Alert>}
+            <Input
+              label={`Mã gồm 6 chữ số gửi tới ${email}`}
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              required
+            />
+            <Button type="submit" loading={verifyOtp.isPending} disabled={otp.length !== 6}>
+              Xác minh
+            </Button>
+            <div className="flex items-center justify-between text-sm">
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("email");
+                  setErrorMessage(null);
+                }}
+                className="text-fg-muted hover:underline"
+              >
+                Đổi email
+              </button>
+              <button
+                type="button"
+                onClick={sendOtp}
+                disabled={cooldown > 0 || requestOtp.isPending}
+                className="text-fg-muted hover:underline disabled:cursor-not-allowed disabled:no-underline disabled:opacity-60"
+              >
+                {cooldown > 0 ? `Gửi lại mã (${cooldown}s)` : "Gửi lại mã"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {step === "company" && (
+          <form onSubmit={handleCompanyNext} className="flex w-full flex-col gap-4">
+            <Input
+              label="Tên doanh nghiệp"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              maxLength={200}
+              required
+            />
+            <Input
+              label="Email doanh nghiệp (tuỳ chọn)"
+              type="email"
+              placeholder={email}
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+            />
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-fg-soft">Logo doanh nghiệp (tuỳ chọn)</span>
+              <div className="flex items-center gap-3">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-dashed border-line-strong bg-surface-muted text-xs text-fg-faint">
+                  {logoPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- local blob: preview
+                    <img
+                      src={logoPreview}
+                      alt="Xem trước logo"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    "Logo"
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept={LOGO_ACCEPT}
+                    onChange={handlePickLogo}
+                    className="hidden"
+                    aria-label="Chọn logo"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    {logo ? "Đổi ảnh" : "Chọn ảnh"}
+                  </Button>
+                  {logo && (
+                    <button
+                      type="button"
+                      onClick={() => setLogo(null)}
+                      className="text-left text-xs text-fg-muted hover:underline"
+                    >
+                      Bỏ ảnh
+                    </button>
+                  )}
+                  <span className="text-xs text-fg-faint">PNG, JPEG, WebP · tối đa 2MB</span>
+                </div>
               </div>
             </div>
-          </div>
-          <Button type="submit">Tiếp tục</Button>
-        </form>
-      )}
+            <Button type="submit">Tiếp tục</Button>
+          </form>
+        )}
 
-      {step === "account" && (
-        <form onSubmit={handleRegister} className="flex w-full flex-col gap-4">
-          <Input
-            label="Tên đăng nhập"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="username"
-            pattern="[A-Za-z0-9._\-]{3,100}"
-            title="3-100 ký tự: chữ, số, dấu chấm, gạch dưới hoặc gạch ngang"
-            required
-          />
-          <Input label="Họ tên" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" maxLength={200} required />
-          <Input
-            label="Mật khẩu (8-72 ký tự)"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
-            minLength={8}
-            maxLength={72}
-            required
-          />
-          <Input
-            label="Nhập lại mật khẩu"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            autoComplete="new-password"
-            minLength={8}
-            maxLength={72}
-            required
-          />
-          <div className="flex gap-2">
-            <Button type="button" variant="secondary" onClick={() => setStep("company")}>
-              Quay lại
-            </Button>
-            <Button type="submit" loading={registerCompany.isPending || finishing} className="flex-1">
-              Tạo doanh nghiệp
-            </Button>
-          </div>
-        </form>
-      )}
+        {step === "account" && (
+          <form onSubmit={handleRegister} className="flex w-full flex-col gap-4">
+            <Input
+              label="Tên đăng nhập"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              pattern="[A-Za-z0-9._\-]{3,100}"
+              title="3-100 ký tự: chữ, số, dấu chấm, gạch dưới hoặc gạch ngang"
+              required
+            />
+            <Input
+              label="Họ tên"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              autoComplete="name"
+              maxLength={200}
+              required
+            />
+            <Input
+              label="Mật khẩu (8-72 ký tự)"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={72}
+              required
+            />
+            <Input
+              label="Nhập lại mật khẩu"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={72}
+              required
+            />
+            <div className="flex gap-2">
+              <Button type="button" variant="secondary" onClick={() => setStep("company")}>
+                Quay lại
+              </Button>
+              <Button
+                type="submit"
+                loading={registerCompany.isPending || finishing}
+                className="flex-1"
+              >
+                Tạo doanh nghiệp
+              </Button>
+            </div>
+          </form>
+        )}
+      </StepTransition>
 
       {errorMessage && (
-        <p role="alert" className="w-full text-sm text-danger">
+        <Alert tone="danger" className="w-full">
           {errorMessage}
-        </p>
+        </Alert>
       )}
     </div>
   );

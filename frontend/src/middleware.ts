@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { MARKETING_PATHS } from "@/features/marketing/locales";
 
 const ACCESS_TOKEN_COOKIE = "access_token";
 const PUBLIC_PATHS = ["/login", "/forgot-password", "/register", "/invite"];
@@ -11,6 +12,12 @@ const PUBLIC_PATHS = ["/login", "/forgot-password", "/register", "/invite"];
  * cookie just means the first API call from /dashboard returns 401 and the page redirects.
  */
 export function middleware(request: NextRequest) {
+  // The marketing page ("/" and its other languages, "/en") is public for everyone; its call to action leads to
+  // /login, which forwards a signed-in visitor to the dashboard.
+  if (MARKETING_PATHS.includes(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+
   const hasSessionCookie = request.cookies.has(ACCESS_TOKEN_COOKIE);
   const isPublicPath = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
 

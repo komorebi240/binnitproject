@@ -18,8 +18,8 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 const TONE_CLASSES: Record<ToastTone, string> = {
-  success: "bg-green-600 text-white",
-  error: "bg-danger text-danger-foreground",
+  success: "bg-green-600/90 text-white",
+  error: "bg-danger/90 text-danger-foreground",
 };
 
 const AUTO_DISMISS_MS = 4000;
@@ -63,7 +63,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={toast.id}
             type="button"
             onClick={() => dismiss(toast.id)}
-            className={`rounded px-4 py-2 text-left text-sm shadow-lg ${TONE_CLASSES[toast.tone]} ${
+            className={`rounded px-4 py-2 text-left text-sm shadow-lg ring-1 ring-white/25 ${TONE_CLASSES[toast.tone]} ${
               toast.leaving ? "animate-toast-out" : "animate-toast-in"
             }`}
           >

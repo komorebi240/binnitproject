@@ -41,7 +41,7 @@ export function AddEventForUserForm({ userId, onDone }: AddEventForUserFormProps
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid grid-cols-1 gap-3 rounded border border-gray-200 bg-surface-muted p-4 sm:grid-cols-2"
+      className="grid grid-cols-1 gap-3 rounded border border-line bg-surface-muted p-4 sm:grid-cols-2"
     >
       <CalendarEventFields form={form} onChange={setForm} />
       {errorMessage && (

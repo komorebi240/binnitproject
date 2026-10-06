@@ -49,7 +49,7 @@ export function DepartmentDetailView({ departmentId, onDeleted }: DepartmentDeta
   }
 
   if (!department) {
-    return <p className="text-sm text-gray-500">Không tìm thấy phòng ban.</p>;
+    return <p className="text-sm text-fg-muted">Không tìm thấy phòng ban.</p>;
   }
 
   const isExecutive = currentUser.authorityLevel === "EXECUTIVE";
@@ -57,10 +57,10 @@ export function DepartmentDetailView({ departmentId, onDeleted }: DepartmentDeta
 
   return (
     <div className="flex flex-col gap-6 md:flex-row [.pane-narrow_&]:md:flex-col">
-      <aside className="flex flex-col gap-3 rounded border border-gray-200 bg-surface p-5 shadow-sm md:w-1/4 [.pane-narrow_&]:md:w-full">
+      <aside className="flex flex-col gap-3 rounded glass-card p-5 md:w-1/4 [.pane-narrow_&]:md:w-full">
         <DepartmentAvatar department={department} size="lg" />
-        <h1 className="text-xl font-semibold text-gray-900">{department.name}</h1>
-        <p className="text-sm text-gray-600">{department.description ?? "Chưa có mô tả."}</p>
+        <h1 className="text-xl font-semibold text-fg">{department.name}</h1>
+        <p className="text-sm text-fg-soft">{department.description ?? "Chưa có mô tả."}</p>
         {canEdit && (
           <Button variant="secondary" onClick={() => setEditing(true)}>
             Chỉnh sửa
@@ -74,9 +74,9 @@ export function DepartmentDetailView({ departmentId, onDeleted }: DepartmentDeta
       </aside>
 
       <div className="flex flex-col gap-6 md:w-3/4 [.pane-narrow_&]:md:w-full">
-        <section className="flex flex-col gap-3 rounded border border-gray-200 bg-surface p-5 shadow-sm">
+        <section className="flex flex-col gap-3 rounded glass-card p-5">
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold text-gray-900">Nhân sự</h2>
+            <h2 className="text-base font-semibold text-fg">Nhân sự</h2>
             {canEdit && <PlusButton label="Thêm nhân sự có sẵn vào phòng ban" onClick={() => setAddingStaff(true)} />}
           </div>
           <DepartmentMemberList departmentId={departmentId} departmentName={department.name} />

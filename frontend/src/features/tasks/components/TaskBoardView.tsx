@@ -109,14 +109,14 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
 
   function renderCancelledCard(task: Task) {
     return (
-      <div key={task.id} className="relative rounded border border-gray-200 bg-white p-2.5 text-sm shadow-sm">
+      <div key={task.id} className="relative rounded glass-card p-2.5 text-sm">
         <div className="flex items-start justify-between gap-2">
-          <button type="button" onClick={() => setDetailTaskId(task.id)} className="text-left font-medium text-gray-500 line-through hover:text-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">{task.title}</button>
+          <button type="button" onClick={() => setDetailTaskId(task.id)} className="text-left font-medium text-fg-muted line-through hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">{task.title}</button>
           <button
             type="button"
             onClick={() => setOpenMenuId(openMenuId === task.id ? null : task.id)}
             aria-label="Tuỳ chọn"
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-400 transition-colors duration-150 hover:bg-surface-muted hover:text-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-fg-faint transition-colors duration-150 hover:bg-surface-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             <DotsThreeVertical size={16} weight="bold" aria-hidden />
           </button>
@@ -125,12 +125,12 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
         {openMenuId === task.id && (
           <>
             <button type="button" aria-label="Đóng" onClick={() => setOpenMenuId(null)} className="fixed inset-0 z-20 cursor-default" />
-            <div className="animate-fade-in absolute right-2 top-9 z-30 w-36 rounded border border-gray-200 bg-white py-1 text-sm shadow-lg">
+            <div className="animate-fade-in absolute right-2 top-9 z-30 w-36 rounded glass py-1 text-sm">
               <button
                 type="button"
                 onClick={() => handleRestore(task.id)}
                 disabled={restoreTask.isPending}
-                className="block w-full px-3 py-1.5 text-left text-gray-700 hover:bg-surface-muted disabled:opacity-50"
+                className="block w-full px-3 py-1.5 text-left text-fg-soft hover:bg-surface-muted disabled:opacity-50"
               >
                 Thêm lại
               </button>
@@ -155,10 +155,10 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
         key={task.id}
         type="button"
         onClick={() => setDetailTaskId(task.id)}
-        className="card-interactive rounded border border-gray-200 bg-white p-2.5 text-left text-sm shadow-sm hover:border-primary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        className="card-interactive rounded glass-card p-2.5 text-left text-sm hover:border-primary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       >
-        <p className="font-medium text-gray-900">{task.title}</p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+        <p className="font-medium text-fg">{task.title}</p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
           <Badge tone={PRIORITY_TONE[task.priority]}>{task.priority}</Badge>
           <ChecklistProgress task={task} />
           {task.dueDate && <span>Deadline: {new Date(task.dueDate).toLocaleDateString("vi-VN")}</span>}
@@ -193,12 +193,12 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
           return (
             <div key={column.status} className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-gray-900">{column.label}</p>
-                <span className="text-xs text-gray-400">{items.length}</span>
+                <p className="text-sm font-semibold text-fg">{column.label}</p>
+                <span className="text-xs text-fg-faint">{items.length}</span>
               </div>
               <div className="flex flex-col gap-2">
                 {items.length === 0 ? (
-                  <p className="text-xs text-gray-400">Không có việc nào</p>
+                  <p className="text-xs text-fg-faint">Không có việc nào</p>
                 ) : (
                   items.map(renderCard)
                 )}
@@ -208,11 +208,11 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
         })}
       </div>
 
-      <div className="mt-4 border-t border-gray-100 pt-3">
+      <div className="mt-4 border-t border-line/60 pt-3">
         <button
           type="button"
           onClick={() => setShowCompleted((v) => !v)}
-          className="flex items-center gap-1.5 rounded text-sm font-medium text-gray-600 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          className="flex items-center gap-1.5 rounded text-sm font-medium text-fg-soft hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         >
           {showCompleted ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
           Đã hoàn thành ({completedTasks.length})
@@ -220,7 +220,7 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
         {showCompleted && (
           <div className="animate-fade-in mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3 [.pane-narrow_&]:sm:grid-cols-1">
             {completedTasks.length === 0 ? (
-              <p className="text-xs text-gray-400">Chưa có việc nào hoàn thành trong khoảng thời gian này</p>
+              <p className="text-xs text-fg-faint">Chưa có việc nào hoàn thành trong khoảng thời gian này</p>
             ) : (
               completedTasks.map(renderCard)
             )}
@@ -228,11 +228,11 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
         )}
       </div>
 
-      <div className="mt-3 border-t border-gray-100 pt-3">
+      <div className="mt-3 border-t border-line/60 pt-3">
         <button
           type="button"
           onClick={() => setShowCancelled((v) => !v)}
-          className="flex items-center gap-1.5 rounded text-sm font-medium text-gray-600 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          className="flex items-center gap-1.5 rounded text-sm font-medium text-fg-soft hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         >
           {showCancelled ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
           Đã huỷ ({cancelledTasks.length})
@@ -240,7 +240,7 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
         {showCancelled && (
           <div className="animate-fade-in mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3 [.pane-narrow_&]:sm:grid-cols-1">
             {cancelledTasks.length === 0 ? (
-              <p className="text-xs text-gray-400">Chưa có việc nào bị huỷ trong khoảng thời gian này</p>
+              <p className="text-xs text-fg-faint">Chưa có việc nào bị huỷ trong khoảng thời gian này</p>
             ) : (
               cancelledTasks.map(renderCancelledCard)
             )}

@@ -154,7 +154,7 @@ export function TaskList({ currentUser }: TaskListProps) {
   ];
 
   const cancelledColumns = [
-    { header: "Việc", cell: (t: Task) => <span className="text-gray-500 line-through">{t.title}</span> },
+    { header: "Việc", cell: (t: Task) => <span className="text-fg-muted line-through">{t.title}</span> },
     { header: "Giao cho", cell: (t: Task) => t.assigneeUserName ?? `Phòng ${t.assigneeDepartmentName}` },
     { header: "Người giao", cell: (t: Task) => t.assignedByUserName },
     { header: "Ưu tiên", cell: (t: Task) => <Badge tone={PRIORITY_TONE[t.priority]}>{PRIORITY_LABELS[t.priority]}</Badge> },
@@ -199,7 +199,7 @@ export function TaskList({ currentUser }: TaskListProps) {
           <button
             type="button"
             onClick={() => setShowDone((v) => !v)}
-            className="flex items-center gap-1.5 rounded text-sm font-medium text-gray-600 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            className="flex items-center gap-1.5 rounded text-sm font-medium text-fg-soft hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             {showDone ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
             Đã hoàn thành ({doneTasks.length})
@@ -217,7 +217,7 @@ export function TaskList({ currentUser }: TaskListProps) {
           <button
             type="button"
             onClick={() => setShowCancelled((v) => !v)}
-            className="flex items-center gap-1.5 rounded text-sm font-medium text-gray-600 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            className="flex items-center gap-1.5 rounded text-sm font-medium text-fg-soft hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             {showCancelled ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
             Đã huỷ ({cancelledTasks.length})

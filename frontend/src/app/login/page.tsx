@@ -1,20 +1,7 @@
-import { AuthPageShell } from "@/components/layout/AuthPageShell";
-import { LoginForm } from "@/features/auth/components/LoginForm";
-import { LoginIntro } from "@/features/auth/components/LoginIntro";
+import { AuthLanding } from "@/features/auth/components/AuthLanding";
+import { parseAuthView } from "@/features/auth/authView";
 
-export default function LoginPage() {
-  return (
-    <AuthPageShell>
-      <LoginIntro
-        heading={
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">Đăng nhập hệ thống</h1>
-            <p className="text-sm text-gray-500">Dùng tài khoản được cấp bởi quản lý của bạn.</p>
-          </div>
-        }
-      >
-        <LoginForm />
-      </LoginIntro>
-    </AuthPageShell>
-  );
+/** `?open=login` (e.g. back from the forgot-password page) skips the intro and opens the sign-in window at once. */
+export default function LoginPage({ searchParams }: { searchParams: { open?: string | string[] } }) {
+  return <AuthLanding initialView={parseAuthView(searchParams.open)} />;
 }

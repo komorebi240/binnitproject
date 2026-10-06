@@ -4,6 +4,8 @@ const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN ?? "http://localhost:8080";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // `import { X } from "@phosphor-icons/react"` otherwise pulls the whole 1,500-icon barrel into every dev compile.
+  experimental: { optimizePackageImports: ["@phosphor-icons/react"] },
   // A second dev server can run next to the production one by building into its own folder (run-dev-parallel.ps1).
   distDir: process.env.NEXT_DIST_DIR || ".next",
   // Only the Docker image build asks for a self-contained server (see frontend/Dockerfile);

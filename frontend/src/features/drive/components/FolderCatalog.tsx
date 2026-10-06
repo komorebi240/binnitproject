@@ -61,7 +61,7 @@ export function FolderCatalog({ currentUser }: FolderCatalogProps) {
                   href={`https://drive.google.com/drive/folders/${f.googleFolderId}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                  className="inline-flex items-center gap-1 text-primary-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                 >
                   {f.googleFolderName}
                   <ArrowSquareOut size={14} aria-hidden />
@@ -79,11 +79,11 @@ export function FolderCatalog({ currentUser }: FolderCatalogProps) {
       )}
 
       {driveStatus && !driveStatus.connected ? (
-        <p className="rounded border border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500">
+        <p className="rounded border border-dashed border-line-strong px-4 py-3 text-sm text-fg-muted">
           Kết nối Google Drive của bạn ở mục phía trên trước khi đăng ký folder.
         </p>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded border border-gray-200 p-4 sm:flex-row sm:items-end [.pane-narrow_&]:sm:flex-col [.pane-narrow_&]:sm:items-stretch">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded border border-line p-4 sm:flex-row sm:items-end [.pane-narrow_&]:sm:flex-col [.pane-narrow_&]:sm:items-stretch">
           <div className="flex-1">
             <Input
               label="Link hoặc ID folder Google Drive"

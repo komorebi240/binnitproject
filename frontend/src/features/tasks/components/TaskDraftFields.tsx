@@ -37,7 +37,7 @@ export function ChecklistDraftEditor({
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium text-gray-700">
+      <p className="text-sm font-medium text-fg-soft">
         Checklist (tuỳ chọn, {items.length}/{MAX_CHECKLIST_ITEMS})
       </p>
       {items.length > 0 && (
@@ -45,14 +45,14 @@ export function ChecklistDraftEditor({
           {items.map((text, index) => (
             <li
               key={`${index}-${text}`}
-              className="flex items-center gap-2 rounded border border-gray-200 px-2 py-1 text-sm"
+              className="flex items-center gap-2 rounded border border-line px-2 py-1 text-sm"
             >
-              <span className="min-w-0 flex-1 break-words text-gray-800">{text}</span>
+              <span className="min-w-0 flex-1 break-words text-fg">{text}</span>
               <button
                 type="button"
                 onClick={() => onChange(items.filter((_, i) => i !== index))}
                 aria-label={`Bỏ mục ${text}`}
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-400 hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-fg-faint hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               >
                 <X size={14} aria-hidden />
               </button>
@@ -74,7 +74,7 @@ export function ChecklistDraftEditor({
           }}
           placeholder="Thêm một bước..."
           aria-label="Mục checklist mới"
-          className="min-w-0 flex-1 rounded border border-gray-200 bg-white px-2.5 py-1.5 text-sm text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          className="min-w-0 flex-1 rounded border border-line bg-surface px-2.5 py-1.5 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         />
         <Button
           type="button"
@@ -121,7 +121,7 @@ export function AttachmentDraftPicker({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium text-gray-700">
+        <p className="text-sm font-medium text-fg-soft">
           Tài liệu đính kèm (tuỳ chọn, {files.length}/{MAX_TASK_ATTACHMENTS})
         </p>
         <input
@@ -149,16 +149,16 @@ export function AttachmentDraftPicker({
           {files.map((file, index) => (
             <li
               key={`${index}-${file.name}`}
-              className="flex items-center gap-2 rounded border border-gray-200 px-2 py-1 text-sm"
+              className="flex items-center gap-2 rounded border border-line px-2 py-1 text-sm"
             >
-              <Paperclip size={14} aria-hidden className="shrink-0 text-primary" />
-              <span className="min-w-0 flex-1 truncate text-gray-800">{file.name}</span>
-              <span className="shrink-0 text-xs text-gray-500">{formatSize(file.size)}</span>
+              <Paperclip size={14} aria-hidden className="shrink-0 text-primary-text" />
+              <span className="min-w-0 flex-1 truncate text-fg">{file.name}</span>
+              <span className="shrink-0 text-xs text-fg-muted">{formatSize(file.size)}</span>
               <button
                 type="button"
                 onClick={() => onChange(files.filter((_, i) => i !== index))}
                 aria-label={`Bỏ tệp ${file.name}`}
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-400 hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-fg-faint hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               >
                 <X size={14} aria-hidden />
               </button>

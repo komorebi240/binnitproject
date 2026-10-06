@@ -37,10 +37,10 @@ export function AcceptInvitationForm({ token }: { token: string }) {
   if (currentUser) {
     return (
       <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center">
-        <p className="text-sm text-gray-700">
+        <p className="text-sm text-fg-soft">
           Bạn đang đăng nhập bằng tài khoản <strong>{currentUser.fullName}</strong> ({currentUser.companyName}).
         </p>
-        <p className="text-sm text-gray-500">Hãy đăng xuất để tạo tài khoản mới từ lời mời này.</p>
+        <p className="text-sm text-fg-muted">Hãy đăng xuất để tạo tài khoản mới từ lời mời này.</p>
         <Button loading={logout.isPending} onClick={() => logout.mutate(undefined, { onSuccess: () => window.location.reload() })}>
           Đăng xuất và tiếp tục
         </Button>
@@ -54,8 +54,8 @@ export function AcceptInvitationForm({ token }: { token: string }) {
         <p role="alert" className="text-sm text-danger">
           Lời mời này không hợp lệ hoặc đã hết hạn.
         </p>
-        <p className="text-sm text-gray-500">Hãy nhờ người mời gửi lại lời mời mới.</p>
-        <Link href="/login" className="text-sm text-primary hover:underline">
+        <p className="text-sm text-fg-muted">Hãy nhờ người mời gửi lại lời mời mới.</p>
+        <Link href="/login" className="text-sm text-primary-text hover:underline">
           Đến trang đăng nhập
         </Link>
       </div>
@@ -79,12 +79,12 @@ export function AcceptInvitationForm({ token }: { token: string }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4">
-      <div className="rounded-lg border border-gray-200 bg-surface p-3 text-sm shadow-sm">
-        <p className="text-gray-500">
-          <span className="font-medium text-gray-900">{preview.inviterName}</span> mời bạn tham gia
+      <div className="rounded-lg glass-card p-3 text-sm">
+        <p className="text-fg-muted">
+          <span className="font-medium text-fg">{preview.inviterName}</span> mời bạn tham gia
         </p>
-        <p className="mt-0.5 text-base font-semibold text-gray-900">{preview.companyName}</p>
-        <p className="mt-1 text-gray-500">Vai trò: {LEVEL_LABELS[preview.authorityLevel]}</p>
+        <p className="mt-0.5 text-base font-semibold text-fg">{preview.companyName}</p>
+        <p className="mt-1 text-fg-muted">Vai trò: {LEVEL_LABELS[preview.authorityLevel]}</p>
       </div>
       <Input label="Email" type="email" value={preview.email} readOnly disabled />
       <Input

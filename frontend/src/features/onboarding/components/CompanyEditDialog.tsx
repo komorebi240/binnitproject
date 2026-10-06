@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import { useUpdateCompany } from "../hooks/useOnboarding";
@@ -41,22 +42,13 @@ export function CompanyEditDialog({ company, onClose }: { company: Company; onCl
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <Input label="Tên công ty" value={name} onChange={(e) => setName(e.target.value)} maxLength={200} required />
         <Input label="Email doanh nghiệp" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
-        <div className="flex flex-col gap-1">
-          <label htmlFor="company-description" className="text-sm font-medium text-gray-700">
-            Giới thiệu ngắn
-          </label>
-          <textarea
-            id="company-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            maxLength={DESCRIPTION_MAX}
-            rows={5}
-            className="rounded border border-gray-300 px-3 py-2 text-sm transition-colors duration-150 hover:border-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-          />
-          <span className="self-end text-xs text-gray-400">
-            {description.length}/{DESCRIPTION_MAX}
-          </span>
-        </div>
+        <Textarea
+          label="Giới thiệu ngắn"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          maxLength={DESCRIPTION_MAX}
+          rows={5}
+        />
         {errorMessage && (
           <p role="alert" className="text-sm text-danger">
             {errorMessage}

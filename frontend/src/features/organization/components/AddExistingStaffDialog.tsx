@@ -60,19 +60,19 @@ export function AddExistingStaffDialog({ departmentId, departmentName, onClose }
     <Modal title={`Thêm nhân sự vào ${departmentName}`} onClose={onClose}>
       <label className="relative block">
         <span className="sr-only">Tìm nhân sự</span>
-        <MagnifyingGlass size={16} aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+        <MagnifyingGlass size={16} aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-faint" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Tìm theo tên hoặc tên đăng nhập..."
-          className="w-full rounded border border-gray-200 bg-white py-2 pl-8 pr-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          className="w-full rounded border border-line bg-surface py-2 pl-8 pr-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         />
       </label>
 
       {isLoading ? (
         <Skeleton rows={3} />
       ) : candidates.length === 0 ? (
-        <p className="py-4 text-center text-sm text-gray-500">
+        <p className="py-4 text-center text-sm text-fg-muted">
           {query ? "Không có nhân sự nào khớp." : "Chưa có nhân sự nào khác để thêm vào phòng ban này."}
         </p>
       ) : (
@@ -82,10 +82,10 @@ export function AddExistingStaffDialog({ departmentId, departmentName, onClose }
               <span className="flex min-w-0 items-center gap-2.5">
                 <Avatar avatarUrl={user.avatarUrl} fullName={user.fullName} presenceStatus={user.presenceStatus} size="sm" />
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-gray-900">
+                  <span className="block truncate text-sm font-medium text-fg">
                     <Highlight text={user.fullName} query={query} />
                   </span>
-                  <span className="block truncate text-xs text-gray-500">
+                  <span className="block truncate text-xs text-fg-muted">
                     {departmentLabel(user.departmentId) ?? "Chưa có phòng ban"} · {user.username}
                   </span>
                 </span>
@@ -98,8 +98,8 @@ export function AddExistingStaffDialog({ departmentId, departmentName, onClose }
         </ul>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3">
-        <p className="text-sm text-gray-500">Chưa có người cần tìm?</p>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-3">
+        <p className="text-sm text-fg-muted">Chưa có người cần tìm?</p>
         <Button variant="secondary" onClick={goCreate}>
           Tạo nhân sự mới ở trang Nhân sự
         </Button>

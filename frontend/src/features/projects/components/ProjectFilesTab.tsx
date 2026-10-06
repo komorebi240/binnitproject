@@ -42,13 +42,13 @@ function LinkFolderDialog({ project, currentUser, onClose }: { project: ProjectD
 
   return (
     <Modal title="Gắn thư mục Drive vào dự án" onClose={onClose}>
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-fg-soft">
         Thành viên dự án sẽ được cấp quyền xem thư mục này (người chưa kết nối Google Drive sẽ cần kết nối rồi nhờ bạn thêm lại).
       </p>
       {isLoading ? (
-        <p className="py-4 text-center text-sm text-gray-400">Đang tải...</p>
+        <p className="py-4 text-center text-sm text-fg-faint">Đang tải...</p>
       ) : candidates.length === 0 ? (
-        <p className="py-4 text-center text-sm text-gray-500">
+        <p className="py-4 text-center text-sm text-fg-muted">
           Không có thư mục nào để gắn. Đăng ký thư mục của phòng ban ở trang Google Drive trước.
         </p>
       ) : (
@@ -56,8 +56,8 @@ function LinkFolderDialog({ project, currentUser, onClose }: { project: ProjectD
           {candidates.map((folder) => (
             <li key={folder.id} className="flex items-center justify-between gap-3 rounded px-2 py-1.5 hover:bg-surface-muted">
               <span className="min-w-0">
-                <span className="block truncate text-sm font-medium text-gray-900">{folder.googleFolderName}</span>
-                <span className="block truncate text-xs text-gray-500">{folder.departmentName}</span>
+                <span className="block truncate text-sm font-medium text-fg">{folder.googleFolderName}</span>
+                <span className="block truncate text-xs text-fg-muted">{folder.departmentName}</span>
               </span>
               <Button variant="secondary" onClick={() => handleLink(folder.id)} disabled={link.isPending}>
                 Gắn
@@ -86,7 +86,7 @@ export function ProjectFilesTab({ project, currentUser }: { project: ProjectDeta
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold text-gray-900">Thư mục Drive chung</h2>
+        <h2 className="text-base font-semibold text-fg">Thư mục Drive chung</h2>
         {project.canManage && (
           <Button variant="secondary" onClick={() => setLinking(true)}>
             Gắn thư mục
@@ -102,12 +102,12 @@ export function ProjectFilesTab({ project, currentUser }: { project: ProjectDeta
       ) : (
         <ul className="flex flex-col gap-1.5">
           {project.folders.map((folder) => (
-            <li key={folder.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 px-3 py-2.5">
+            <li key={folder.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-line px-3 py-2.5">
               <span className="flex min-w-0 items-center gap-2.5">
-                <FolderSimple size={20} aria-hidden className="shrink-0 text-primary" />
+                <FolderSimple size={20} aria-hidden className="shrink-0 text-primary-text" />
                 <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium text-gray-900">{folder.folderName}</span>
-                  <span className="block truncate text-xs text-gray-500">Của {folder.departmentName}</span>
+                  <span className="block truncate text-sm font-medium text-fg">{folder.folderName}</span>
+                  <span className="block truncate text-xs text-fg-muted">Của {folder.departmentName}</span>
                 </span>
               </span>
               <span className="flex gap-2">
@@ -115,7 +115,7 @@ export function ProjectFilesTab({ project, currentUser }: { project: ProjectDeta
                   href={`https://drive.google.com/drive/folders/${encodeURIComponent(folder.googleFolderId)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center rounded bg-surface-muted px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                  className="inline-flex items-center rounded bg-surface-muted px-3 py-1.5 text-sm font-medium text-fg-soft hover:bg-line focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                 >
                   Mở trong Drive
                 </a>

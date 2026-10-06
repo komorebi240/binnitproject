@@ -31,7 +31,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     return (
       <div className="flex flex-col gap-1">
-        <label htmlFor={inputId} className="text-sm font-medium text-gray-700">
+        <label htmlFor={inputId} className="text-sm font-medium text-fg-soft">
           {label}
         </label>
         <div className="relative">
@@ -49,10 +49,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               validation.clear();
               onChange?.(event);
             }}
-            className={`rounded border px-3 py-2 text-sm transition-colors duration-150
+            className={`rounded border bg-surface px-3 py-2 text-sm text-fg transition-colors duration-150
             focus-visible:outline focus-visible:outline-2 ${shownError ? "focus-visible:outline-danger" : "focus-visible:outline-primary"}
             disabled:cursor-not-allowed disabled:opacity-50
-            ${shownError ? "border-danger" : "border-gray-300 hover:border-gray-400"}
+            ${shownError ? "border-danger" : "border-line-strong hover:border-fg-faint"}
             ${hasOwnWidth ? "" : "w-full"} ${isPassword ? "pr-10 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden" : ""} ${className}`}
             {...props}
           />
@@ -62,7 +62,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               onClick={() => setRevealed((value) => !value)}
               aria-label={revealed ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
               aria-pressed={revealed}
-              className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r text-gray-500 transition-colors duration-150 hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r text-fg-muted transition-colors duration-150 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
               {revealed ? <EyeSlash size={18} aria-hidden /> : <Eye size={18} aria-hidden />}
             </button>

@@ -117,7 +117,7 @@ export function UserManager({ currentUser }: UserManagerProps) {
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold text-gray-900">Nhân sự</h2>
+        <h2 className="text-lg font-semibold text-fg">Nhân sự</h2>
         <PlusButton
           label="Thêm nhân sự"
           onClick={() => {
@@ -141,7 +141,7 @@ export function UserManager({ currentUser }: UserManagerProps) {
                   type="button"
                   onClick={() => setManagingUserId(u.id)}
                   title="Mở cửa sổ quản lý"
-                  className="rounded text-left font-medium text-gray-900 hover:text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                  className="rounded text-left font-medium text-fg hover:text-primary-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                 >
                   {u.fullName}
                 </button>

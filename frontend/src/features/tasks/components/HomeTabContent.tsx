@@ -19,7 +19,7 @@ export function HomeTabContent({ boardView }: HomeTabContentProps) {
 
   return (
     <>
-      <h1 className="mb-4 text-lg font-semibold text-gray-900">
+      <h1 className="mb-4 text-lg font-semibold text-fg">
         {boardView ? "Công việc của tôi" : "Trang chủ"}
       </h1>
       {boardView ? (

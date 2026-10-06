@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArrowCounterClockwise, Pause, Play, Timer } from "@phosphor-icons/react";
 import { FloatingWindow } from "@/components/ui/FloatingWindow";
+import { Tabs } from "@/components/ui/Tabs";
 import {
   clampGeometry,
   defaultGeometry,
@@ -89,11 +90,11 @@ export function PomodoroControl({ userId }: { userId: number }) {
         <Timer
           size={20}
           weight={running ? "fill" : "regular"}
-          className={running ? "text-primary" : ""}
+          className={running ? "text-primary-text" : ""}
           aria-hidden
         />
         {active && (
-          <span className="font-mono text-xs tabular-nums text-gray-700">
+          <span className="font-mono text-xs tabular-nums text-fg-soft">
             {formatClock(remaining)}
           </span>
         )}
@@ -115,34 +116,23 @@ export function PomodoroControl({ userId }: { userId: number }) {
               onClick={() => setOpen(false)}
               title="Đóng cửa sổ (đồng hồ vẫn chạy)"
               aria-label="Đóng cửa sổ đồng hồ"
-              className="flex h-6 items-center rounded px-1.5 text-xs text-gray-500 hover:bg-surface-muted hover:text-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+              className="flex h-6 items-center rounded px-1.5 text-xs text-fg-muted hover:bg-surface-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
               Đóng
             </button>
           }
         >
           <div className="flex flex-1 flex-col items-center justify-between gap-3 py-1">
-            <div className="flex w-full gap-1" role="tablist" aria-label="Chế độ">
-              {PHASES.map((phase) => (
-                <button
-                  key={phase}
-                  type="button"
-                  role="tab"
-                  aria-selected={state.phase === phase}
-                  onClick={() => pomodoro.select(phase)}
-                  className={`flex-1 rounded px-1 py-1 text-xs font-medium transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
-                    state.phase === phase
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-surface-muted text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  {PHASE_LABELS[phase]}
-                </button>
-              ))}
-            </div>
+            <Tabs
+              label="Chế độ"
+              variant="solid"
+              value={state.phase}
+              onChange={(phase) => pomodoro.select(phase)}
+              items={PHASES.map((phase) => ({ id: phase, label: PHASE_LABELS[phase] }))}
+            />
 
             <p
-              className="font-mono text-5xl font-semibold tabular-nums text-gray-900"
+              className="font-mono text-5xl font-semibold tabular-nums text-fg"
               role="timer"
               aria-label={`${PHASE_LABELS[state.phase]}, còn ${formatClock(remaining)}`}
             >
@@ -174,19 +164,19 @@ export function PomodoroControl({ userId }: { userId: number }) {
                 onClick={pomodoro.resetPhase}
                 title="Đặt lại chế độ này"
                 aria-label="Đặt lại chế độ này"
-                className="flex h-9 w-9 items-center justify-center rounded border border-gray-200 text-gray-600 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                className="flex h-9 w-9 items-center justify-center rounded border border-line text-fg-soft hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               >
                 <ArrowCounterClockwise size={16} aria-hidden />
               </button>
             </div>
 
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-fg-muted">
               Đã xong {state.completedFocus} vòng tập trung
               {state.completedFocus > 0 && (
                 <button
                   type="button"
                   onClick={pomodoro.resetAll}
-                  className="ml-2 underline hover:text-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                  className="ml-2 underline hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                 >
                   Xoá
                 </button>

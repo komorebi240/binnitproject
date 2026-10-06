@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 /*
+ * Text, border and status colours are tokens too (fg*, line*, success/warning/info/danger): components use
+ * text-fg, border-line, bg-success/10 ... and every theme - dark included - restyles them here, so no
+ * per-class overrides are needed.
+ *
  * Theme tokens (Phase 4 plan - CLAUDE.md section 26 design tokens). Each theme sets the same
  * set of RGB-triplet variables; Tailwind's color tokens in tailwind.config.ts read them via
  * `rgb(var(--color-x) / <alpha-value>)` so switching `data-theme` on <html> recolors the whole
@@ -35,9 +39,50 @@
   --color-danger-foreground: 255 255 255;
   --color-body-bg: 247 247 255; /* near-white with a faint indigo tint, not flat white */
   --color-body-fg: 17 24 39; /* gray-900 */
+  --color-fg: 17 24 39; /* gray-900 - main text */
+  --color-fg-soft: 55 65 81; /* gray-700 - secondary text */
+  --color-fg-muted: 75 85 99; /* gray-600 - hints, captions (6.5:1 on a glass card, 4.5:1 on the tinted page) */
+  --color-fg-faint: 107 114 128; /* gray-500 - placeholders, icons, disabled */
+  --color-primary-text: 67 56 202; /* indigo-700 - brand colour for text and icons (6.9:1 on a glass card) */
+  --color-line: 229 231 235; /* gray-200 - borders and dividers */
+  --color-line-strong: 209 213 219; /* gray-300 - input borders */
+  --color-success: 22 163 74; /* green-600 */
+  --color-success-text: 21 128 61; /* green-700 */
+  --color-warning: 217 119 6; /* amber-600 */
+  --color-warning-text: 146 64 14; /* amber-800 */
+  --color-info: 37 99 235; /* blue-600 */
+  --color-info-text: 29 78 216; /* blue-700 */
+  --color-danger-text: 185 28 28; /* red-700 */
+
+  /*
+   * Glass (see the "Glass" section below). Light themes: a milky white pane with a bright rim (edge + top highlight),
+   * a thin brand-tinted outline so the pane keeps its shape on a pale page, a diagonal sheen, and a brand-tinted shadow.
+   */
+  --aurora-alpha: 0.3;
+  --glass-rgb: 255 255 255;
+  --glass-edge: rgb(255 255 255 / 0.8);
+  --glass-outline: rgb(var(--color-primary) / 0.16);
+  --glass-divider: rgb(var(--color-primary) / 0.2);
+  --gloss-alpha: 0.32;
+  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.95), inset 1px 0 0 rgb(255 255 255 / 0.55), inset 0 -1px 0 rgb(var(--color-primary) / 0.08);
+  --glass-sheen: linear-gradient(135deg, rgb(255 255 255 / 0.55) 0%, rgb(255 255 255 / 0.12) 48%, rgb(255 255 255 / 0) 100%);
+  --glass-shadow: 0 6px 16px -8px rgb(var(--color-primary) / 0.34);
+  --glass-shadow-raised: 0 16px 36px -14px rgb(var(--color-primary) / 0.45);
 }
 
 :root[data-theme="dark"] {
+  --aurora-alpha: 0.42;
+  --glass-rgb: 30 41 59; /* slate-800, the dark surface */
+  --glass-edge: rgb(255 255 255 / 0.2);
+  --glass-outline: rgb(0 0 0 / 0.4);
+  --glass-divider: rgb(255 255 255 / 0.14);
+  --gloss-alpha: 0.2;
+  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.2), inset 1px 0 0 rgb(255 255 255 / 0.07), inset 0 -1px 0 rgb(0 0 0 / 0.25);
+  --glass-sheen: linear-gradient(135deg, rgb(255 255 255 / 0.1) 0%, rgb(255 255 255 / 0.03) 48%, rgb(255 255 255 / 0) 100%);
+  --glass-shadow: 0 6px 16px -8px rgb(0 0 0 / 0.6);
+  --glass-shadow-raised: 0 16px 36px -14px rgb(0 0 0 / 0.75);
+  --color-primary-text: 167 139 250; /* violet-400 - violet-500 is only 3.4:1 on the dark glass */
+  --color-fg-faint: 122 138 161; /* between slate-500 and slate-400: slate-500 is only 3:1 on the dark glass */
   --color-primary: 139 92 246; /* violet-500 - lighter than the old violet-600 for more lift off the navy body */
   --color-primary-end: 67 56 202; /* indigo-700 - darker end gives the gradient real lightness range instead of two similarly-bright stops */
   --color-primary-foreground: 255 255 255;
@@ -48,9 +93,24 @@
   --color-danger-foreground: 17 24 39;
   --color-body-bg: 15 23 42; /* slate-900 - "night indigo" base */
   --color-body-fg: 241 245 249; /* slate-100 */
+  --color-fg: 241 245 249; /* slate-100 */
+  --color-fg-soft: 203 213 225; /* slate-300 */
+  --color-fg-muted: 148 163 184; /* slate-400 */
+  --color-fg-faint: 100 116 139; /* slate-500 */
+  --color-line: 51 65 85; /* slate-700 */
+  --color-line-strong: 71 85 105; /* slate-600 */
+  --color-success: 74 222 128; /* green-400 */
+  --color-success-text: 134 239 172; /* green-300 */
+  --color-warning: 251 191 36; /* amber-400 */
+  --color-warning-text: 252 211 77; /* amber-300 */
+  --color-info: 96 165 250; /* blue-400 */
+  --color-info-text: 147 197 253; /* blue-300 */
+  --color-danger-text: 252 165 165; /* red-300 */
 }
 
 :root[data-theme="gray"] {
+  --aurora-alpha: 0.2;
+  --color-primary-text: 51 65 85; /* slate-700 */
   --color-primary: 100 116 139; /* slate-500 */
   --color-primary-end: 30 41 59; /* slate-800 - far enough in lightness from slate-500 to read as a real gradient, not a flat tint */
   --color-primary-foreground: 255 255 255;
@@ -64,6 +124,7 @@
 }
 
 :root[data-theme="pink"] {
+  --color-primary-text: 190 24 93; /* pink-700 - pink-400 itself is only 2.3:1 as text */
   --color-primary: 244 114 182; /* pink-400 */
   --color-primary-end: 157 23 77; /* pink-800 - far enough in lightness from pink-400 to read as a real gradient */
   --color-primary-foreground: 255 255 255;
@@ -77,9 +138,33 @@
 }
 
 body {
-  background: rgb(var(--color-body-bg));
+  background-color: rgb(var(--color-body-bg));
   color: rgb(var(--color-body-fg));
   font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * The page carries a soft "aurora" of the theme's own colours behind everything: glass only reads as glass when there
+ * is something colourful behind it. It is a layer of its own (a fixed pseudo-element promoted to the compositor), NOT
+ * `background-attachment: fixed` on the body: Chromium cannot cache a fixed body background and repaints the whole
+ * viewport of gradients whenever anything on the page changes, which made desktop Chrome and Edge drop frames (iOS
+ * Safari ignores fixed backgrounds, which is why only desktop suffered). As its own layer it is rasterised once.
+ * Keep the wrappers between <body> and the glass surfaces free of opaque backgrounds, or the aurora is hidden.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  contain: strict;
+  transform: translateZ(0);
+  background-image:
+    radial-gradient(58rem 40rem at 4% -8%, rgb(var(--color-primary) / var(--aurora-alpha)), transparent 70%),
+    radial-gradient(50rem 36rem at 100% 2%, rgb(var(--color-primary-end) / calc(var(--aurora-alpha) * 0.85)), transparent 70%),
+    radial-gradient(44rem 34rem at -4% 78%, rgb(var(--color-primary-end) / calc(var(--aurora-alpha) * 0.6)), transparent 70%),
+    radial-gradient(60rem 42rem at 78% 112%, rgb(var(--color-primary) / calc(var(--aurora-alpha) * 0.85)), transparent 70%);
+  background-repeat: no-repeat;
 }
 
 /* Orbit brand typeface pairing: Space Grotesk for headings (its geometric, slightly technical
@@ -92,69 +177,8 @@ h3 {
   font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
 }
 
-/*
- * Dark-theme readability patch: most feature panels (built before the theme system existed)
- * hard-code neutral Tailwind classes like text-gray-900/border-gray-200/bg-white rather than a
- * theme token, because they were never meant to render on a dark surface. Rewriting every one
- * of those classNames is out of scope for this pass (CLAUDE.md section 29 - no work beyond
- * what's needed); this block keeps them legible under the dark theme without touching component
- * code, at the cost of a handful of !important overrides. New shared UI components should use
- * the CSS-variable-backed tokens (bg-surface, text-primary, etc.) instead of raw gray/white.
- */
 :root[data-theme="dark"] {
   color-scheme: dark;
-}
-
-:root[data-theme="dark"] .bg-white {
-  background-color: rgb(var(--color-surface)) !important;
-}
-
-:root[data-theme="dark"] .bg-gray-100,
-:root[data-theme="dark"] .bg-gray-200 {
-  background-color: rgb(var(--color-surface-muted)) !important;
-}
-
-/* Pastel "tinted zone" backgrounds (home status columns, priority panel) -> translucent on dark. */
-:root[data-theme="dark"] .bg-red-50 {
-  background-color: rgb(239 68 68 / 0.14) !important;
-}
-
-:root[data-theme="dark"] .bg-amber-50 {
-  background-color: rgb(245 158 11 / 0.14) !important;
-}
-
-:root[data-theme="dark"] .bg-indigo-50 {
-  background-color: rgb(99 102 241 / 0.16) !important;
-}
-
-:root[data-theme="dark"] .bg-green-50 {
-  background-color: rgb(34 197 94 / 0.14) !important;
-}
-
-:root[data-theme="dark"] .text-gray-900 {
-  color: #f1f5f9 !important;
-}
-
-:root[data-theme="dark"] .text-gray-800 {
-  color: #e2e8f0 !important;
-}
-
-:root[data-theme="dark"] .text-gray-700,
-:root[data-theme="dark"] .text-gray-600 {
-  color: #cbd5e1 !important;
-}
-
-:root[data-theme="dark"] .text-gray-500 {
-  color: #94a3b8 !important;
-}
-
-:root[data-theme="dark"] .border-gray-100,
-:root[data-theme="dark"] .border-gray-200,
-:root[data-theme="dark"] .border-gray-300,
-:root[data-theme="dark"] .border-gray-400,
-:root[data-theme="dark"] .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
-:root[data-theme="dark"] .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
-  border-color: #334155 !important;
 }
 
 /*
@@ -164,7 +188,21 @@ h3 {
  * background behind it (the reported "blind ra nền" issue).
  */
 .gradient-surface {
-  box-shadow: inset 0 0 0 1px rgb(var(--color-primary-ring) / 0.12);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 0 0 1px rgb(var(--color-primary-ring) / 0.12);
+}
+
+/*
+ * A gradient BUTTON: the same ring, plus a lit top edge, a shaded bottom edge, a coloured glow under it and (in the
+ * components layer below) a gloss on the upper half - the glass look for primary actions. Not for charts, banners or
+ * avatars, which are gradient surfaces but not buttons. The shadow is unlayered, like .gradient-surface, so a
+ * `shadow-sm` utility on the same element cannot flatten it.
+ */
+.glass-button {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    inset 0 -1px 0 rgb(0 0 0 / 0.16),
+    inset 0 0 0 1px rgb(var(--color-primary-ring) / 0.12),
+    0 6px 14px -6px rgb(var(--color-primary) / 0.55);
 }
 
 /*
@@ -174,12 +212,131 @@ h3 {
  * something the user can't actually click would be a false affordance.
  */
 .card-interactive {
-  transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out;
+  transition: transform 200ms ease-out, border-color 200ms ease-out;
 }
 
+/* The shadow switches instantly: animating a blurred shadow repaints the card on every frame of the transition. */
 .card-interactive:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px -10px rgb(var(--color-primary) / 0.35);
+  box-shadow: var(--glass-highlight), 0 0 0 1px var(--glass-outline), 0 10px 20px -10px rgb(var(--color-primary) / 0.45);
+}
+
+/*
+ * Glass - one look for every raised or floating layer, tuned per theme by the --glass-* tokens above. A pane is a
+ * translucent fill with a diagonal sheen, a bright rim (edge + top highlight), a thin outline so it keeps its shape on
+ * a pale page, and a soft shadow.
+ *
+ *   .glass          small popovers (menus, the notification list): strongest fill and a light blur, because page
+ *                   text can sit right behind them.
+ *   .glass-window   large surfaces (dialogs, the sign-in card, the priority drawer, floating windows): the same
+ *                   look but NO blur. They are 84-94% opaque, so a blur showed almost nothing, yet compositing a
+ *                   blurred 450 x 600 pane cost a 40 ms frame the moment it opened, and windows that get dragged
+ *                   would be re-blurred on every frame.
+ *   .glass-bar      app chrome (header, sidebar, tab bar): fill and sheen only.
+ *   .glass-card     in-page surfaces (stat cards, tiles, panels, tables): fill, rim and a soft shadow.
+ *   .glass-control  secondary buttons: lighter fill and a rim.
+ *   .glass-button   primary buttons: see .gradient-surface and the gloss below.
+ *
+ * PERFORMANCE RULES (desktop Chrome/Edge repaint and blur far more expensively than iOS Safari):
+ *   - backdrop-filter only on small popovers that exist one at a time: .glass. Never on the bars, the cards, the
+ *     buttons or any large surface - nothing scrolls beneath them, so the blur showed nothing but cost a GPU pass
+ *     per element per frame (the first version blurred three full-width bars plus every secondary button).
+ *   - one small blur radius, no saturate(), no full-screen blurred scrims behind dialogs (a plain dim does the job).
+ *   - one soft shadow per surface, never animated (see .card-interactive).
+ *   - decorative motion and animated dialogs are promoted to their own layers (will-change), so animating them only
+ *     moves textures instead of repainting.
+ *
+ * Text must stay readable, so the fill is translucent rather than clear. Where backdrop-filter is missing, or the
+ * person asks the system for less transparency (Windows: Settings > Personalization > Colors > Transparency
+ * effects), .glass and .glass-control get a much more opaque fill.
+ * Elements using these classes must not also carry border-color, background or box-shadow utilities (they would
+ * override the glass); utilities from the shared UI primitives are removed where a primitive is made of glass.
+ */
+:root {
+  --glass-blur: 12px;
+  --glass-alpha-bar: 0.6;
+  --glass-alpha-card: 0.72;
+  --glass-alpha-window: 0.94;
+  --glass-alpha-panel: 0.84;
+  --glass-alpha-control: 0.55;
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  :root {
+    --glass-alpha-panel: 0.97;
+    --glass-alpha-control: 0.85;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-alpha-panel: 0.9;
+    --glass-alpha-control: 0.72;
+  }
+}
+
+@layer components {
+  .glass,
+  .glass-window,
+  .glass-card,
+  .glass-control {
+    border: 1px solid var(--glass-edge);
+    background-image: var(--glass-sheen);
+  }
+
+  .glass {
+    background-color: rgb(var(--glass-rgb) / var(--glass-alpha-panel));
+    box-shadow: var(--glass-highlight), 0 0 0 1px var(--glass-outline), var(--glass-shadow-raised);
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
+  }
+
+  .glass-window {
+    background-color: rgb(var(--glass-rgb) / var(--glass-alpha-window));
+    box-shadow: var(--glass-highlight), 0 0 0 1px var(--glass-outline), var(--glass-shadow-raised);
+  }
+
+  .glass-card {
+    background-color: rgb(var(--glass-rgb) / var(--glass-alpha-card));
+    box-shadow: var(--glass-highlight), 0 0 0 1px var(--glass-outline), var(--glass-shadow);
+  }
+
+  .glass-control {
+    background-color: rgb(var(--glass-rgb) / var(--glass-alpha-control));
+    box-shadow: var(--glass-highlight), 0 0 0 1px var(--glass-outline);
+  }
+
+  .glass-control:hover {
+    background-color: rgb(var(--glass-rgb) / calc(var(--glass-alpha-control) + 0.2));
+  }
+
+  .glass-bar {
+    background-color: rgb(var(--glass-rgb) / var(--glass-alpha-bar));
+    background-image: var(--glass-sheen);
+    border-color: var(--glass-divider);
+  }
+
+  /* The gloss of a glass button: lit from above. Behind the label, above the gradient fill. */
+  .glass-button {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .glass-button::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgb(255 255 255 / var(--gloss-alpha)) 0%,
+      rgb(255 255 255 / calc(var(--gloss-alpha) * 0.25)) 50%,
+      rgb(255 255 255 / 0) 51%,
+      rgb(0 0 0 / 0.07) 100%
+    );
+  }
 }
 
 /* Respect the user's OS-level motion preference everywhere - including the new hover-lift and
@@ -199,11 +356,158 @@ h3 {
   }
 }
 
-/* Orbit wordmark text: dark navy on light surfaces, light on the dark theme (see components/brand). */
-.orbit-wordmark-text {
-  fill: #312e81;
+/*
+ * Orbit logo colours (components/brand, master files in public/brand, rules in docs/brand): the logo is brand
+ * artwork, so it keeps the Orbit indigo/violet on every theme; only the dark theme swaps to the lighter "reversed"
+ * set, which keeps the ring, the satellite and the word at 4:1 or better against the dark page.
+ */
+:root {
+  --logo-planet-from: #4f46e5;
+  --logo-planet-to: #7c3aed;
+  --logo-ring: #7c3aed;
+  --logo-satellite: #4f46e5;
+  --logo-word: #312e81;
 }
 
-:root[data-theme="dark"] .orbit-wordmark-text {
-  fill: #e0e7ff;
+:root[data-theme="dark"] {
+  --logo-planet-from: #6366f1;
+  --logo-planet-to: #8b5cf6;
+  --logo-ring: #a78bfa;
+  --logo-satellite: #c4b5fd;
+  --logo-word: #e0e7ff;
 }
+
+.orbit-logo-ring {
+  stroke: var(--logo-ring);
+}
+
+.orbit-logo-satellite {
+  fill: var(--logo-satellite);
+}
+
+.orbit-logo-word {
+  fill: var(--logo-word);
+}
+
+/*
+ * Marketing page ("/", features/marketing). Scripted animation is avoided on purpose: the page is static HTML, the
+ * orbits are CSS, and the scroll reveals are scroll-driven CSS animations (they simply do not play where unsupported).
+ */
+
+/* The orbit scene: a square box whose size everything inside is measured against (container units). */
+.mk-scene-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.orbit-scene {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(1100px, 135vw, 1800px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  container-type: size;
+}
+
+/* Every orbit is the same circle squashed into an ellipse and tilted by --plane (see OrbitScene.tsx for the maths). */
+.orbit-plane {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform: rotate(var(--plane)) scaleY(var(--squash));
+}
+
+.orbit-spin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform: rotate(var(--phi));
+  animation: orbit-spin var(--period) linear infinite;
+}
+
+/* The icon cancels the plane's squash and tilt, and the spin, so it stays round and upright while it travels. */
+.orbit-chip {
+  position: absolute;
+  left: -22px;
+  top: -22px;
+  display: flex;
+  height: 44px;
+  width: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  transform: translateX(var(--r)) rotate(calc(var(--phi) * -1)) scaleY(var(--unsquash)) rotate(calc(var(--plane) * -1));
+  animation: orbit-counter var(--period) linear infinite;
+  will-change: transform;
+}
+
+@keyframes orbit-spin {
+  from { transform: rotate(var(--phi)); }
+  to { transform: rotate(calc(var(--phi) + 360deg)); }
+}
+
+@keyframes orbit-counter {
+  from { transform: translateX(var(--r)) rotate(calc(var(--phi) * -1)) scaleY(var(--unsquash)) rotate(calc(var(--plane) * -1)); }
+  to { transform: translateX(var(--r)) rotate(calc(var(--phi) * -1 - 360deg)) scaleY(var(--unsquash)) rotate(calc(var(--plane) * -1)); }
+}
+
+/* Below the fold, the browser may skip rendering a section until it is near the viewport. */
+.mk-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 640px;
+}
+
+/* Cards and headings rise into place as they scroll into view (compositor-driven; unsupported browsers show them). */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .mk-reveal {
+      animation: mk-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+
+@keyframes mk-rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* The call to action fades the page out before the sign-in page's logo intro starts (LandingCta). */
+.mk-page {
+  transition: opacity 280ms ease-out;
+}
+
+.mk-leaving .mk-page {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit-spin,
+  .orbit-chip {
+    animation: none;
+  }
+}
+
+/* The sign-in landing's hint (AuthLanding): invisible for a moment, then it fades in and breathes until the buttons come. */
+.landing-hint {
+  opacity: 0;
+  animation: landing-hint-in 600ms ease-out 2200ms forwards, landing-hint-breathe 2600ms ease-in-out 2800ms infinite;
+}
+
+@keyframes landing-hint-in {
+  to { opacity: 1; }
+}
+
+@keyframes landing-hint-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+

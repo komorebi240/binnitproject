@@ -80,13 +80,13 @@ export function CreateProjectDialog({ currentUser, onClose }: { currentUser: Use
         )}
 
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="text-sm font-medium text-gray-700">Mời phòng ban hỗ trợ (tuỳ chọn)</legend>
+          <legend className="text-sm font-medium text-fg-soft">Mời phòng ban hỗ trợ (tuỳ chọn)</legend>
           {supportCandidates.length === 0 ? (
-            <p className="text-sm text-gray-400">Chưa có phòng ban nào khác để mời.</p>
+            <p className="text-sm text-fg-faint">Chưa có phòng ban nào khác để mời.</p>
           ) : (
             <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
               {supportCandidates.map((d) => (
-                <label key={d.id} className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-surface-muted">
+                <label key={d.id} className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-fg-soft hover:bg-surface-muted">
                   <input type="checkbox" checked={supportIds.includes(d.id)} onChange={() => toggleSupport(d.id)} />
                   {d.name}
                 </label>

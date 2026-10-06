@@ -94,9 +94,9 @@ export function QuickSearch({ currentUserAuthorityLevel }: QuickSearchProps) {
       {open && (
         <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/20 pt-24">
           <button type="button" aria-label="Đóng" onClick={() => setOpen(false)} className="animate-fade-in fixed inset-0 cursor-default bg-black/20" />
-          <div className="animate-pop-in relative w-full max-w-md origin-top rounded-lg border border-gray-200 bg-white shadow-lg">
-            <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2.5">
-              <MagnifyingGlass size={18} className="text-gray-400" aria-hidden />
+          <div className="animate-pop-in relative glass-window w-full max-w-md origin-top rounded-lg">
+            <div className="flex items-center gap-2 border-b border-line/60 px-3 py-2.5">
+              <MagnifyingGlass size={18} className="text-fg-faint" aria-hidden />
               <input
                 ref={inputRef}
                 value={query}
@@ -108,11 +108,11 @@ export function QuickSearch({ currentUserAuthorityLevel }: QuickSearchProps) {
                 placeholder="Tìm tính năng, trang..."
                 className="flex-1 bg-transparent text-sm outline-none"
               />
-              <kbd className="rounded border border-gray-200 px-1.5 py-0.5 text-[10px] text-gray-400">Esc</kbd>
+              <kbd className="rounded border border-line px-1.5 py-0.5 text-[10px] text-fg-faint">Esc</kbd>
             </div>
             <ul className="max-h-72 overflow-y-auto py-1">
               {results.length === 0 ? (
-                <li className="px-3 py-6 text-center text-sm text-gray-400">Không tìm thấy</li>
+                <li className="px-3 py-6 text-center text-sm text-fg-faint">Không tìm thấy</li>
               ) : (
                 results.map((item, index) => {
                   const ItemIcon = item.icon;
@@ -123,15 +123,15 @@ export function QuickSearch({ currentUserAuthorityLevel }: QuickSearchProps) {
                         onClick={() => go(item.href)}
                         onMouseEnter={() => setActiveIndex(index)}
                         className={`flex w-full items-center gap-2.5 py-2 pr-3 text-left text-sm ${item.child ? "pl-9" : "pl-3"} ${
-                          index === activeIndex ? "bg-surface-muted text-gray-900" : "text-gray-700"
+                          index === activeIndex ? "bg-surface-muted text-fg" : "text-fg-soft"
                         }`}
                       >
                         {item.child ? (
-                          <span aria-hidden className="h-1 w-1 shrink-0 rounded-full bg-gray-300" />
+                          <span aria-hidden className="h-1 w-1 shrink-0 rounded-full bg-line-strong" />
                         ) : (
-                          <ItemIcon size={16} aria-hidden className="shrink-0 text-gray-400" />
+                          <ItemIcon size={16} aria-hidden className="shrink-0 text-fg-faint" />
                         )}
-                        <span className={item.child ? "text-gray-600" : "font-medium"}>
+                        <span className={item.child ? "text-fg-soft" : "font-medium"}>
                           <Highlight text={item.label} query={query} />
                         </span>
                       </button>

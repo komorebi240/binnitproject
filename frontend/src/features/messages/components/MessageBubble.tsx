@@ -64,14 +64,14 @@ function FileAttachment({ attachment }: { attachment: MessageAttachment }) {
       type="button"
       onClick={handleDownload}
       disabled={downloading}
-      className="flex w-full items-center gap-2 rounded border border-gray-200 bg-white px-2.5 py-2 text-left text-gray-900 transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-60"
+      className="flex w-full items-center gap-2 rounded border border-line bg-surface px-2.5 py-2 text-left text-fg transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-60"
     >
-      <FileIcon size={22} aria-hidden className="shrink-0 text-primary" />
+      <FileIcon size={22} aria-hidden className="shrink-0 text-primary-text" />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium">{attachment.fileName}</span>
-        <span className="block text-xs text-gray-500">{formatSize(attachment.sizeBytes)}</span>
+        <span className="block text-xs text-fg-muted">{formatSize(attachment.sizeBytes)}</span>
       </span>
-      <DownloadSimple size={18} aria-hidden className="shrink-0 text-gray-500" />
+      <DownloadSimple size={18} aria-hidden className="shrink-0 text-fg-muted" />
     </button>
   );
 }
@@ -92,10 +92,10 @@ export function MessageBubble({ message, isMine, senderName, senderAvatarUrl, se
   const canRecall = isMine && !message.recalled;
 
   const bubbleClassName = message.recalled
-    ? "border border-dashed border-gray-300 bg-transparent italic text-gray-500"
+    ? "border border-dashed border-line-strong bg-transparent italic text-fg-muted"
     : isMine
       ? "bg-primary text-primary-foreground"
-      : "bg-surface-muted text-gray-900";
+      : "bg-surface-muted text-fg";
 
   return (
     <div className={`group flex items-end gap-2 ${isMine ? "flex-row-reverse" : ""}`}>
@@ -116,7 +116,7 @@ export function MessageBubble({ message, isMine, senderName, senderAvatarUrl, se
             )}
           </div>
         )}
-        <span className="text-[10px] text-gray-400">
+        <span className="text-[10px] text-fg-faint">
           {new Date(message.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
         </span>
       </div>
@@ -127,14 +127,14 @@ export function MessageBubble({ message, isMine, senderName, senderAvatarUrl, se
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="Tuỳ chọn tin nhắn"
-            className="flex h-7 w-7 items-center justify-center rounded text-gray-400 opacity-0 transition-opacity duration-150 hover:bg-surface-muted hover:text-gray-700 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary group-hover:opacity-100"
+            className="flex h-7 w-7 items-center justify-center rounded text-fg-faint opacity-0 transition-opacity duration-150 hover:bg-surface-muted hover:text-fg-soft focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary group-hover:opacity-100"
           >
             <DotsThreeVertical size={16} weight="bold" aria-hidden />
           </button>
           {menuOpen && (
             <>
               <button type="button" aria-label="Đóng" onClick={() => setMenuOpen(false)} className="fixed inset-0 z-20 cursor-default" />
-              <div className="animate-fade-in absolute bottom-8 right-0 z-30 w-32 rounded border border-gray-200 bg-white py-1 text-sm shadow-lg">
+              <div className="animate-fade-in absolute bottom-8 right-0 z-30 w-32 rounded glass py-1 text-sm">
                 <button
                   type="button"
                   onClick={() => {

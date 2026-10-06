@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
@@ -50,9 +51,9 @@ export function DeleteUserDialog({ user, onClose, onDeleted }: DeleteUserDialogP
   return (
     <Modal title="Xoá nhân sự" onClose={onClose} widthClassName="max-w-md">
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-900">
+        <Alert tone="danger">
           Bạn sắp xoá <strong>{user.fullName}</strong> ({user.username}). Tài khoản sẽ không đăng nhập được nữa và hành động này không thể hoàn tác.
-        </p>
+        </Alert>
         <Input
           label={`Nhập "${user.username}" để xác nhận`}
           value={confirmation}

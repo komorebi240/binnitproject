@@ -96,7 +96,7 @@ export function ActionMenu({ items, label = "Tuỳ chọn", size = "md" }: Actio
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={`flex items-center justify-center rounded text-gray-400 transition-colors duration-150 hover:bg-surface-muted hover:text-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${triggerSize}`}
+        className={`flex items-center justify-center rounded text-fg-faint transition-colors duration-150 hover:bg-surface-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${triggerSize}`}
       >
         <DotsThreeVertical size={size === "sm" ? 16 : 18} weight="bold" aria-hidden />
       </button>
@@ -108,7 +108,7 @@ export function ActionMenu({ items, label = "Tuỳ chọn", size = "md" }: Actio
             <div
               ref={menuRef}
               role="menu"
-              className="animate-fade-in fixed z-50 rounded border border-gray-200 bg-white py-1 text-sm shadow-lg"
+              className="glass animate-fade-in fixed z-50 rounded py-1 text-sm"
               style={{
                 width: MENU_WIDTH,
                 top: position?.top ?? 0,
@@ -126,7 +126,7 @@ export function ActionMenu({ items, label = "Tuỳ chọn", size = "md" }: Actio
                     close();
                     item.onSelect();
                   }}
-                  className={`block w-full px-3 py-1.5 text-left hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-none disabled:opacity-50 ${item.danger ? "text-danger" : "text-gray-700"}`}
+                  className={`block w-full px-3 py-1.5 text-left hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-none disabled:opacity-50 ${item.danger ? "text-danger" : "text-fg-soft"}`}
                 >
                   {item.label}
                 </button>

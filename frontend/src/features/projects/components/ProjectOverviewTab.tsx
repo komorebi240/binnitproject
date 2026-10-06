@@ -85,10 +85,10 @@ function DepartmentRow({ department, canRemove, projectId }: { department: Proje
   }
 
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 px-3 py-2.5">
+    <li className="flex flex-wrap items-center justify-between gap-2 rounded border border-line px-3 py-2.5">
       <div className="min-w-0">
-        <p className="font-medium text-gray-900">{department.departmentName}</p>
-        <p className="text-xs text-gray-500">
+        <p className="font-medium text-fg">{department.departmentName}</p>
+        <p className="text-xs text-fg-muted">
           {department.role === "OWNER" ? "Chủ trì" : "Hỗ trợ"} · {department.memberCount} thành viên
           {department.note ? ` · "${department.note}"` : ""}
         </p>
@@ -114,7 +114,7 @@ export function ProjectOverviewTab({ project }: { project: ProjectDetail }) {
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold text-gray-900">Phòng ban tham gia</h2>
+        <h2 className="text-base font-semibold text-fg">Phòng ban tham gia</h2>
         {project.canManage && (
           <Button variant="secondary" onClick={() => setInviting(true)}>
             Mời phòng ban

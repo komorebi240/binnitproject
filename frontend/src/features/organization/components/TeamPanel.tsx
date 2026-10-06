@@ -50,8 +50,8 @@ export function TeamPanel({ departmentId, departmentName, canManage }: TeamPanel
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded border border-gray-200 bg-surface p-5 shadow-sm">
-      <h3 className="text-base font-semibold text-gray-900">Nhóm trong phòng &quot;{departmentName}&quot;</h3>
+    <div className="flex flex-col gap-3 rounded glass-card p-5">
+      <h3 className="text-base font-semibold text-fg">Nhóm trong phòng &quot;{departmentName}&quot;</h3>
 
       {isLoading ? (
         <Skeleton rows={2} />
@@ -65,12 +65,12 @@ export function TeamPanel({ departmentId, departmentName, canManage }: TeamPanel
           {(teams ?? []).map((team) => {
             const isExpanded = expandedTeamId === team.id;
             return (
-              <li key={team.id} className="rounded border border-gray-200">
+              <li key={team.id} className="rounded border border-line">
                 <div className="flex items-center justify-between gap-2 px-3 py-2">
                   <button
                     type="button"
                     onClick={() => setExpandedTeamId(isExpanded ? null : team.id)}
-                    className="flex flex-1 items-center gap-1.5 text-left text-sm font-medium text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                    className="flex flex-1 items-center gap-1.5 text-left text-sm font-medium text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                   >
                     {isExpanded ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
                     {team.name}
@@ -82,7 +82,7 @@ export function TeamPanel({ departmentId, departmentName, canManage }: TeamPanel
                   )}
                 </div>
                 {isExpanded && (
-                  <div className="animate-fade-in border-t border-gray-100 px-3 py-2">
+                  <div className="animate-fade-in border-t border-line/60 px-3 py-2">
                     <TeamMemberList teamId={team.id} teamName={team.name} />
                   </div>
                 )}

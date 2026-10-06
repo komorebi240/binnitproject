@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert } from "@/components/ui/Alert";
 import { useCurrentUser } from "@/features/auth/hooks/useAuth";
 import { DrivePanel } from "./DrivePanel";
 
@@ -27,14 +28,10 @@ export function DriveTabContent({ driveConnected, driveError }: DriveTabContentP
       {(driveConnected || driveError) && (
         <div className="mb-4">
           {driveConnected && (
-            <p role="status" className="rounded bg-green-50 px-3 py-2 text-sm text-green-800">
-              Đã kết nối Google Drive thành công.
-            </p>
+            <Alert tone="success">Đã kết nối Google Drive thành công.</Alert>
           )}
           {driveError && (
-            <p role="alert" className="rounded bg-red-50 px-3 py-2 text-sm text-danger">
-              {DRIVE_ERROR_LABELS[driveError] ?? `Kết nối Google Drive thất bại (${driveError}).`}
-            </p>
+            <Alert tone="danger">{DRIVE_ERROR_LABELS[driveError] ?? `Kết nối Google Drive thất bại (${driveError}).`}</Alert>
           )}
         </div>
       )}

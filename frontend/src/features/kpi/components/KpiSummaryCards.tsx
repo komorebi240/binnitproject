@@ -3,6 +3,7 @@
 import { BarChart } from "@/components/ui/BarChart";
 import { ColumnChart } from "@/components/ui/ColumnChart";
 import { Badge } from "@/components/ui/Badge";
+import { CountUp } from "@/components/ui/CountUp";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useMyKpiSummary } from "../hooks/useKpi";
 import { useTasksList } from "@/features/tasks/hooks/useTasks";
@@ -56,9 +57,9 @@ export function KpiSummaryCards({ currentUser }: KpiSummaryCardsProps) {
   const allMyTasks = (tasks ?? []).filter((t) => t.assigneeUserId === currentUser.userId);
   const myTasks = allMyTasks.filter((t) => new Date(t.createdAt) >= monthStart);
   const segments = [
-    { label: "Đã giao", value: myTasks.filter((t) => t.status === "ASSIGNED").length, colorClassName: "bg-gray-400" },
+    { label: "Đã giao", value: myTasks.filter((t) => t.status === "ASSIGNED").length, colorClassName: "bg-fg-faint" },
     { label: "Đã nhận", value: myTasks.filter((t) => t.status === "ACCEPTED").length, colorClassName: "bg-primary" },
-    { label: "Hoàn thành", value: myTasks.filter((t) => t.status === "DONE").length, colorClassName: "bg-green-500" },
+    { label: "Hoàn thành", value: myTasks.filter((t) => t.status === "DONE").length, colorClassName: "bg-success" },
     {
       label: "Từ chối/Huỷ",
       value: myTasks.filter((t) => t.status === "DECLINED" || t.status === "CANCELLED").length,
@@ -71,32 +72,38 @@ export function KpiSummaryCards({ currentUser }: KpiSummaryCardsProps) {
   return (
     <section className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 [.pane-narrow_&]:sm:grid-cols-1">
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-gray-500">Khối lượng công việc ({MONTH_LABEL(summary.periodYear, summary.periodMonth)})</p>
-          <p className="mt-1 text-2xl font-semibold text-gray-900">{summary.totalAssigned}</p>
+        <div className="rounded-lg glass-card p-4">
+          <p className="text-sm text-fg-muted">Khối lượng công việc ({MONTH_LABEL(summary.periodYear, summary.periodMonth)})</p>
+          <p className="mt-1 text-2xl font-semibold text-fg">
+            <CountUp value={summary.totalAssigned} />
+          </p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-gray-500">Tỷ lệ hoàn thành</p>
-          <p className="mt-1 text-2xl font-semibold text-gray-900">{summary.completionRatePercent}%</p>
+        <div className="rounded-lg glass-card p-4">
+          <p className="text-sm text-fg-muted">Tỷ lệ hoàn thành</p>
+          <p className="mt-1 text-2xl font-semibold text-fg">
+            <CountUp value={summary.completionRatePercent} suffix="%" />
+          </p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-sm text-gray-500">KPI tháng này</p>
+        <div className="rounded-lg glass-card p-4">
+          <p className="text-sm text-fg-muted">KPI tháng này</p>
           <div className="mt-1 flex items-center gap-2">
-            <p className="text-2xl font-semibold text-gray-900">{summary.kpiScore}</p>
+            <p className="text-2xl font-semibold text-fg">
+              <CountUp value={summary.kpiScore} />
+            </p>
             {summary.incentiveLabel && <Badge tone={tierTone(summary.kpiScore)}>{summary.incentiveLabel}</Badge>}
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 [.pane-narrow_&]:lg:grid-cols-1">
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-medium text-gray-700">
+        <div className="rounded-lg glass-card p-4">
+          <p className="mb-3 text-sm font-medium text-fg-soft">
             Khối lượng công việc theo trạng thái ({MONTH_LABEL(summary.periodYear, summary.periodMonth)})
           </p>
           <BarChart segments={segments} />
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-medium text-gray-700">Việc hoàn thành 7 ngày gần đây</p>
+        <div className="rounded-lg glass-card p-4">
+          <p className="mb-3 text-sm font-medium text-fg-soft">Việc hoàn thành 7 ngày gần đây</p>
           <ColumnChart bars={weekBars} ariaLabel="Số việc hoàn thành mỗi ngày trong 7 ngày gần đây" />
         </div>
       </div>

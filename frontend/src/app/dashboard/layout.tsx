@@ -49,8 +49,8 @@ export default function DashboardLayout(_props: { children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className="animate-pulse p-4 sm:p-8">
-        <div className="mb-6 h-6 w-48 rounded bg-gray-200" />
-        <div className="h-40 rounded bg-gray-100" />
+        <div className="mb-6 h-6 w-48 rounded bg-line" />
+        <div className="h-40 rounded bg-surface-muted" />
       </div>
     );
   }
@@ -58,9 +58,9 @@ export default function DashboardLayout(_props: { children: React.ReactNode }) {
   if (!currentUser) {
     if (isUnauthenticated) return null; // redirecting to /login
     return (
-      <div className="p-8 text-center text-sm text-gray-500">
+      <div className="p-8 text-center text-sm text-fg-muted">
         Không kết nối được máy chủ.{" "}
-        <button type="button" onClick={() => window.location.reload()} className="text-primary underline">
+        <button type="button" onClick={() => window.location.reload()} className="text-primary-text underline">
           Tải lại
         </button>
       </div>
@@ -88,7 +88,7 @@ function DashboardShell({ currentUser }: { currentUser: UserProfile }) {
     <TourProvider currentUser={currentUser}>
     <PomodoroProvider key={currentUser.userId} userId={currentUser.userId}>
     <div className="flex h-screen flex-col overflow-hidden">
-      <header className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-3 sm:px-8">
+      <header className="glass-bar flex shrink-0 items-center justify-between border-b px-4 py-3 sm:px-8">
         <div className="flex items-center gap-3">
           {/* Orbit's own brand mark, not the tenant's company name - this corner is "whose
               product is this" (consistent across every company using the app). */}
@@ -100,7 +100,7 @@ function DashboardShell({ currentUser }: { currentUser: UserProfile }) {
             title="Về trang chủ"
             className="shrink-0 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
-            <OrbitWordmark width={91} height={32} />
+            <OrbitWordmark width={120} />
           </button>
           <CompanyBadge />
         </div>

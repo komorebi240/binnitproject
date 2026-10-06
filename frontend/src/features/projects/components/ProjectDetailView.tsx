@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Tabs, useTabsIds } from "@/components/ui/Tabs";
 import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import type { UserProfile } from "@/features/auth/types";
@@ -82,13 +84,14 @@ export function ProjectDetailView({ projectId, currentUser, onDeleted }: Project
   const deleteProject = useDeleteProject();
   const { showToast } = useToast();
   const [tab, setTab] = useState<TabId>("overview");
+  const tabIds = useTabsIds();
   const [editing, setEditing] = useState(false);
 
   if (isLoading) {
     return <Skeleton rows={4} />;
   }
   if (isError || !project) {
-    return <p className="text-sm text-gray-500">Không tìm thấy dự án, hoặc bạn không có quyền xem.</p>;
+    return <p className="text-sm text-fg-muted">Không tìm thấy dự án, hoặc bạn không có quyền xem.</p>;
   }
 
   const waiting = project.departments.filter(
@@ -119,9 +122,9 @@ export function ProjectDetailView({ projectId, currentUser, onDeleted }: Project
     <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-gray-900">{project.name}</h1>
-          <p className="text-sm text-gray-500">Chủ trì: {project.ownerDepartmentName ?? "-"}</p>
-          {project.description && <p className="mt-2 max-w-3xl whitespace-pre-wrap break-words text-sm text-gray-600">{project.description}</p>}
+          <h1 className="text-xl font-semibold text-fg">{project.name}</h1>
+          <p className="text-sm text-fg-muted">Chủ trì: {project.ownerDepartmentName ?? "-"}</p>
+          {project.description && <p className="mt-2 max-w-3xl whitespace-pre-wrap break-words text-sm text-fg-soft">{project.description}</p>}
         </div>
         {project.canManage && (
           <div className="flex gap-2">
@@ -136,11 +139,8 @@ export function ProjectDetailView({ projectId, currentUser, onDeleted }: Project
       </header>
 
       {waiting.map((department) => (
-        <section key={department.departmentId} className="flex flex-col gap-2 rounded border border-yellow-200 bg-yellow-50 p-4" aria-label="Lời mời chờ phản hồi">
-          <p className="text-sm font-medium text-gray-900">
-            {department.departmentName} được mời tham gia dự án này
-          </p>
-          {department.note && <p className="text-sm text-gray-600">&ldquo;{department.note}&rdquo;</p>}
+        <Alert key={department.departmentId} tone="warning" title={`${department.departmentName} được mời tham gia dự án này`} className="p-4">
+          {department.note && <p>&ldquo;{department.note}&rdquo;</p>}
           <div className="flex gap-2">
             <Button onClick={() => answer(department.departmentId, true)} loading={respond.isPending}>
               Nhận lời
@@ -149,36 +149,28 @@ export function ProjectDetailView({ projectId, currentUser, onDeleted }: Project
               Từ chối
             </Button>
           </div>
-        </section>
+        </Alert>
       ))}
 
-      <div role="tablist" aria-label="Các phần của dự án" className="flex gap-1 overflow-x-auto border-b border-gray-200">
-        {TABS.map((item) => {
+      <Tabs
+        label="Các phần của dự án"
+        variant="underline"
+        ids={tabIds}
+        value={tab}
+        onChange={setTab}
+        items={TABS.map((item) => {
           const disabled = item.needsWork && !project.canWork;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={tab === item.id}
-              disabled={disabled}
-              title={disabled ? "Chỉ thành viên dự án mới xem được" : undefined}
-              onClick={() => setTab(item.id)}
-              className={`shrink-0 border-b-2 px-3 py-2 text-sm font-medium transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40 ${
-                tab === item.id ? "border-primary text-primary" : "border-transparent text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              {item.label}
-            </button>
-          );
+          return { id: item.id, label: item.label, disabled, title: disabled ? "Chỉ thành viên dự án mới xem được" : undefined };
         })}
-      </div>
+      />
 
-      {tab === "overview" && <ProjectOverviewTab project={project} />}
-      {tab === "members" && <ProjectMembersTab project={project} currentUser={currentUser} />}
-      {tab === "tasks" && project.canWork && <ProjectTasksTab project={project} currentUser={currentUser} />}
-      {tab === "chat" && project.canWork && <ProjectChatTab project={project} currentUser={currentUser} />}
-      {tab === "files" && project.canWork && <ProjectFilesTab project={project} currentUser={currentUser} />}
+      <div role="tabpanel" id={tabIds.panelId(tab)} aria-labelledby={tabIds.tabId(tab)} className="flex flex-col gap-5">
+        {tab === "overview" && <ProjectOverviewTab project={project} />}
+        {tab === "members" && <ProjectMembersTab project={project} currentUser={currentUser} />}
+        {tab === "tasks" && project.canWork && <ProjectTasksTab project={project} currentUser={currentUser} />}
+        {tab === "chat" && project.canWork && <ProjectChatTab project={project} currentUser={currentUser} />}
+        {tab === "files" && project.canWork && <ProjectFilesTab project={project} currentUser={currentUser} />}
+      </div>
 
       {editing && <EditProjectDialog project={project} onClose={() => setEditing(false)} />}
     </div>

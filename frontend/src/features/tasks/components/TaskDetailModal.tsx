@@ -77,11 +77,11 @@ function PersonRow({
   onMessage: (userId: number, name: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded border border-gray-200 px-3 py-2">
+    <div className="flex items-center gap-3 rounded border border-line px-3 py-2">
       <Avatar avatarUrl={null} fullName={name} size="sm" />
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-gray-500">{label}</p>
-        <p className="truncate text-sm font-medium text-gray-900">{name}</p>
+        <p className="text-xs text-fg-muted">{label}</p>
+        <p className="truncate text-sm font-medium text-fg">{name}</p>
       </div>
       {userId != null && userId !== currentUserId && (
         <Button variant="secondary" onClick={() => onMessage(userId, name)}>
@@ -134,11 +134,11 @@ function AttachmentRow({
   }
 
   return (
-    <li className="flex items-center gap-2 rounded border border-gray-200 px-2.5 py-1.5">
+    <li className="flex items-center gap-2 rounded border border-line px-2.5 py-1.5">
       {attachment.image ? (
         <AttachmentThumb taskId={taskId} attachment={attachment} />
       ) : (
-        <FileIcon size={22} aria-hidden className="shrink-0 text-primary" />
+        <FileIcon size={22} aria-hidden className="shrink-0 text-primary-text" />
       )}
       <button
         type="button"
@@ -147,17 +147,17 @@ function AttachmentRow({
         title="Tải xuống"
         className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-60"
       >
-        <span className="block truncate text-sm font-medium text-gray-900">{attachment.fileName}</span>
-        <span className="block text-xs text-gray-500">{formatSize(attachment.sizeBytes)}</span>
+        <span className="block truncate text-sm font-medium text-fg">{attachment.fileName}</span>
+        <span className="block text-xs text-fg-muted">{formatSize(attachment.sizeBytes)}</span>
       </button>
-      <DownloadSimple size={16} aria-hidden className="shrink-0 text-gray-400" />
+      <DownloadSimple size={16} aria-hidden className="shrink-0 text-fg-faint" />
       {canRemove && (
         <button
           type="button"
           onClick={() => onRemove(attachment)}
           disabled={removing}
           aria-label={`Xoá tệp ${attachment.fileName}`}
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-gray-400 hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-fg-faint hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
         >
           <X size={14} aria-hidden />
         </button>
@@ -214,13 +214,13 @@ function DriveLinkSection({ taskId, driveUrl, canManage }: { taskId: number; dri
           href={driveUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          className="flex min-w-0 items-center gap-1.5 text-sm font-medium text-primary-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         >
           <GoogleDriveLogo size={18} aria-hidden className="shrink-0" />
           <span className="truncate">{driveUrl}</span>
         </a>
       ) : (
-        <span className="text-sm text-gray-400">Chưa có link Drive</span>
+        <span className="text-sm text-fg-faint">Chưa có link Drive</span>
       )}
       {canManage && (
         <>
@@ -307,7 +307,7 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
     <Modal title="Chi tiết công việc" onClose={onClose}>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <h4 className="break-words text-lg font-semibold text-gray-900">{task.title}</h4>
+          <h4 className="break-words text-lg font-semibold text-fg">{task.title}</h4>
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={STATUS_TONE[task.status]}>{STATUS_LABELS[task.status]}</Badge>
             <Badge tone={PRIORITY_TONE[task.priority]}>Ưu tiên: {PRIORITY_LABELS[task.priority]}</Badge>
@@ -315,9 +315,9 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
         </div>
 
         <div>
-          <p className="mb-1 text-xs font-medium text-gray-500">Mô tả</p>
-          <p className="whitespace-pre-wrap break-words text-sm text-gray-800">
-            {task.description || <span className="text-gray-400">Không có mô tả</span>}
+          <p className="mb-1 text-xs font-medium text-fg-muted">Mô tả</p>
+          <p className="whitespace-pre-wrap break-words text-sm text-fg">
+            {task.description || <span className="text-fg-faint">Không có mô tả</span>}
           </p>
         </div>
 
@@ -338,9 +338,9 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
               onMessage={handleMessage}
             />
           ) : (
-            <div className="rounded border border-gray-200 px-3 py-2">
-              <p className="text-xs text-gray-500">Giao cho phòng ban</p>
-              <p className="text-sm font-medium text-gray-900">{task.assigneeDepartmentName ?? "-"}</p>
+            <div className="rounded border border-line px-3 py-2">
+              <p className="text-xs text-fg-muted">Giao cho phòng ban</p>
+              <p className="text-sm font-medium text-fg">{task.assigneeDepartmentName ?? "-"}</p>
             </div>
           )}
         </div>
@@ -349,7 +349,7 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
 
         <section className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-medium text-gray-500">
+            <p className="text-xs font-medium text-fg-muted">
               Tài liệu đính kèm ({task.attachments.length}/{MAX_TASK_ATTACHMENTS})
             </p>
             {canAddFiles && (
@@ -376,7 +376,7 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
             )}
           </div>
           {task.attachments.length === 0 ? (
-            <p className="text-sm text-gray-400">Chưa có tài liệu đính kèm</p>
+            <p className="text-sm text-fg-faint">Chưa có tài liệu đính kèm</p>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {task.attachments.map((attachment) => (
@@ -394,23 +394,23 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
         </section>
 
         <section className="flex flex-col gap-2">
-          <p className="text-xs font-medium text-gray-500">Google Drive</p>
+          <p className="text-xs font-medium text-fg-muted">Google Drive</p>
           <DriveLinkSection taskId={task.id} driveUrl={task.driveUrl} canManage={task.canManage} />
         </section>
 
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <div>
-            <dt className="text-xs text-gray-500">Hạn chót</dt>
-            <dd className="text-gray-900">{formatDate(task.dueDate)}</dd>
+            <dt className="text-xs text-fg-muted">Hạn chót</dt>
+            <dd className="text-fg">{formatDate(task.dueDate)}</dd>
           </div>
           <div>
-            <dt className="text-xs text-gray-500">Ngày tạo</dt>
-            <dd className="text-gray-900">{formatDateTime(task.createdAt)}</dd>
+            <dt className="text-xs text-fg-muted">Ngày tạo</dt>
+            <dd className="text-fg">{formatDateTime(task.createdAt)}</dd>
           </div>
           {task.completedAt && (
             <div>
-              <dt className="text-xs text-gray-500">Hoàn thành lúc</dt>
-              <dd className="text-gray-900">{formatDateTime(task.completedAt)}</dd>
+              <dt className="text-xs text-fg-muted">Hoàn thành lúc</dt>
+              <dd className="text-fg">{formatDateTime(task.completedAt)}</dd>
             </div>
           )}
         </dl>

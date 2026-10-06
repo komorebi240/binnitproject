@@ -29,22 +29,22 @@ export function Table<T>({ columns, rows, emptyState, getRowKey, onRowClick }: T
   }
 
   return (
-    <div className="animate-fade-in overflow-x-auto rounded border border-gray-200 shadow-sm">
-      <table className="min-w-full divide-y divide-gray-200 text-sm">
-        <thead className="bg-surface-muted">
+    <div className="glass-card animate-fade-in overflow-x-auto rounded">
+      <table className="min-w-full divide-y divide-line text-sm">
+        <thead className="bg-surface-muted/60">
           <tr>
             {columns.map((column) => (
               <th
                 key={column.header}
                 scope="col"
-                className="px-4 py-2 text-left font-medium text-gray-700"
+                className="px-4 py-2 text-left font-medium text-fg-soft"
               >
                 {column.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100 bg-white">
+        <tbody className="divide-y divide-line/60">
           {rows.map((row, index) => (
             <tr
               key={getRowKey(row, index)}
@@ -69,7 +69,7 @@ export function Table<T>({ columns, rows, emptyState, getRowKey, onRowClick }: T
               }
             >
               {columns.map((column) => (
-                <td key={column.header} className="px-4 py-2 text-gray-900">
+                <td key={column.header} className="px-4 py-2 text-fg">
                   {column.cell(row)}
                 </td>
               ))}

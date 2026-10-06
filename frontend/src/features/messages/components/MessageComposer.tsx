@@ -43,27 +43,27 @@ export function MessageComposer({ recipientUserId }: { recipientUserId: number }
   return (
     <form onSubmit={handleSend} className="mt-3 flex flex-col gap-2">
       {file && (
-        <div className="flex w-fit max-w-full items-center gap-2 rounded-full border border-gray-200 bg-surface-muted py-1 pl-3 pr-1 text-xs text-gray-700">
+        <div className="flex w-fit max-w-full items-center gap-2 rounded-full border border-line bg-surface-muted py-1 pl-3 pr-1 text-xs text-fg-soft">
           <Paperclip size={14} aria-hidden />
           <span className="truncate">{file.name}</span>
           <button
             type="button"
             onClick={() => setFile(null)}
             aria-label="Bỏ tệp đính kèm"
-            className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-line focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             <X size={12} aria-hidden />
           </button>
         </div>
       )}
-      <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-surface-muted px-2 py-1.5 shadow-sm transition-colors duration-150 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+      <div className="flex items-center gap-2 rounded-full border border-line bg-surface-muted px-2 py-1.5 shadow-sm transition-colors duration-150 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
         <input ref={fileInputRef} type="file" accept={ATTACHMENT_ACCEPT} onChange={handlePick} className="hidden" aria-label="Chọn tệp đính kèm" />
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           title="Đính kèm ảnh hoặc tệp (tối đa 5MB)"
           aria-label="Đính kèm ảnh hoặc tệp"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors duration-150 hover:bg-gray-200 hover:text-gray-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors duration-150 hover:bg-line hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         >
           <Paperclip size={18} aria-hidden />
         </button>

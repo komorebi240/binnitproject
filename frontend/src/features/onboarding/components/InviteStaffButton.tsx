@@ -126,21 +126,21 @@ function InviteDialog({ currentUser, onClose }: { currentUser: UserProfile; onCl
           <Button type="submit" loading={createInvitation.isPending}>
             Gửi lời mời
           </Button>
-          <p className="mt-1.5 text-xs text-gray-500">Người nhận mở liên kết trong email (hiệu lực 7 ngày) để tự đặt tên đăng nhập và mật khẩu.</p>
+          <p className="mt-1.5 text-xs text-fg-muted">Người nhận mở liên kết trong email (hiệu lực 7 ngày) để tự đặt tên đăng nhập và mật khẩu.</p>
         </div>
       </form>
 
-      <section className="flex flex-col gap-2 border-t border-gray-100 pt-3">
-        <h4 className="text-sm font-semibold text-gray-900">Lời mời đang chờ ({(invitations ?? []).length})</h4>
+      <section className="flex flex-col gap-2 border-t border-line/60 pt-3">
+        <h4 className="text-sm font-semibold text-fg">Lời mời đang chờ ({(invitations ?? []).length})</h4>
         {(invitations ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Chưa có lời mời nào đang chờ.</p>
+          <p className="text-sm text-fg-faint">Chưa có lời mời nào đang chờ.</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
             {(invitations ?? []).map((invitation) => (
-              <li key={invitation.id} className="flex flex-wrap items-center gap-2 rounded border border-gray-200 px-3 py-2 text-sm">
+              <li key={invitation.id} className="flex flex-wrap items-center gap-2 rounded border border-line px-3 py-2 text-sm">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-gray-900">{invitation.email}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="truncate font-medium text-fg">{invitation.email}</p>
+                  <p className="text-xs text-fg-muted">
                     {LEVEL_LABELS[invitation.authorityLevel]}
                     {invitation.departmentName ? ` · ${invitation.departmentName}` : ""}
                     {invitation.teamName ? ` · ${invitation.teamName}` : ""}
@@ -191,7 +191,7 @@ export function InviteStaffButton({ currentUser }: { currentUser: UserProfile })
         type="button"
         onClick={() => setOpen(true)}
         data-tour="invite-staff"
-        className="flex items-center gap-1.5 rounded border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-700 transition-colors duration-150 hover:border-primary hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        className="flex items-center gap-1.5 rounded border border-line px-2.5 py-1 text-xs font-medium text-fg-soft transition-colors duration-150 hover:border-primary hover:text-primary-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       >
         <EnvelopeSimple size={14} aria-hidden />
         Mời qua email

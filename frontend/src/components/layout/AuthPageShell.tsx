@@ -24,10 +24,11 @@ function BackgroundPlanets() {
 }
 
 /** Shared frame for every pre-login page (login, forgot password): centered column over the Orbit planet backdrop. */
-export function AuthPageShell({ children }: { children: ReactNode }) {
+export function AuthPageShell({ children, backdrop }: { children: ReactNode; backdrop?: ReactNode }) {
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center gap-6 overflow-hidden px-4">
       <BackgroundPlanets />
+      {backdrop}
       <div className="relative flex w-full flex-col items-center gap-6">{children}</div>
     </main>
   );

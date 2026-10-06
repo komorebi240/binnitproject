@@ -10,9 +10,9 @@ interface EmptyStateProps {
  */
 export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
-    <div className="animate-fade-in flex flex-col items-center justify-center gap-2 rounded border border-dashed border-gray-300 px-6 py-12 text-center">
-      <p className="text-sm font-medium text-gray-900">{title}</p>
-      {description && <p className="text-sm text-gray-500">{description}</p>}
+    <div className="animate-fade-in flex flex-col items-center justify-center gap-2 rounded border border-dashed border-line-strong px-6 py-12 text-center">
+      <p className="text-sm font-medium text-fg">{title}</p>
+      {description && <p className="text-sm text-fg-muted">{description}</p>}
       {action}
     </div>
   );

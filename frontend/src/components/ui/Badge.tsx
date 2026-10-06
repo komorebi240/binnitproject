@@ -8,11 +8,11 @@ interface BadgeProps {
 }
 
 const TONE_CLASSES: Record<BadgeTone, string> = {
-  neutral: "bg-gray-100 text-gray-700",
-  info: "bg-blue-100 text-blue-700",
-  success: "bg-green-100 text-green-700",
-  warning: "bg-yellow-100 text-yellow-800",
-  danger: "bg-red-100 text-red-700",
+  neutral: "bg-surface-muted text-fg-soft",
+  info: "bg-info/15 text-info-text",
+  success: "bg-success/15 text-success-text",
+  warning: "bg-warning/15 text-warning-text",
+  danger: "bg-danger/15 text-danger-text",
 };
 
 /** Design-system primitive (CLAUDE.md section 26) - status/priority pills use color plus text,

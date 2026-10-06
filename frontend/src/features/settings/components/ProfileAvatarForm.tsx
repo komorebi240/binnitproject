@@ -12,9 +12,9 @@ import type { AuthorityLevel, PresenceStatus, UserProfile } from "@/features/aut
 const STATUS_OPTIONS: PresenceStatus[] = ["ONLINE", "LIMITED", "DO_NOT_DISTURB"];
 
 const STATUS_DOT_CLASSES: Record<PresenceStatus, string> = {
-  ONLINE: "bg-green-500",
-  LIMITED: "bg-yellow-500",
-  DO_NOT_DISTURB: "bg-red-500",
+  ONLINE: "bg-success",
+  LIMITED: "bg-warning",
+  DO_NOT_DISTURB: "bg-danger",
 };
 
 const LEVEL_LABELS: Record<AuthorityLevel, string> = {
@@ -70,8 +70,8 @@ export function ProfileAvatarForm({ currentUser }: ProfileAvatarFormProps) {
     <section className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Hồ sơ</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-semibold text-fg">Hồ sơ</h2>
+          <p className="text-sm text-fg-muted">
             {currentUser.fullName} - {currentUser.title ?? LEVEL_LABELS[currentUser.authorityLevel]}
             {currentUser.departmentName ? ` · ${currentUser.departmentName}` : ""}
             {currentUser.teamName ? ` · ${currentUser.teamName}` : ""}
@@ -89,11 +89,11 @@ export function ProfileAvatarForm({ currentUser }: ProfileAvatarFormProps) {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadAvatar.isPending}
-            className="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
+            className="rounded border border-line-strong px-3 py-1.5 text-sm font-medium text-fg-soft transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
           >
             {uploadAvatar.isPending ? "Đang tải lên..." : "Đổi ảnh đại diện"}
           </button>
-          <p className="mt-1 text-xs text-gray-500">PNG, JPEG hoặc WebP, tối đa 2MB.</p>
+          <p className="mt-1 text-xs text-fg-muted">PNG, JPEG hoặc WebP, tối đa 2MB.</p>
           <input
             ref={fileInputRef}
             type="file"
@@ -105,7 +105,7 @@ export function ProfileAvatarForm({ currentUser }: ProfileAvatarFormProps) {
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium text-gray-700">Trạng thái</p>
+        <p className="mb-2 text-sm font-medium text-fg-soft">Trạng thái</p>
         <div className="flex flex-wrap gap-2">
           {STATUS_OPTIONS.map((status) => {
             const isSelected = currentUser.presenceStatus === status;
@@ -118,7 +118,7 @@ export function ProfileAvatarForm({ currentUser }: ProfileAvatarFormProps) {
                 disabled={updatePresence.isPending}
                 className={`flex items-center gap-2 rounded border px-3 py-2 text-sm font-medium transition-all duration-150
                   focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50
-                  ${isSelected ? "border-primary ring-2 ring-primary ring-offset-1" : "border-gray-300 hover:border-gray-400"}`}
+                  ${isSelected ? "border-primary ring-2 ring-primary ring-offset-1" : "border-line-strong hover:border-line-strong"}`}
               >
                 <span className={`h-2.5 w-2.5 rounded-full ${STATUS_DOT_CLASSES[status]}`} aria-hidden />
                 {STATUS_LABELS[status]}

@@ -32,7 +32,7 @@ export function ResetPasswordPanel({ user }: { user: UserSummary }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm text-gray-700">
+      <p className="text-sm text-fg-soft">
         Gửi mã đặt lại mật khẩu đến email đã đăng ký của <strong>{user.fullName}</strong>. Họ nhập
         mã ở trang &ldquo;Quên mật khẩu&rdquo; để tự đặt mật khẩu mới; bạn sẽ không biết mật khẩu
         của họ.
@@ -98,7 +98,7 @@ export function ChangeEmailPanel({ user }: { user: UserSummary }) {
   if (step === "email") {
     return (
       <form onSubmit={handleRequest} className="flex flex-col gap-2">
-        <p className="text-sm text-gray-700">
+        <p className="text-sm text-fg-soft">
           Nhập email mới của <strong>{user.fullName}</strong>. Một mã xác nhận sẽ được gửi đến email
           mới đó.
         </p>
@@ -126,7 +126,7 @@ export function ChangeEmailPanel({ user }: { user: UserSummary }) {
 
   return (
     <form onSubmit={handleConfirm} className="flex flex-col gap-2">
-      <p className="text-sm text-gray-700">
+      <p className="text-sm text-fg-soft">
         Đã gửi mã 6 số đến <strong>{email.trim()}</strong>. Nhờ {user.fullName} đọc mã trong hộp thư
         đó và nhập vào đây (mã có hiệu lực 15 phút). Email cũ sẽ nhận thông báo khi đổi xong.
       </p>

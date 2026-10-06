@@ -22,7 +22,7 @@ export function SettingsView({ onOpenDrive }: SettingsViewProps) {
   if (!currentUser) return null;
 
   return (
-    <div className="flex flex-col gap-8 divide-y divide-gray-100">
+    <div className="flex flex-col gap-8 divide-y divide-line/60">
       <ProfileAvatarForm currentUser={currentUser} />
       <div className="pt-8">
         <ThemePicker />
@@ -40,17 +40,17 @@ export function SettingsView({ onOpenDrive }: SettingsViewProps) {
         <KpiConfigForm currentUser={currentUser} />
       </div>
       <div className="pt-8">
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Hướng dẫn sử dụng</h2>
-        <p className="mb-3 text-sm text-gray-500">Xem lại vòng làm quen với các tính năng chính của Orbit.</p>
+        <h2 className="mb-2 text-lg font-semibold text-fg">Hướng dẫn sử dụng</h2>
+        <p className="mb-3 text-sm text-fg-muted">Xem lại vòng làm quen với các tính năng chính của Orbit.</p>
         <Button variant="secondary" onClick={startTour}>
           Xem lại hướng dẫn
         </Button>
       </div>
       <div className="pt-8">
-        <h2 className="mb-2 text-lg font-semibold text-gray-900">Google Drive</h2>
-        <p className="text-sm text-gray-500">
+        <h2 className="mb-2 text-lg font-semibold text-fg">Google Drive</h2>
+        <p className="text-sm text-fg-muted">
           Quản lý kết nối và danh mục folder ở{" "}
-          <button type="button" onClick={onOpenDrive} className="text-primary hover:underline">
+          <button type="button" onClick={onOpenDrive} className="text-primary-text hover:underline">
             trang Google Drive
           </button>
           .

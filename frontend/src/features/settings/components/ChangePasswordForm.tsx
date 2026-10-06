@@ -37,7 +37,7 @@ export function ChangePasswordForm() {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold text-gray-900">Đổi mật khẩu</h2>
+      <h2 className="text-lg font-semibold text-fg">Đổi mật khẩu</h2>
       <form onSubmit={handleSubmit} className="flex max-w-sm flex-col gap-3">
         <Input
           label="Mật khẩu hiện tại"

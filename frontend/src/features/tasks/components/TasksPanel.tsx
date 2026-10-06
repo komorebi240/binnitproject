@@ -20,7 +20,7 @@ export function TasksPanel({ currentUser }: TasksPanelProps) {
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold text-gray-900">Công việc</h2>
+        <h2 className="text-lg font-semibold text-fg">Công việc</h2>
         <PlusButton label={canAssign ? "Giao việc mới" : "Thêm việc cho mình"} onClick={() => setCreating(true)} />
       </div>
       <TaskList currentUser={currentUser} />

@@ -172,7 +172,7 @@ function PinnedNoteWindow({ note, index, userId, zIndex, onActivate }: PinnedNot
           title="Bỏ ghim"
           aria-label="Bỏ ghim"
           onClick={() => setPinned.mutate({ id: note.id, pinned: false })}
-          className="flex h-6 w-6 items-center justify-center rounded text-gray-400 hover:bg-surface-muted hover:text-gray-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+          className="flex h-6 w-6 items-center justify-center rounded text-fg-faint hover:bg-surface-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         >
           <X size={14} aria-hidden />
         </button>
@@ -187,7 +187,7 @@ function PinnedNoteWindow({ note, index, userId, zIndex, onActivate }: PinnedNot
         }}
         aria-label={`Nội dung ghi chú ${note.title}`}
         placeholder="Viết ghi chú..."
-        className="min-h-0 flex-1 resize-none rounded border border-gray-200 bg-transparent px-2 py-1.5 text-sm text-gray-700 transition-colors duration-150 hover:border-gray-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        className="min-h-0 flex-1 resize-none rounded border border-line bg-transparent px-2 py-1.5 text-sm text-fg-soft transition-colors duration-150 hover:border-line-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       />
     </FloatingWindow>
   );

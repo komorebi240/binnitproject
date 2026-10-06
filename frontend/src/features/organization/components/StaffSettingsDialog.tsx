@@ -7,6 +7,7 @@ import type { AuthorityLevel } from "@/features/auth/types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { Tabs, useTabsIds } from "@/components/ui/Tabs";
 import { ChangeEmailPanel, ResetPasswordPanel } from "./StaffAccountPanels";
 import { TransferPositionForm } from "./TransferPositionForm";
 import type { UserSummary } from "../types";
@@ -41,35 +42,21 @@ export function StaffSettingsDialog({
   onClose,
 }: StaffSettingsDialogProps) {
   const [section, setSection] = useState<Section>("position");
+  const tabIds = useTabsIds();
 
   return (
     <Modal title={`Quản lý nhân sự: ${user.fullName}`} onClose={onClose} widthClassName="max-w-3xl">
       <div className="flex min-h-[22rem] flex-col gap-4 md:flex-row">
-        <nav
-          aria-label="Mục quản lý"
-          className="flex shrink-0 gap-1 overflow-x-auto md:w-44 md:flex-col md:overflow-visible"
-          role="tablist"
-          aria-orientation="vertical"
-        >
-          {SECTIONS.map(({ id, label }) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={section === id}
-              onClick={() => setSection(id)}
-              className={`whitespace-nowrap rounded px-3 py-2 text-left text-sm font-medium transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
-                section === id
-                  ? "bg-primary/10 text-primary"
-                  : "text-gray-600 hover:bg-surface-muted hover:text-gray-900"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
+        <Tabs
+          label="Mục quản lý"
+          variant="side"
+          ids={tabIds}
+          value={section}
+          onChange={setSection}
+          items={SECTIONS.map(({ id, label }) => ({ id, label }))}
+        />
 
-        <div role="tabpanel" className="min-w-0 flex-1">
+        <div role="tabpanel" id={tabIds.panelId(section)} aria-labelledby={tabIds.tabId(section)} className="min-w-0 flex-1">
           {section === "position" && (
             <TransferPositionForm user={user} allowedLevels={allowedLevels} onDone={onClose} />
           )}
@@ -78,7 +65,7 @@ export function StaffSettingsDialog({
           {section === "account" && (
             <div className="flex flex-col gap-6">
               <section className="flex flex-col gap-2">
-                <h4 className="text-sm font-semibold text-gray-900">Trạng thái tài khoản</h4>
+                <h4 className="text-sm font-semibold text-fg">Trạng thái tài khoản</h4>
                 <div className="flex flex-wrap items-center gap-3">
                   <Badge tone={user.active ? "success" : "danger"}>
                     {user.active ? "Đang hoạt động" : "Đã khoá"}
@@ -93,11 +80,11 @@ export function StaffSettingsDialog({
                 </div>
               </section>
               <section className="flex flex-col gap-2">
-                <h4 className="text-sm font-semibold text-gray-900">Mật khẩu</h4>
+                <h4 className="text-sm font-semibold text-fg">Mật khẩu</h4>
                 <ResetPasswordPanel user={user} />
               </section>
               <section className="flex flex-col gap-2">
-                <h4 className="text-sm font-semibold text-gray-900">Email</h4>
+                <h4 className="text-sm font-semibold text-fg">Email</h4>
                 <ChangeEmailPanel user={user} />
               </section>
             </div>

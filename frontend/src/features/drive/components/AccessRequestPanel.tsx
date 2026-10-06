@@ -124,7 +124,7 @@ export function AccessRequestPanel({ currentUser }: AccessRequestPanelProps) {
       )}
 
       {canRequest && (
-        <form onSubmit={handleCreate} className="flex items-end gap-2 rounded border border-gray-200 p-4">
+        <form onSubmit={handleCreate} className="flex items-end gap-2 rounded border border-line p-4">
           <div className="flex-1">
             <Select
               label="Xin quyền vào folder"

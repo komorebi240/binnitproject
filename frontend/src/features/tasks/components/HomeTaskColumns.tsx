@@ -20,9 +20,9 @@ interface ColumnSpec {
 }
 
 const COLUMNS: ColumnSpec[] = [
-  { status: "ASSIGNED", label: "Cần làm", tintClassName: "bg-amber-50", dotClassName: "bg-amber-500" },
-  { status: "ACCEPTED", label: "Đang làm", tintClassName: "bg-indigo-50", dotClassName: "bg-primary" },
-  { status: "DONE", label: "Hoàn thành", tintClassName: "bg-green-50", dotClassName: "bg-green-500" },
+  { status: "ASSIGNED", label: "Cần làm", tintClassName: "bg-warning/10", dotClassName: "bg-warning" },
+  { status: "ACCEPTED", label: "Đang làm", tintClassName: "bg-primary/10", dotClassName: "bg-primary" },
+  { status: "DONE", label: "Hoàn thành", tintClassName: "bg-success/10", dotClassName: "bg-success" },
 ];
 
 const PRIORITY_LABELS: Record<TaskPriority, string> = { HIGH: "Cao", MEDIUM: "Trung bình", LOW: "Thấp" };
@@ -66,11 +66,11 @@ export function HomeTaskColumns({ currentUser }: { currentUser: UserProfile }) {
           <section key={column.status} className={`flex flex-col gap-2 rounded-lg p-3 ${column.tintClassName}`}>
             <div className="flex items-center gap-2">
               <span className={`h-2 w-2 rounded-full ${column.dotClassName}`} aria-hidden />
-              <h3 className="text-sm font-semibold text-gray-900">{column.label}</h3>
-              <span className="text-xs text-gray-500">{items.length}</span>
+              <h3 className="text-sm font-semibold text-fg">{column.label}</h3>
+              <span className="text-xs text-fg-muted">{items.length}</span>
             </div>
             {items.length === 0 ? (
-              <p className="text-xs text-gray-400">Không có việc nào</p>
+              <p className="text-xs text-fg-faint">Không có việc nào</p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {items.map((task) => (
@@ -78,10 +78,10 @@ export function HomeTaskColumns({ currentUser }: { currentUser: UserProfile }) {
                    <button
                     type="button"
                     onClick={() => setDetailTaskId(task.id)}
-                    className="card-interactive block w-full rounded border border-gray-200 bg-white p-2.5 text-left text-sm shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                    className="card-interactive block w-full rounded glass-card p-2.5 text-left text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                    >
-                    <p className="break-words font-medium text-gray-900">{task.title}</p>
-                    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                    <p className="break-words font-medium text-fg">{task.title}</p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
                       <Badge tone={PRIORITY_TONE[task.priority]}>{PRIORITY_LABELS[task.priority]}</Badge>
                       <ChecklistProgress task={task} />
                       {task.dueDate && (

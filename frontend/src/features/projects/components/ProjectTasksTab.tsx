@@ -125,7 +125,7 @@ export function ProjectTasksTab({ project, currentUser }: { project: ProjectDeta
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <h2 className="text-base font-semibold text-gray-900">Công việc của dự án</h2>
+        <h2 className="text-base font-semibold text-fg">Công việc của dự án</h2>
         <PlusButton label="Thêm việc cho dự án" onClick={() => setCreating(true)} />
       </div>
 
@@ -136,10 +136,10 @@ export function ProjectTasksTab({ project, currentUser }: { project: ProjectDeta
       ) : (
         <ul className="flex flex-col gap-1.5">
           {(tasks ?? []).map((task) => (
-            <li key={task.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-200 px-3 py-2.5">
+            <li key={task.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-line px-3 py-2.5">
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-gray-900">{task.title}</p>
-                <p className="text-xs text-gray-500">
+                <p className="truncate text-sm font-medium text-fg">{task.title}</p>
+                <p className="text-xs text-fg-muted">
                   {task.assigneeUserName ?? "-"} · giao bởi {task.assignedByUserName}
                   {task.dueDate ? ` · hạn ${new Date(task.dueDate).toLocaleDateString("vi-VN")}` : ""}
                   {task.checklist.length > 0 ? ` · ${task.checklist.filter((i) => i.done).length}/${task.checklist.length}` : ""}
