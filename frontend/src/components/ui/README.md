@@ -13,6 +13,11 @@ animation. Defined in `tailwind.config.ts` (`fade-in`, `toast-in`, `toast-out`) 
 navigation (`app/dashboard/layout.tsx`, keyed by pathname), `Button` press feedback
 (`active:scale-95`), and `Skeleton`'s pulse. Add new motion here, not ad hoc per component.
 
+**Glass**: raised and floating layers use the shared glass utilities from `app/globals.css`, never their own
+`bg-surface`/`border-line`/`shadow-*` combination - `.glass` for panels that float over content (`Modal`,
+`FloatingWindow`, `ActionMenu`, popovers), `.glass-card` for in-page surfaces (`Table`, stat cards, tiles),
+`.glass-bar` for app chrome, `.glass-control` for secondary buttons and `.glass-button` for gradient (primary/danger) buttons. Inputs stay solid. Details in the frontend README, Phase 34.
+
 **Not yet implemented** (add when a real feature first needs it, following the same pattern -
 Tailwind classes driven by `tailwind.config.ts` tokens, `forwardRef` where a ref is meaningful,
 explicit loading/error/disabled states): `Modal`, `Dropdown`, `Card`, `Alert`, `Pagination`.
@@ -28,3 +33,9 @@ use a Phosphor icon (`size={16-20}`, `aria-hidden` when paired with visible text
 WCAG 2.2 AA), and include
 `focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary` - the same pattern
 already on `Button`/`Input`.
+
+**Added in Phase 30:** `Alert` (info/success/warning/danger callout), `Tabs` (+ `useTabsIds`; arrow-key navigation, 4 variants),
+`Textarea` (multi-line `Input`, with counter), `AnimatedList`, `CountUp`, `JumpToLatest`, `ImageLightbox`, `Highlight`.
+Colours are tokens, not raw Tailwind palette: text `text-fg` / `fg-soft` / `fg-muted` / `fg-faint`, borders `border-line` /
+`line-strong`, status `success` / `warning` / `info` / `danger` (use `bg-success/10 text-success-text` for a tint). Every theme
+defines them in `app/globals.css`, so a component using them needs no per-theme override.

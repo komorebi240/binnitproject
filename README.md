@@ -104,6 +104,6 @@ see [CLAUDE.md § 30](CLAUDE.md#30-secrets-and-configuration).
 * **Publish for free (one VM + Azure SQL free offer):** [docs/deploy-free.md](docs/deploy-free.md). The files it uses: `backend/Dockerfile`, `frontend/Dockerfile`,
   `deploy/docker-compose.yml`, `deploy/Caddyfile`, `deploy/.env.example`.
 * **Publish from your own PC (no cloud account, free):** `powershell -ExecutionPolicy Bypass -File .\run-public.ps1` builds and runs the production backend (profile `prod`, empty database `orbit`)
-  and frontend and opens the named Cloudflare tunnel `orbit`, so the site is at https://app.stayorbit.cloud while this PC is on and online; `-Stop` closes it. Settings live in the
+  and frontend and opens the named Cloudflare tunnel `orbit`, so the site is at https://app.stayorbit.cloud while this PC is on and online (the root of that address is the marketing page, the app's door is `/login`); `-Stop` closes it. Settings live in the
   git-ignored `backend/prod.env.local` (production overrides and fresh secrets) plus `backend/.env.local` (database login, SMTP); the tunnel config is `%USERPROFILE%\.cloudflared\orbit.yml`.
   The dev servers (`run-local.ps1`, database `project_dev`, seed users) are separate and are stopped while the public site runs.
