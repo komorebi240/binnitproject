@@ -96,3 +96,14 @@ npm run dev
 Before either will run against a real database, copy `backend/src/main/resources/application-prod.yml.example`
 and fill in real (non-committed) SQL Server connection details via environment variables -
 see [CLAUDE.md § 30](CLAUDE.md#30-secrets-and-configuration).
+
+## Running and publishing
+
+* **Local, one click:** `powershell -ExecutionPolicy Bypass -File .un-local.ps1` starts the backend and the frontend in two windows. The backend reads
+  `backend/.env.local` (git-ignored; template `backend/.env.example`).
+* **Publish for free (one VM + Azure SQL free offer):** [docs/deploy-free.md](docs/deploy-free.md). The files it uses: `backend/Dockerfile`, `frontend/Dockerfile`,
+  `deploy/docker-compose.yml`, `deploy/Caddyfile`, `deploy/.env.example`.
+* **Publish from your own PC (no cloud account, free):** `powershell -ExecutionPolicy Bypass -File .\run-public.ps1` builds and runs the production backend (profile `prod`, empty database `orbit`)
+  and frontend and opens the named Cloudflare tunnel `orbit`, so the site is at https://app.stayorbit.cloud while this PC is on and online; `-Stop` closes it. Settings live in the
+  git-ignored `backend/prod.env.local` (production overrides and fresh secrets) plus `backend/.env.local` (database login, SMTP); the tunnel config is `%USERPROFILE%\.cloudflared\orbit.yml`.
+  The dev servers (`run-local.ps1`, database `project_dev`, seed users) are separate and are stopped while the public site runs.

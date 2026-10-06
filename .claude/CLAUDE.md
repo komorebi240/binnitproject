@@ -43,3 +43,22 @@ Only after explicit approval: inspect `git status` and `git diff`, run targeted 
 ## Skill routing
 
 Use the focused skill(s) that match the task. Start with project-onboarding for an unfamiliar area; use architecture-review before major work. Use specialized review/workflow skills only when their domain is materially involved. Their procedures supplement these global rules and must not be copied into unrelated work.
+
+## Code Integrity and Anti-Workaround Rule
+
+Do not add code merely to make the application run or silence an error.
+
+Before adding new code to fix a problem:
+1. Identify and explain the root cause.
+2. Inspect existing code and architecture for the intended solution.
+3. Reuse or modify the existing implementation when appropriate.
+4. Do not create duplicate utilities, services, components, handlers, abstractions, or configuration.
+5. Do not add temporary hacks, fallback logic, dead code, commented-out alternatives, debug code, or unnecessary wrappers.
+6. Do not change unrelated files to compensate for a defect.
+7. If the correct fix requires an architectural change, stop and request REVIEW approval.
+
+Prefer:
+root-cause fix > modify existing code > reuse existing implementation > refactor > create new code.
+
+Never:
+error → add workaround → add another workaround → leave obsolete code behind.

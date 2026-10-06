@@ -1,0 +1,3 @@
+# Deployment secrets
+deploy/.env
+.tunnel/

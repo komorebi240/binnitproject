@@ -1,0 +1,50 @@
+# One VM runs everything except the database: Caddy (HTTPS) -> frontend + backend.
+# The browser only ever talks to https://$SITE_HOST, so the session cookie is same-origin and
+# Caddy sees the real client IP (it overwrites any X-Forwarded-For sent by the client).
+# Usage: cp .env.example .env, fill it in, then: docker compose up -d --build
+services:
+  backend:
+    build: ../backend
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:sqlserver://${DB_HOST}:1433;databaseName=${DB_NAME};encrypt=true;trustServerCertificate=false
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      DRIVE_TOKEN_ENCRYPTION_KEY: ${DRIVE_TOKEN_ENCRYPTION_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: https://${SITE_HOST}/api/v1/drive/oauth2/callback
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      PUBLIC_BASE_URL: https://${SITE_HOST}
+      FRONTEND_URL: https://${SITE_HOST}
+      CORS_ALLOWED_ORIGINS: https://${SITE_HOST}
+      # API documentation is for developers: off in production (Caddy does not route it either).
+      SPRINGDOC_API_DOCS_ENABLED: "false"
+      SPRINGDOC_SWAGGER_UI_ENABLED: "false"
+    volumes:
+      - uploads:/data/uploads
+
+  frontend:
+    build: ../frontend
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [backend, frontend]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_HOST: ${SITE_HOST}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  uploads:
+  caddy_data:
+  caddy_config:
