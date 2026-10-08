@@ -19,6 +19,7 @@ import { useCurrentUser } from "@/features/auth/hooks/useAuth";
 import { useNotes, useSetNotePinned, useUpdateNote } from "../hooks/useNotes";
 import type { Note } from "../types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 const LIMITS: WindowLimits = { minWidth: 220, minHeight: 140, margin: 8 };
 const STORAGE_PREFIX = "pinned-note-window:";
 const BASE_Z_INDEX = 40;
@@ -47,6 +48,7 @@ interface PinnedNoteWindowProps {
  * Text is saved shortly after typing stops and when the text area loses focus.
  */
 function PinnedNoteWindow({ note, index, userId, zIndex, onActivate }: PinnedNoteWindowProps) {
+  const { t } = useI18n();
   const updateNote = useUpdateNote();
   const setPinned = useSetNotePinned();
   const { showToast } = useToast();
@@ -130,13 +132,13 @@ function PinnedNoteWindow({ note, index, userId, zIndex, onActivate }: PinnedNot
             lastSavedRef.current = previous; // let the next change retry
             showToast(
               "error",
-              err instanceof ApiRequestError ? err.message : "Không lưu được ghi chú",
+              err instanceof ApiRequestError ? err.message : t("notes.noteModal.couldnTSaveTheNote"),
             );
           },
         },
       );
     },
-    [note.id, note.title, updateNote, showToast],
+    [note.id, note.title, updateNote, showToast, t],
   );
 
   useEffect(() => {
@@ -169,8 +171,8 @@ function PinnedNoteWindow({ note, index, userId, zIndex, onActivate }: PinnedNot
       headerActions={
         <button
           type="button"
-          title="Bỏ ghim"
-          aria-label="Bỏ ghim"
+          title={t("notes.notesPanel.unpin")}
+          aria-label={t("notes.notesPanel.unpin")}
           onClick={() => setPinned.mutate({ id: note.id, pinned: false })}
           className="flex h-6 w-6 items-center justify-center rounded text-fg-faint hover:bg-surface-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         >
@@ -185,8 +187,8 @@ function PinnedNoteWindow({ note, index, userId, zIndex, onActivate }: PinnedNot
         onBlur={() => {
           if (text !== lastSavedRef.current) save(text);
         }}
-        aria-label={`Nội dung ghi chú ${note.title}`}
-        placeholder="Viết ghi chú..."
+        aria-label={t("notes.pinnedNoteWidget.contentOfNoteTitle", { title: note.title })}
+        placeholder={t("notes.pinnedNoteWidget.writeANote")}
         className="min-h-0 flex-1 resize-none rounded border border-line bg-transparent px-2 py-1.5 text-sm text-fg-soft transition-colors duration-150 hover:border-line-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       />
     </FloatingWindow>

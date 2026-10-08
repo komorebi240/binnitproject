@@ -5,6 +5,7 @@ import { X } from "@phosphor-icons/react";
 import { gsap, prefersReducedMotion, useGSAP } from "@/lib/motion";
 import { AuthCard } from "./AuthCard";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface AuthWindowProps {
   /** Accessible name of the window, e.g. "Đăng nhập". */
   label: string;
@@ -21,6 +22,7 @@ const FOCUSABLE =
  * button that opened it. Under reduced motion it simply appears and disappears.
  */
 export function AuthWindow({ label, onClose, children }: AuthWindowProps) {
+  const { t } = useI18n();
   const overlayRef = useRef<HTMLDivElement>(null);
   const scrimRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -129,7 +131,7 @@ export function AuthWindow({ label, onClose, children }: AuthWindowProps) {
             <button
               type="button"
               onClick={requestClose}
-              aria-label="Đóng"
+              aria-label={t("common.close")}
               className="absolute right-3 top-4 flex h-8 w-8 items-center justify-center rounded text-fg-muted transition-colors duration-150 hover:bg-surface-muted hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
               <X size={18} aria-hidden />

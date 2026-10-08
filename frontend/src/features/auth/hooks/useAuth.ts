@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { forgotPassword, getCurrentUser, login, logout, resetPassword, updatePresence, uploadAvatar } from "../api/authApi";
-import { resetClientSession } from "@/lib/session";
+import { consumeSignedOutOnPurpose, markSignedOutOnPurpose, resetClientSession } from "@/lib/session";
 import type { LoginInput, PresenceStatus, ResetPasswordInput } from "../types";
 
 export const AUTH_ME_QUERY_KEY = ["auth", "me"] as const;
@@ -22,6 +22,7 @@ export function useLogin() {
     mutationFn: (input: LoginInput) => login(input),
     onSuccess: (profile) => {
       // A different account may have used this browser before - start from a clean slate.
+      consumeSignedOutOnPurpose();
       resetClientSession(queryClient);
       queryClient.setQueryData(AUTH_ME_QUERY_KEY, profile);
     },
@@ -33,7 +34,10 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: logout,
-    onSuccess: () => resetClientSession(queryClient),
+    onSuccess: () => {
+      markSignedOutOnPurpose();
+      resetClientSession(queryClient);
+    },
   });
 }
 

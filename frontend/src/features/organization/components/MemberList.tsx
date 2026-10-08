@@ -8,13 +8,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import type { DepartmentMember } from "../types";
 
-const LEVEL_LABELS: Record<string, string> = {
-  EXECUTIVE: "Điều hành",
-  DEPARTMENT_HEAD: "Trưởng phòng",
-  TEAM_LEAD: "Trưởng nhóm",
-  EMPLOYEE: "Nhân viên",
-};
-
+import { LEVEL_SHORT_LABEL_KEYS } from "@/features/onboarding/types";
+import { useI18n } from "@/lib/i18n/useI18n";
 interface MemberListProps {
   members: DepartmentMember[] | undefined;
   isLoading: boolean;
@@ -30,6 +25,7 @@ interface MemberListProps {
  * department or a team.
  */
 export function MemberList({ members, isLoading, contextLabel, emptyTitle }: MemberListProps) {
+  const { t } = useI18n();
   const [openMemberId, setOpenMemberId] = useState<number | null>(null);
   const { navigateActiveTab } = useTabs();
 
@@ -49,13 +45,13 @@ export function MemberList({ members, isLoading, contextLabel, emptyTitle }: Mem
             <Avatar avatarUrl={member.avatarUrl} fullName={member.fullName} presenceStatus={member.presenceStatus} size="sm" />
             <div>
               <p className="text-sm font-medium text-fg">{member.fullName}</p>
-              <p className="text-xs text-fg-muted">{member.title ?? LEVEL_LABELS[member.authorityLevel]}</p>
+              <p className="text-xs text-fg-muted">{member.title ?? t(LEVEL_SHORT_LABEL_KEYS[member.authorityLevel])}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setOpenMemberId(openMemberId === member.userId ? null : member.userId)}
-            aria-label="Xem thông tin"
+            aria-label={t("organization.memberList.viewDetails")}
             className="flex h-8 w-8 items-center justify-center rounded text-fg-faint transition-colors duration-150 hover:bg-surface-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             <DotsThreeVertical size={18} weight="bold" aria-hidden />
@@ -65,15 +61,15 @@ export function MemberList({ members, isLoading, contextLabel, emptyTitle }: Mem
             <>
               <button
                 type="button"
-                aria-label="Đóng"
+                aria-label={t("common.close")}
                 onClick={() => setOpenMemberId(null)}
                 className="fixed inset-0 z-20 cursor-default"
               />
               <div className="animate-fade-in absolute right-0 top-10 z-30 w-64 rounded glass p-3 text-sm">
                 <p className="font-medium text-fg">{member.fullName}</p>
-                <p className="text-fg-muted">{member.email ?? "Chưa có email"}</p>
+                <p className="text-fg-muted">{member.email ?? t("organization.memberList.noEmailYet")}</p>
                 <p className="text-fg-muted">
-                  {contextLabel} · {LEVEL_LABELS[member.authorityLevel]}
+                  {contextLabel} · {t(LEVEL_SHORT_LABEL_KEYS[member.authorityLevel])}
                 </p>
                 <div className="mt-2 flex flex-col gap-1.5">
                   <button
@@ -83,14 +79,14 @@ export function MemberList({ members, isLoading, contextLabel, emptyTitle }: Mem
                     }
                     className="rounded bg-surface-muted px-2 py-1.5 text-center text-xs font-medium text-fg-soft hover:bg-line focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                   >
-                    Nhắn tin riêng
+                    {t("common.directMessages")}
                   </button>
                   <button
                     type="button"
                     onClick={() => navigateActiveTab("/dashboard/drive")}
                     className="rounded bg-surface-muted px-2 py-1.5 text-center text-xs font-medium text-fg-soft hover:bg-line focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                   >
-                    Gửi yêu cầu Drive
+                    {t("common.sendADriveRequest")}
                   </button>
                 </div>
               </div>

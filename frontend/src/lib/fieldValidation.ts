@@ -1,4 +1,10 @@
-/** Vietnamese messages for the browser's built-in form validation (the native bubble is English and cannot be styled). */
+import type { TranslationKey } from "@/lib/i18n/dictionary";
+import type { Params } from "@/lib/i18n/translate";
+
+/** Messages for the browser's built-in form validation, in the user's language (the native bubble follows the browser and cannot be styled). */
+
+/** The translator of `useI18n()`. */
+export type Translate = (key: TranslationKey, params?: Params) => string;
 
 /** The slice of a form control this needs; a real <input>/<select> satisfies it, and tests can fake it. */
 export interface FieldDescription {
@@ -25,30 +31,32 @@ export interface FieldDescription {
 }
 
 /** "Tên đăng nhập" -> "tên đăng nhập"; a trailing hint such as " (vd: CEO)" is dropped so the sentence reads naturally. */
-export function fieldNoun(label: string): string {
+export function fieldNoun(label: string, t: Translate): string {
   const withoutHint = label.replace(/\s*\([^)]*\)\s*$/, "").trim();
-  if (!withoutHint) return "trường này";
+  if (!withoutHint) return t("lib.fieldValidation.thisField");
+  // An acronym such as "KPI" must not become "kPI".
+  if (/^\p{Lu}{2}/u.test(withoutHint)) return withoutHint;
   return withoutHint.charAt(0).toLowerCase() + withoutHint.slice(1);
 }
 
-export function describeInvalidField(field: FieldDescription, label: string): string {
-  const noun = fieldNoun(label);
+export function describeInvalidField(field: FieldDescription, label: string, t: Translate): string {
+  const noun = fieldNoun(label, t);
   const { validity } = field;
 
   if (validity.valueMissing) {
-    return field.isSelect ? `Vui lòng chọn ${noun}.` : `Vui lòng nhập ${noun}.`;
+    return t(field.isSelect ? "lib.fieldValidation.pleaseChooseNoun" : "lib.fieldValidation.pleaseEnterNoun", { noun });
   }
   if (validity.typeMismatch) {
-    if (field.type === "email") return "Email chưa đúng định dạng, ví dụ ten@congty.com.";
-    if (field.type === "url") return "Liên kết chưa đúng định dạng, cần bắt đầu bằng https://.";
-    return `Giá trị ${noun} chưa đúng định dạng.`;
+    if (field.type === "email") return t("lib.fieldValidation.theEmailFormatIsWrongFor");
+    if (field.type === "url") return t("lib.fieldValidation.theLinkFormatIsWrongIt");
+    return t("lib.fieldValidation.theFormatOfNounIsWrong", { noun });
   }
-  if (validity.tooShort) return `Cần ít nhất ${field.minLength} ký tự cho ${noun}.`;
-  if (validity.tooLong) return `Chỉ được tối đa ${field.maxLength} ký tự cho ${noun}.`;
-  if (validity.rangeUnderflow) return `Giá trị nhỏ nhất của ${noun} là ${field.min}.`;
-  if (validity.rangeOverflow) return `Giá trị lớn nhất của ${noun} là ${field.max}.`;
+  if (validity.tooShort) return t("lib.fieldValidation.enterAtLeastMinlengthCharactersFor", { minLength: field.minLength, noun });
+  if (validity.tooLong) return t("lib.fieldValidation.useAtMostMaxlengthCharactersFor", { maxLength: field.maxLength, noun });
+  if (validity.rangeUnderflow) return t("lib.fieldValidation.theSmallestValueForNounIs", { noun, min: field.min });
+  if (validity.rangeOverflow) return t("lib.fieldValidation.theLargestValueForNounIs", { noun, max: field.max });
   if (validity.patternMismatch || validity.stepMismatch || validity.badInput) {
-    return `Giá trị ${noun} chưa hợp lệ.`;
+    return t("lib.fieldValidation.theValueOfNounIsNot", { noun });
   }
-  return field.validationMessage || `Giá trị ${noun} chưa hợp lệ.`;
+  return field.validationMessage || t("lib.fieldValidation.theValueOfNounIsNot", { noun });
 }

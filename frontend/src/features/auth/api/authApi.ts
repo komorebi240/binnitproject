@@ -11,6 +11,11 @@ export async function logout(): Promise<void> {
   await apiClient.post("/auth/logout");
 }
 
+/** Tells the server the person did something, so the sign-in is not ended for being idle. Rejects (401) once it has ended. */
+export async function reportActivity(): Promise<void> {
+  await apiClient.post("/auth/session/activity");
+}
+
 export async function getCurrentUser(): Promise<UserProfile> {
   const { data } = await apiClient.get<ApiResponse<UserProfile>>("/auth/me");
   return data.data as UserProfile;

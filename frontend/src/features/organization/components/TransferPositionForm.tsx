@@ -10,13 +10,8 @@ import type { AuthorityLevel } from "@/features/auth/types";
 import { useDepartments, useTeams, useUpdatePosition } from "../hooks/useOrganization";
 import type { UserSummary } from "../types";
 
-const LEVEL_LABELS: Record<AuthorityLevel, string> = {
-  EXECUTIVE: "Điều hành (CEO/CTO/COO...)",
-  DEPARTMENT_HEAD: "Trưởng phòng",
-  TEAM_LEAD: "Trưởng nhóm",
-  EMPLOYEE: "Nhân viên",
-};
-
+import { LEVEL_LABEL_KEYS } from "@/features/onboarding/types";
+import { useI18n } from "@/lib/i18n/useI18n";
 interface TransferPositionFormProps {
   user: UserSummary;
   allowedLevels: AuthorityLevel[];
@@ -29,6 +24,7 @@ interface TransferPositionFormProps {
  * Modal primitive if a second use case shows up (CLAUDE.md section 29).
  */
 export function TransferPositionForm({ user, allowedLevels, onDone }: TransferPositionFormProps) {
+  const { t } = useI18n();
   const { data: departments } = useDepartments();
   const updatePosition = useUpdatePosition();
   const { showToast } = useToast();
@@ -49,10 +45,10 @@ export function TransferPositionForm({ user, allowedLevels, onDone }: TransferPo
         id: user.id,
         input: { authorityLevel, title: title || undefined, departmentId, teamId },
       });
-      showToast("success", "Đã chuyển vị trí");
+      showToast("success", t("organization.transferPositionForm.positionChanged"));
       onDone();
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không chuyển được vị trí");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("organization.transferPositionForm.couldnTChangeThePosition"));
     }
   }
 
@@ -62,23 +58,23 @@ export function TransferPositionForm({ user, allowedLevels, onDone }: TransferPo
       className="grid grid-cols-1 gap-3 rounded border border-line bg-surface-muted p-4 sm:grid-cols-2"
     >
       <Select
-        label="Vai trò mới"
+        label={t("organization.transferPositionForm.newRole")}
         value={authorityLevel}
         onChange={(e) => setAuthorityLevel(e.target.value as AuthorityLevel)}
-        options={allowedLevels.map((level) => ({ value: level, label: LEVEL_LABELS[level] }))}
+        options={allowedLevels.map((level) => ({ value: level, label: t(LEVEL_LABEL_KEYS[level]) }))}
       />
-      <Input label="Chức danh hiển thị" value={title} onChange={(e) => setTitle(e.target.value)} />
+      <Input label={t("organization.transferPositionForm.displayedJobTitle")} value={title} onChange={(e) => setTitle(e.target.value)} />
 
       {authorityLevel !== "EXECUTIVE" && (
         <Select
-          label="Phòng ban"
+          label={t("common.departments")}
           value={departmentId ? String(departmentId) : ""}
           onChange={(e) => {
             setDepartmentId(e.target.value ? Number(e.target.value) : undefined);
             setTeamId(undefined);
           }}
           options={[
-            { value: "", label: "-- Chọn phòng ban --" },
+            { value: "", label: t("common.chooseADepartment") },
             ...(departments ?? []).map((d) => ({ value: String(d.id), label: d.name })),
           ]}
         />
@@ -86,11 +82,11 @@ export function TransferPositionForm({ user, allowedLevels, onDone }: TransferPo
 
       {(authorityLevel === "TEAM_LEAD" || authorityLevel === "EMPLOYEE") && departmentId && (
         <Select
-          label="Nhóm (tuỳ chọn cho nhân viên, bắt buộc cho trưởng nhóm)"
+          label={t("organization.transferPositionForm.teamOptionalForEmployeesRequiredFor")}
           value={teamId ? String(teamId) : ""}
           onChange={(e) => setTeamId(e.target.value ? Number(e.target.value) : undefined)}
           options={[
-            { value: "", label: "-- Không thuộc nhóm nào --" },
+            { value: "", label: t("common.noTeam") },
             ...(teamsInChosenDepartment ?? []).map((t) => ({ value: String(t.id), label: t.name })),
           ]}
         />
@@ -104,10 +100,10 @@ export function TransferPositionForm({ user, allowedLevels, onDone }: TransferPo
 
       <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" loading={updatePosition.isPending}>
-          Xác nhận chuyển
+          {t("organization.transferPositionForm.confirmChange")}
         </Button>
         <Button type="button" variant="secondary" onClick={onDone}>
-          Huỷ
+          {t("common.cancel")}
         </Button>
       </div>
     </form>

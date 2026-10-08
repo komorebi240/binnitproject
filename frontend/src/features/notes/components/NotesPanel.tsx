@@ -15,15 +15,17 @@ import { useDeleteNote, useNotes, useSetNotePinned } from "../hooks/useNotes";
 import { NoteModal } from "./NoteModal";
 import type { Note } from "../types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 const ICON_BUTTON =
   "flex h-8 w-8 items-center justify-center rounded transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary";
 
-function formatEdited(note: Note): string {
-  return new Date(note.updatedAt ?? note.createdAt).toLocaleDateString("vi-VN", { day: "numeric", month: "numeric", year: "numeric" });
+function formatEdited(note: Note, locale: string): string {
+  return new Date(note.updatedAt ?? note.createdAt).toLocaleDateString(locale, { day: "numeric", month: "numeric", year: "numeric" });
 }
 
 /** Fully private per-user notes (Phase 6 plan) - no sharing UI at all, matching the backend. Pinned notes come first. */
 export function NotesPanel() {
+  const { t, intlLocale } = useI18n();
   const { data: notes, isLoading } = useNotes();
   const deleteNote = useDeleteNote();
   const setPinned = useSetNotePinned();
@@ -36,8 +38,8 @@ export function NotesPanel() {
 
   function handleDelete(id: number) {
     deleteNote.mutate(id, {
-      onSuccess: () => showToast("success", "Đã xoá ghi chú"),
-      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : "Không xoá được"),
+      onSuccess: () => showToast("success", t("notes.notesPanel.noteDeleted")),
+      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("notes.notesPanel.couldnTDeleteIt")),
     });
   }
 
@@ -57,12 +59,12 @@ export function NotesPanel() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-fg">Note của tôi</h2>
-          <PlusButton label="Tạo ghi chú mới" onClick={() => setModalNote(null)} />
+          <h2 className="text-lg font-semibold text-fg">{t("common.myNotes")}</h2>
+          <PlusButton label={t("notes.notesPanel.createANewNote")} onClick={() => setModalNote(null)} />
         </div>
         {all.length > 0 && (
           <label className="relative ml-auto block w-full sm:w-64">
-            <span className="sr-only">Tìm trong ghi chú</span>
+            <span className="sr-only">{t("notes.notesPanel.searchNotes")}</span>
             <MagnifyingGlass size={16} aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-faint" />
             <input
               value={query}
@@ -70,7 +72,7 @@ export function NotesPanel() {
                 captureLayout();
                 setQuery(e.target.value);
               }}
-              placeholder="Tìm trong ghi chú..."
+              placeholder={t("notes.notesPanel.searchNotes2")}
               className="w-full rounded border border-line bg-surface py-1.5 pl-8 pr-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             />
           </label>
@@ -78,9 +80,9 @@ export function NotesPanel() {
       </div>
 
       {all.length === 0 ? (
-        <EmptyState title="Chưa có ghi chú nào" description="Tạo ghi chú đầu tiên bằng nút + bên trên." />
+        <EmptyState title={t("notes.notesPanel.noNotesYet")} description={t("notes.notesPanel.createYourFirstNoteWithThe")} />
       ) : shown.length === 0 ? (
-        <p className="py-8 text-center text-sm text-fg-faint">Không có ghi chú nào khớp &quot;{query}&quot;</p>
+        <p className="py-8 text-center text-sm text-fg-faint">{t("notes.notesPanel.noNotesMatchQuery", { query })}</p>
       ) : (
         <AnimatedList ref={listRef} className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3">
           {shown.map((note) => (
@@ -101,16 +103,16 @@ export function NotesPanel() {
                     <Highlight text={note.content} query={query} />
                   </span>
                 ) : (
-                  <span className="text-sm italic text-fg-faint">Chưa có nội dung</span>
+                  <span className="text-sm italic text-fg-faint">{t("notes.notesPanel.noContentYet")}</span>
                 )}
-                <span className="mt-auto pt-2 text-xs text-fg-faint">{formatEdited(note)}</span>
+                <span className="mt-auto pt-2 text-xs text-fg-faint">{formatEdited(note, intlLocale)}</span>
               </button>
 
               <div className="absolute right-2 top-2 flex">
                 <button
                   type="button"
-                  title={note.pinned ? "Bỏ ghim" : "Ghim (hiện nổi ở mọi trang)"}
-                  aria-label={note.pinned ? "Bỏ ghim" : "Ghim (hiện nổi ở mọi trang)"}
+                  title={note.pinned ? t("notes.notesPanel.unpin") : t("notes.notesPanel.pinFloatsOnEveryPage")}
+                  aria-label={note.pinned ? t("notes.notesPanel.unpin") : t("notes.notesPanel.pinFloatsOnEveryPage")}
                   aria-pressed={note.pinned}
                   onClick={() => {
                     captureLayout();
@@ -122,8 +124,8 @@ export function NotesPanel() {
                 </button>
                 <button
                   type="button"
-                  title="Xoá ghi chú"
-                  aria-label={`Xoá ghi chú ${note.title}`}
+                  title={t("notes.notesPanel.deleteNote")}
+                  aria-label={t("notes.notesPanel.deleteNoteTitle", { title: note.title })}
                   onClick={() => handleDelete(note.id)}
                   disabled={deleteNote.isPending}
                   className={`${ICON_BUTTON} text-fg-faint opacity-0 hover:text-danger focus-visible:opacity-100 group-hover:opacity-100 disabled:opacity-40`}

@@ -6,6 +6,7 @@ import { RegisterWizard } from "@/features/onboarding/components/RegisterWizard"
 import type { AuthView } from "../authView";
 import { LoginForm } from "./LoginForm";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 function SwitchLink({
   prompt,
   action,
@@ -42,27 +43,28 @@ export function AuthWindows({
   onViewChange: (view: AuthView) => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   return (
-    <AuthWindow label={view === "login" ? "Đăng nhập" : "Đăng ký doanh nghiệp"} onClose={onClose}>
+    <AuthWindow label={view === "login" ? t("common.signIn") : t("auth.authWindows.registerYourCompany")} onClose={onClose}>
       <StepTransition stepKey={view} index={view === "login" ? 0 : 1}>
         {view === "login" ? (
           <div>
             <div className="mb-6 text-center">
-              <h2 className="text-xl font-semibold text-fg">Đăng nhập hệ thống</h2>
-              <p className="mt-1 text-sm text-fg-muted">Dùng tài khoản được cấp bởi quản lý của bạn.</p>
+              <h2 className="text-xl font-semibold text-fg">{t("auth.authWindows.signInToOrbit")}</h2>
+              <p className="mt-1 text-sm text-fg-muted">{t("auth.authWindows.useTheAccountYourManagerGave")}</p>
             </div>
             <LoginForm onRegisterClick={() => onViewChange("register")} />
           </div>
         ) : (
           <div>
             <div className="mb-6 text-center">
-              <h2 className="text-xl font-semibold text-fg">Đăng ký doanh nghiệp</h2>
+              <h2 className="text-xl font-semibold text-fg">{t("auth.authWindows.registerYourCompany")}</h2>
               <p className="mt-1 text-sm text-fg-muted">
-                Tạo không gian làm việc và tài khoản quản trị viên đầu tiên.
+                {t("auth.authWindows.createYourWorkspaceAndTheFirst")}
               </p>
             </div>
             <RegisterWizard />
-            <SwitchLink prompt="Đã có tài khoản?" action="Đăng nhập" onClick={() => onViewChange("login")} />
+            <SwitchLink prompt={t("auth.authWindows.alreadyHaveAnAccount")} action={t("common.signIn")} onClick={() => onViewChange("login")} />
           </div>
         )}
       </StepTransition>

@@ -9,9 +9,9 @@ import { ApiRequestError } from "@/lib/api/client";
 import type { UserProfile } from "@/features/auth/types";
 import { useCreateTask } from "../hooks/useTasks";
 import { AttachmentDraftPicker, ChecklistDraftEditor } from "./TaskDraftFields";
-import type { TaskPriority } from "../types";
+import { TASK_PRIORITY_KEYS, type TaskPriority } from "../types";
 
-const PRIORITY_LABELS: Record<TaskPriority, string> = { LOW: "Thấp", MEDIUM: "Trung bình", HIGH: "Cao" };
+import { useI18n } from "@/lib/i18n/useI18n";
 
 interface CreateOwnTaskFormProps {
   currentUser: UserProfile;
@@ -24,6 +24,7 @@ interface CreateOwnTaskFormProps {
  * it's always the caller.
  */
 export function CreateOwnTaskForm({ currentUser, onDone }: CreateOwnTaskFormProps) {
+  const { t } = useI18n();
   const createTask = useCreateTask();
   const { showToast } = useToast();
   const [form, setForm] = useState({ title: "", description: "", priority: "MEDIUM" as TaskPriority, dueDate: "", driveUrl: "" });
@@ -49,43 +50,43 @@ export function CreateOwnTaskForm({ currentUser, onDone }: CreateOwnTaskFormProp
         files,
       });
       if (failedUploads > 0) {
-        showToast("error", `Đã thêm việc nhưng ${failedUploads} tệp không tải lên được, hãy đính kèm lại trong chi tiết việc`);
+        showToast("error", t("tasks.createOwnTaskForm.taskAddedButCountFilesCouldn", { count: failedUploads }));
       } else {
-        showToast("success", "Đã thêm việc");
+        showToast("success", t("tasks.createOwnTaskForm.taskAdded"));
       }
       onDone();
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không thêm được việc");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("common.couldnTAddTheTask"));
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <Input label="Tên việc" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+        <Input label={t("common.taskName")} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
       </div>
       <div className="sm:col-span-2">
         <Input
-          label="Mô tả (tuỳ chọn)"
+          label={t("common.descriptionOptional")}
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
         />
       </div>
       <Select
-        label="Độ ưu tiên"
+        label={t("common.priority")}
         value={form.priority}
         onChange={(e) => setForm({ ...form, priority: e.target.value as TaskPriority })}
-        options={(Object.keys(PRIORITY_LABELS) as TaskPriority[]).map((p) => ({ value: p, label: PRIORITY_LABELS[p] }))}
+        options={(Object.keys(TASK_PRIORITY_KEYS) as TaskPriority[]).map((p) => ({ value: p, label: t(TASK_PRIORITY_KEYS[p]) }))}
       />
       <Input
-        label="Hạn chót (tuỳ chọn)"
+        label={t("common.deadlineOptional")}
         type="date"
         value={form.dueDate}
         onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
       />
       <div className="sm:col-span-2">
         <Input
-          label="Link Google Drive (tuỳ chọn)"
+          label={t("tasks.createOwnTaskForm.googleDriveLinkOptional")}
           type="url"
           placeholder="https://drive.google.com/..."
           value={form.driveUrl}
@@ -105,10 +106,10 @@ export function CreateOwnTaskForm({ currentUser, onDone }: CreateOwnTaskFormProp
       )}
       <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" loading={createTask.isPending}>
-          Thêm việc
+          {t("common.addTask")}
         </Button>
         <Button type="button" variant="secondary" onClick={onDone}>
-          Huỷ
+          {t("common.cancel")}
         </Button>
       </div>
     </form>

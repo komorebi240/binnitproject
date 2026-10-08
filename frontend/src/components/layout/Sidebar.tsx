@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTabs } from "./TabsContext";
 import {
+  AddressBook,
   CalendarBlank,
   CaretLeft,
   CaretRight,
@@ -17,10 +18,12 @@ import {
 } from "@phosphor-icons/react";
 import type { Icon } from "@phosphor-icons/react";
 import type { AuthorityLevel } from "@/features/auth/types";
+import type { TranslationKey } from "@/lib/i18n/dictionary";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 export interface NavItem {
   href: string;
-  label: string;
+  labelKey: TranslationKey;
   icon: Icon;
   /** Omit to show for every authenticated role; otherwise only these roles see the item. */
   roles?: AuthorityLevel[];
@@ -28,18 +31,19 @@ export interface NavItem {
 
 /** Exported so QuickSearch.tsx can search the same destinations instead of duplicating this list. */
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Home", icon: House },
-  { href: "/dashboard/departments", label: "Phòng ban", icon: Buildings },
+  { href: "/dashboard", labelKey: "layout.sidebar.home", icon: House },
+  { href: "/dashboard/departments", labelKey: "common.departments", icon: Buildings },
   // Mirrors UserManager's allowedLevelsFor(): an EMPLOYEE gets an empty allowed-levels list and
   // UserManager renders nothing for them - hiding the nav entry here avoids sending them to a
   // page that would just be blank (the backend's GET /users 403s EMPLOYEE too either way).
-  { href: "/dashboard/users", label: "Nhân sự", icon: UsersThree, roles: ["EXECUTIVE", "DEPARTMENT_HEAD", "TEAM_LEAD"] },
-  { href: "/dashboard/tasks", label: "Công việc", icon: ClipboardText },
-  { href: "/dashboard/projects", label: "Dự án", icon: Handshake },
-  { href: "/dashboard/messages", label: "Tin nhắn", icon: ChatCircle },
-  { href: "/dashboard/calendar", label: "Lịch của tôi", icon: CalendarBlank },
-  { href: "/dashboard/notes", label: "Note của tôi", icon: NotePencil },
-  { href: "/dashboard/drive", label: "Google Drive", icon: HardDrives },
+  { href: "/dashboard/users", labelKey: "common.staff", icon: UsersThree, roles: ["EXECUTIVE", "DEPARTMENT_HEAD", "TEAM_LEAD"] },
+  { href: "/dashboard/tasks", labelKey: "common.tasks", icon: ClipboardText },
+  { href: "/dashboard/projects", labelKey: "common.projects", icon: Handshake },
+  { href: "/dashboard/crm", labelKey: "crm.nav.label", icon: AddressBook },
+  { href: "/dashboard/messages", labelKey: "common.messages", icon: ChatCircle },
+  { href: "/dashboard/calendar", labelKey: "common.myCalendar", icon: CalendarBlank },
+  { href: "/dashboard/notes", labelKey: "common.myNotes", icon: NotePencil },
+  { href: "/dashboard/drive", labelKey: "layout.sidebar.googleDrive", icon: HardDrives },
 ];
 
 const STORAGE_KEY = "sidebar-collapsed";
@@ -63,6 +67,7 @@ interface SidebarProps {
 const LABEL_TRANSITION = "overflow-hidden whitespace-nowrap md:transition-[max-width,opacity] md:duration-300 md:ease-in-out";
 
 export function Sidebar({ currentUserAuthorityLevel }: SidebarProps) {
+  const { t } = useI18n();
   const { activeTab, navigateActiveTab } = useTabs();
   const pathname = activeTab.path.split("?")[0];
   const [collapsed, setCollapsed] = useState(false);
@@ -90,19 +95,19 @@ export function Sidebar({ currentUserAuthorityLevel }: SidebarProps) {
 
   return (
     <nav
-      aria-label="Điều hướng chính"
+      aria-label={t("layout.sidebar.mainNavigation")}
       className={`glass-bar flex gap-1 overflow-x-auto border-b p-2 md:flex-none md:flex-col md:overflow-x-hidden md:border-b-0 md:border-r md:transition-[width,padding] md:duration-300 md:ease-in-out
         ${collapsed ? "md:w-16 md:p-2" : "md:w-56 md:p-4"}`}
     >
       <button
         type="button"
         onClick={toggleCollapsed}
-        title={collapsed ? "Mở rộng" : "Thu gọn"}
-        aria-label={collapsed ? "Mở rộng điều hướng" : "Thu gọn điều hướng"}
+        title={collapsed ? t("layout.sidebar.expand") : t("common.collapse")}
+        aria-label={collapsed ? t("layout.sidebar.expandNavigation") : t("layout.sidebar.collapseNavigation")}
         className="mb-1 hidden items-center justify-center gap-1 rounded px-3 py-2 text-sm text-fg-muted transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary md:flex"
       >
         {collapsed ? <CaretRight size={16} /> : <CaretLeft size={16} />}
-        <span className={`${LABEL_TRANSITION} ${collapsed ? "md:max-w-0 md:opacity-0" : "md:max-w-24 md:opacity-100"}`}>Thu gọn</span>
+        <span className={`${LABEL_TRANSITION} ${collapsed ? "md:max-w-0 md:opacity-0" : "md:max-w-24 md:opacity-100"}`}>{t("common.collapse")}</span>
       </button>
 
       {visibleItems.map((item) => {
@@ -114,7 +119,7 @@ export function Sidebar({ currentUserAuthorityLevel }: SidebarProps) {
             type="button"
             onClick={() => navigateActiveTab(item.href)}
             data-tour={`nav:${item.href}`}
-            title={collapsed ? item.label : undefined}
+            title={collapsed ? t(item.labelKey) : undefined}
             aria-current={isActive ? "page" : undefined}
             className={`flex items-center gap-2 whitespace-nowrap rounded px-3 py-2 text-left text-sm font-medium transition-all duration-150
               focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary
@@ -122,7 +127,7 @@ export function Sidebar({ currentUserAuthorityLevel }: SidebarProps) {
               ${isActive ? "glass-button bg-gradient-to-r from-primary to-primaryEnd text-primary-foreground" : `text-fg-soft hover:bg-surface-muted ${collapsed ? "" : "hover:pl-4"}`}`}
           >
             <Icon size={18} weight={isActive ? "fill" : "regular"} aria-hidden className="shrink-0" />
-            <span className={`${LABEL_TRANSITION} ${collapsed ? "md:max-w-0 md:opacity-0" : "md:max-w-40 md:opacity-100"}`}>{item.label}</span>
+            <span className={`${LABEL_TRANSITION} ${collapsed ? "md:max-w-0 md:opacity-0" : "md:max-w-40 md:opacity-100"}`}>{t(item.labelKey)}</span>
           </button>
         );
       })}

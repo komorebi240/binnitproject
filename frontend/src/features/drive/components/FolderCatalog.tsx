@@ -15,11 +15,13 @@ import { useDepartments } from "@/features/organization/hooks/useOrganization";
 import { useCatalog, useDriveStatus, useRegisterFolder } from "../hooks/useDrive";
 import type { CatalogFolder } from "../types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface FolderCatalogProps {
   currentUser: UserProfile;
 }
 
 export function FolderCatalog({ currentUser }: FolderCatalogProps) {
+  const { t } = useI18n();
   const { data: catalog, isLoading } = useCatalog();
   const { data: departments } = useDepartments();
   const { data: driveStatus } = useDriveStatus();
@@ -41,9 +43,9 @@ export function FolderCatalog({ currentUser }: FolderCatalogProps) {
         departmentId: isExecutive && departmentId ? Number(departmentId) : undefined,
       });
       setFolderLinkOrId("");
-      showToast("success", "Đã đăng ký folder");
+      showToast("success", t("drive.folderCatalog.folderRegistered"));
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không đăng ký được folder");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("drive.folderCatalog.couldnTRegisterTheFolder"));
     }
   }
 
@@ -68,25 +70,25 @@ export function FolderCatalog({ currentUser }: FolderCatalogProps) {
                 </a>
               ),
             },
-            { header: "Thuộc phòng ban", cell: (f) => f.departmentName },
+            { header: t("drive.folderCatalog.department"), cell: (f) => f.departmentName },
           ]}
           rows={catalog ?? []}
           getRowKey={(f) => f.id}
           emptyState={
-            <EmptyState title="Chưa có folder nào được đăng ký" description="Đăng ký folder đầu tiên bằng form bên dưới." />
+            <EmptyState title={t("drive.folderCatalog.noFoldersRegisteredYet")} description={t("drive.folderCatalog.registerTheFirstFolderWithThe")} />
           }
         />
       )}
 
       {driveStatus && !driveStatus.connected ? (
         <p className="rounded border border-dashed border-line-strong px-4 py-3 text-sm text-fg-muted">
-          Kết nối Google Drive của bạn ở mục phía trên trước khi đăng ký folder.
+          {t("drive.folderCatalog.connectYourGoogleDriveInThe")}
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded border border-line p-4 sm:flex-row sm:items-end [.pane-narrow_&]:sm:flex-col [.pane-narrow_&]:sm:items-stretch">
           <div className="flex-1">
             <Input
-              label="Link hoặc ID folder Google Drive"
+              label={t("drive.folderCatalog.googleDriveFolderLinkOrId")}
               value={folderLinkOrId}
               onChange={(e) => setFolderLinkOrId(e.target.value)}
               placeholder="https://drive.google.com/drive/folders/..."
@@ -96,11 +98,11 @@ export function FolderCatalog({ currentUser }: FolderCatalogProps) {
           {isExecutive && (
             <div className="sm:w-56">
               <Select
-                label="Phòng ban"
+                label={t("common.departments")}
                 value={departmentId}
                 onChange={(e) => setDepartmentId(e.target.value)}
                 options={[
-                  { value: "", label: "-- Chọn phòng ban --" },
+                  { value: "", label: t("common.chooseADepartment") },
                   ...(departments ?? []).map((d) => ({ value: String(d.id), label: d.name })),
                 ]}
                 required
@@ -108,7 +110,7 @@ export function FolderCatalog({ currentUser }: FolderCatalogProps) {
             </div>
           )}
           <Button type="submit" loading={registerFolder.isPending}>
-            Đăng ký folder
+            {t("drive.folderCatalog.registerFolder")}
           </Button>
         </form>
       )}

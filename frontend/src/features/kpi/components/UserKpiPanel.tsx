@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ApiRequestError } from "@/lib/api/client";
 import { useUserKpiSummary } from "../hooks/useKpi";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 /** Score bands that the badge and the meter both use: below 40 needs attention, 70 and up is good. */
 const WARNING_FROM = 40;
 const GOOD_FROM = 70;
@@ -17,16 +18,17 @@ function tierOf(score: number): { tone: "success" | "warning" | "danger"; barCla
 }
 
 function ScoreMeter({ score }: { score: number }) {
+  const { t } = useI18n();
   const clamped = Math.min(MAX_SCORE, Math.max(0, score));
   return (
     <div>
       <div
         role="meter"
-        aria-label="Điểm KPI"
+        aria-label={t("kpi.userKpiPanel.kpiScore")}
         aria-valuemin={0}
         aria-valuemax={MAX_SCORE}
         aria-valuenow={clamped}
-        aria-valuetext={`${clamped} trên ${MAX_SCORE}`}
+        aria-valuetext={t("kpi.userKpiPanel.clampedOutOfMaxScore", { clamped, MAX_SCORE })}
         className="relative h-2 rounded-full bg-line"
       >
         <div
@@ -89,6 +91,7 @@ interface UserKpiPanelProps {
 
 /** The KPI tab of the staff management window: one headline score, then the three numbers behind it. */
 export function UserKpiPanel({ userId }: UserKpiPanelProps) {
+  const { t } = useI18n();
   const { data: summary, isLoading, isError, error } = useUserKpiSummary(userId, true);
 
   if (isLoading) {
@@ -98,19 +101,19 @@ export function UserKpiPanel({ userId }: UserKpiPanelProps) {
   if (isError) {
     return (
       <p role="alert" className="text-sm text-danger">
-        {error instanceof ApiRequestError ? error.message : "Không xem được KPI"}
+        {error instanceof ApiRequestError ? error.message : t("kpi.userKpiPanel.couldnTLoadTheKpi")}
       </p>
     );
   }
   if (!summary) return null;
 
-  const period = `Tháng ${summary.periodMonth}/${summary.periodYear}`;
+  const period = t("kpi.userKpiPanel.monthPeriodmonthPeriodyear", { periodMonth: summary.periodMonth, periodYear: summary.periodYear });
   const completionRate = Math.round(summary.completionRatePercent);
   const onTimeRate = Math.round(summary.onTimeRatePercent);
   const tier = tierOf(summary.kpiScore);
 
   return (
-    <section aria-label={`KPI của ${summary.fullName}`} className="flex flex-col gap-5">
+    <section aria-label={t("kpi.userKpiPanel.fullnameSKpi", { fullName: summary.fullName })} className="flex flex-col gap-5">
       <div className="flex items-baseline justify-between gap-3">
         <h4 className="text-sm font-semibold text-fg">KPI {period.toLowerCase()}</h4>
         <p className="truncate text-xs text-fg-muted">{summary.fullName}</p>
@@ -119,10 +122,10 @@ export function UserKpiPanel({ userId }: UserKpiPanelProps) {
       {summary.totalAssigned === 0 ? (
         <div className="rounded border border-dashed border-line-strong px-4 py-8 text-center">
           <p className="text-sm font-medium text-fg-soft">
-            Chưa có việc nào được giao trong {period.toLowerCase()}
+            {t("kpi.userKpiPanel.noTaskAssignedInPeriod", { period: period.toLowerCase() })}
           </p>
           <p className="mt-1 text-xs text-fg-muted">
-            KPI được tính từ các việc giao trong tháng, nên chưa có điểm để hiển thị.
+            {t("kpi.userKpiPanel.kpiIsCalculatedFromTheTasks")}
           </p>
         </div>
       ) : (
@@ -133,7 +136,7 @@ export function UserKpiPanel({ userId }: UserKpiPanelProps) {
                 <span className="text-4xl font-semibold tabular-nums text-fg">
                   {summary.kpiScore}
                 </span>
-                <span className="text-sm text-fg-muted">/ {MAX_SCORE} điểm</span>
+                <span className="text-sm text-fg-muted">{t("kpi.userKpiPanel.outOfPoints", { max: MAX_SCORE })}</span>
               </p>
               {summary.incentiveLabel && <Badge tone={tier.tone}>{summary.incentiveLabel}</Badge>}
             </div>
@@ -142,20 +145,20 @@ export function UserKpiPanel({ userId }: UserKpiPanelProps) {
 
           <div className="grid grid-cols-1 gap-4 border-t border-line pt-4 sm:grid-cols-3">
             <Metric
-              label="Việc được giao"
+              label={t("kpi.userKpiPanel.tasksAssigned")}
               value={String(summary.totalAssigned)}
-              caption="trong tháng"
+              caption={t("kpi.userKpiPanel.thisMonth")}
             />
             <Metric
-              label="Hoàn thành"
+              label={t("common.done")}
               value={`${summary.completed}/${summary.totalAssigned}`}
-              caption={`${completionRate}% số việc được giao`}
+              caption={t("kpi.userKpiPanel.completionrateOfAssignedTasks", { completionRate })}
               percent={completionRate}
             />
             <Metric
-              label="Đúng hạn"
+              label={t("kpi.userKpiPanel.onTime")}
               value={summary.completed === 0 ? "-" : `${onTimeRate}%`}
-              caption={summary.completed === 0 ? "chưa có việc nào xong" : "trong số việc đã xong"}
+              caption={summary.completed === 0 ? t("kpi.userKpiPanel.noTaskFinishedYet") : t("kpi.userKpiPanel.ofTheTasksFinished")}
               percent={summary.completed === 0 ? undefined : onTimeRate}
             />
           </div>

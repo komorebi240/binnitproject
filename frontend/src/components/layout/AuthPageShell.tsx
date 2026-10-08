@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 
 /**
  * Minimal brand-recognition background - a few dimmed, oversized planet+ring shapes behind the
@@ -23,12 +24,13 @@ function BackgroundPlanets() {
   );
 }
 
-/** Shared frame for every pre-login page (login, forgot password): centered column over the Orbit planet backdrop. */
+/** Shared frame for every pre-login page (login, forgot password, invitation): centered column over the Orbit planet backdrop, with the language switch in the corner. */
 export function AuthPageShell({ children, backdrop }: { children: ReactNode; backdrop?: ReactNode }) {
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center gap-6 overflow-hidden px-4">
       <BackgroundPlanets />
       {backdrop}
+      <LanguageSwitcher className="absolute right-4 top-4 z-10 sm:right-6 sm:top-5" />
       <div className="relative flex w-full flex-col items-center gap-6">{children}</div>
     </main>
   );

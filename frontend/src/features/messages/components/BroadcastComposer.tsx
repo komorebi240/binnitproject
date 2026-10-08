@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import { useBroadcastMessage } from "../hooks/useMessages";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 /**
  * Shown only to a flagged system/broadcast account (UserProfile.systemAccount) - sends one
  * message to every active user in every company (backend MessageServiceImpl.broadcastMessage).
@@ -15,6 +16,7 @@ import { useBroadcastMessage } from "../hooks/useMessages";
  * a conversation, so it gets its own confirmation step rather than living inside a thread.
  */
 export function BroadcastComposer() {
+  const { t } = useI18n();
   const [body, setBody] = useState("");
   const [confirming, setConfirming] = useState(false);
   const broadcast = useBroadcastMessage();
@@ -24,11 +26,11 @@ export function BroadcastComposer() {
     if (!body.trim()) return;
     try {
       const count = await broadcast.mutateAsync(body.trim());
-      showToast("success", `Đã gửi thông báo tới ${count} người dùng`);
+      showToast("success", t("messages.broadcastComposer.notificationSentToCountUsers", { count }));
       setBody("");
       setConfirming(false);
     } catch (err) {
-      showToast("error", err instanceof ApiRequestError ? err.message : "Không gửi được thông báo");
+      showToast("error", err instanceof ApiRequestError ? err.message : t("messages.broadcastComposer.couldnTSendTheNotification"));
     }
   }
 
@@ -36,30 +38,30 @@ export function BroadcastComposer() {
     <div className="mb-4 flex flex-col gap-2 rounded-lg border border-primary/30 bg-surface-muted p-4 shadow-sm">
       <div className="flex items-center gap-2 text-sm font-semibold text-fg">
         <Megaphone size={18} className="text-primary-text" aria-hidden />
-        Gửi thông báo tới tất cả người dùng
+        {t("messages.broadcastComposer.sendANotificationToAllUsers")}
       </div>
       <Textarea
-        label="Nội dung thông báo"
+        label={t("messages.broadcastComposer.notificationText")}
         hideLabel
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder="Nội dung thông báo..."
+        placeholder={t("messages.broadcastComposer.notificationText2")}
         rows={2}
       />
       {confirming ? (
         <div className="flex items-center gap-2">
-          <p className="text-xs text-fg-soft">Gửi tới TẤT CẢ người dùng trong toàn hệ thống?</p>
+          <p className="text-xs text-fg-soft">{t("messages.broadcastComposer.sendToAllUsersAcrossThe")}</p>
           <Button onClick={handleSend} loading={broadcast.isPending}>
-            Xác nhận gửi
+            {t("messages.broadcastComposer.confirmAndSend")}
           </Button>
           <Button variant="secondary" onClick={() => setConfirming(false)}>
-            Huỷ
+            {t("common.cancel")}
           </Button>
         </div>
       ) : (
         <div>
           <Button variant="secondary" onClick={() => setConfirming(true)} disabled={!body.trim()}>
-            Gửi thông báo
+            {t("messages.broadcastComposer.sendNotification")}
           </Button>
         </div>
       )}

@@ -2,14 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CaretDown, Camera, GearSix, SignOut } from "@phosphor-icons/react";
-import { Avatar, STATUS_LABELS } from "@/components/ui/Avatar";
+import { CaretDown, Camera, GearSix, SignOut, Translate } from "@phosphor-icons/react";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { Avatar, PRESENCE_STATUS_KEYS } from "@/components/ui/Avatar";
 import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import { useLogout, useUpdatePresence, useUploadAvatar } from "@/features/auth/hooks/useAuth";
 import type { PresenceStatus, UserProfile } from "@/features/auth/types";
 import { useTabs } from "./TabsContext";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 const STATUS_OPTIONS: { value: PresenceStatus; dotClassName: string }[] = [
   { value: "ONLINE", dotClassName: "bg-success" },
   { value: "LIMITED", dotClassName: "bg-warning" },
@@ -28,6 +30,7 @@ const ITEM_CLASS_NAME =
  * settings" shortcut and the separate gear icon, which duplicated each other.
  */
 export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
+  const { t } = useI18n();
   const router = useRouter();
   const { navigateActiveTab } = useTabs();
   const { showToast } = useToast();
@@ -69,8 +72,8 @@ export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
 
   function handleStatus(status: PresenceStatus) {
     updatePresence.mutate(status, {
-      onSuccess: () => showToast("success", `Trạng thái: ${STATUS_LABELS[status]}`),
-      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : "Không đổi được trạng thái"),
+      onSuccess: () => showToast("success", t("layout.avatarMenu.statusV", { v: t(PRESENCE_STATUS_KEYS[status]) })),
+      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("common.couldnTChangeYourStatus")),
     });
   }
 
@@ -79,18 +82,18 @@ export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
     event.target.value = ""; // allow re-selecting the same file
     if (!file) return;
     if (!AVATAR_TYPES.includes(file.type)) {
-      showToast("error", "Ảnh đại diện phải là PNG, JPEG hoặc WebP");
+      showToast("error", t("layout.avatarMenu.theProfilePhotoMustBeA"));
       return;
     }
     if (file.size > MAX_AVATAR_BYTES) {
-      showToast("error", "Ảnh đại diện tối đa 2MB");
+      showToast("error", t("layout.avatarMenu.theProfilePhotoCanBe2mb"));
       return;
     }
     try {
       await uploadAvatar.mutateAsync(file);
-      showToast("success", "Đã cập nhật ảnh đại diện");
+      showToast("success", t("common.profilePhotoUpdated"));
     } catch (err) {
-      showToast("error", err instanceof ApiRequestError ? err.message : "Không tải lên được ảnh đại diện");
+      showToast("error", err instanceof ApiRequestError ? err.message : t("common.couldnTUploadTheProfilePhoto"));
     }
   }
 
@@ -104,8 +107,8 @@ export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
       <button
         ref={triggerRef}
         type="button"
-        title="Tài khoản"
-        aria-label="Menu tài khoản"
+        title={t("common.account")}
+        aria-label={t("common.accountMenu")}
         aria-haspopup="menu"
         aria-expanded={open}
         data-tour="profile"
@@ -116,11 +119,11 @@ export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
       </button>
 
       {/* Kept mounted so the file dialog still works after the menu closes. */}
-      <input ref={fileInputRef} type="file" accept={AVATAR_TYPES.join(",")} onChange={handleFileChange} className="hidden" aria-label="Chọn ảnh đại diện" />
+      <input ref={fileInputRef} type="file" accept={AVATAR_TYPES.join(",")} onChange={handleFileChange} className="hidden" aria-label={t("layout.avatarMenu.chooseAProfilePhoto")} />
 
       {open && (
         <>
-          <button type="button" aria-label="Đóng menu" onClick={close} className="fixed inset-0 z-20 cursor-default" />
+          <button type="button" aria-label={t("common.closeMenu")} onClick={close} className="fixed inset-0 z-20 cursor-default" />
           <div
             ref={menuRef}
             role="menu"
@@ -146,15 +149,15 @@ export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
                   className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_OPTIONS.find((s) => s.value === currentUser.presenceStatus)?.dotClassName ?? "bg-success"}`}
                   aria-hidden
                 />
-                <span className="flex-1">Trạng thái</span>
-                <span className="max-w-[7.5rem] truncate text-xs text-fg-muted">{STATUS_LABELS[currentUser.presenceStatus]}</span>
+                <span className="flex-1">{t("common.status")}</span>
+                <span className="max-w-[7.5rem] truncate text-xs text-fg-muted">{t(PRESENCE_STATUS_KEYS[currentUser.presenceStatus])}</span>
                 <CaretDown size={12} aria-hidden className={`shrink-0 text-fg-faint transition-transform duration-200 ${statusOpen ? "rotate-180" : ""}`} />
               </button>
 
               {/* grid-rows 0fr -> 1fr animates the height without measuring it */}
               <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${statusOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
                 <div className="overflow-hidden">
-                  <div className="flex flex-col gap-0.5 pb-1 pl-5" role="group" aria-label="Chọn trạng thái">
+                  <div className="flex flex-col gap-0.5 pb-1 pl-5" role="group" aria-label={t("layout.avatarMenu.chooseAStatus")}>
                     {STATUS_OPTIONS.map((option) => {
                       const selected = option.value === currentUser.presenceStatus;
                       return (
@@ -169,12 +172,21 @@ export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
                           className={`${ITEM_CLASS_NAME} ${selected ? "bg-surface-muted font-medium text-fg" : ""}`}
                         >
                           <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${option.dotClassName}`} aria-hidden />
-                          <span className="flex-1 text-xs">{STATUS_LABELS[option.value]}</span>
+                          <span className="flex-1 text-xs">{t(PRESENCE_STATUS_KEYS[option.value])}</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
+              </div>
+
+              {/* The header has the switch from the sm breakpoint up; on a phone it lives here. */}
+              <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 text-sm text-fg-soft sm:hidden">
+                <span className="flex items-center gap-2">
+                  <Translate size={16} aria-hidden className="shrink-0 text-fg-muted" />
+                  {t("layout.avatarMenu.language")}
+                </span>
+                <LanguageSwitcher />
               </div>
 
               <button
@@ -187,7 +199,7 @@ export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
                 className={ITEM_CLASS_NAME}
               >
                 <GearSix size={16} aria-hidden className="shrink-0 text-fg-muted" />
-                Cài đặt
+                {t("common.settings")}
               </button>
 
               <button
@@ -201,12 +213,12 @@ export function AvatarMenu({ currentUser }: { currentUser: UserProfile }) {
                 className={ITEM_CLASS_NAME}
               >
                 <Camera size={16} aria-hidden className="shrink-0 text-fg-muted" />
-                {uploadAvatar.isPending ? "Đang tải ảnh..." : "Đổi ảnh đại diện"}
+                {uploadAvatar.isPending ? t("layout.avatarMenu.uploadingPhoto") : t("common.changeProfilePhoto")}
               </button>
 
               <button type="button" role="menuitem" disabled={logout.isPending} onClick={handleLogout} className={ITEM_CLASS_NAME.replace("text-fg-soft", "text-danger")}>
                 <SignOut size={16} aria-hidden className="shrink-0" />
-                Đăng xuất
+                {t("common.signOut")}
               </button>
             </div>
           </div>

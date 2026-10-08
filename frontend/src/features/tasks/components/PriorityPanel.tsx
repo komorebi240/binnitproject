@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { useTasksList } from "../hooks/useTasks";
-import type { Task, TaskPriority } from "../types";
+import { TASK_PRIORITY_KEYS, type Task, type TaskPriority } from "../types";
 import { TaskDetailModal } from "./TaskDetailModal";
 import type { UserProfile } from "@/features/auth/types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 const PRIORITY_ORDER: TaskPriority[] = ["HIGH", "MEDIUM", "LOW"];
-const PRIORITY_LABELS: Record<TaskPriority, string> = { HIGH: "Cao", MEDIUM: "Trung bình", LOW: "Thấp" };
 const PRIORITY_TONE: Record<TaskPriority, "danger" | "warning" | "neutral"> = {
   HIGH: "danger",
   MEDIUM: "warning",
@@ -37,6 +37,7 @@ interface PriorityPanelProps {
  * its own floating trigger - Phase 6 moved that trigger into the header icon cluster.
  */
 export function PriorityPanel({ currentUser, open, onClose }: PriorityPanelProps) {
+  const { t } = useI18n();
   const { data: tasks } = useTasksList();
   const [detailTaskId, setDetailTaskId] = useState<number | null>(null);
 
@@ -53,19 +54,19 @@ export function PriorityPanel({ currentUser, open, onClose }: PriorityPanelProps
         <div className="fixed inset-0 z-30 flex justify-end">
           <button
             type="button"
-            aria-label="Đóng"
+            aria-label={t("common.close")}
             onClick={onClose}
             className="flex-1 bg-black/20"
           />
           <div className="glass-window animate-fade-in flex w-full max-w-sm flex-col gap-4 overflow-y-auto p-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-fg">Việc cần làm theo ưu tiên</h2>
+              <h2 className="text-sm font-semibold text-fg">{t("tasks.priorityPanel.toDoByPriority")}</h2>
               <button
                 type="button"
                 onClick={onClose}
                 className="rounded text-sm text-fg-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               >
-                Đóng
+                {t("common.close")}
               </button>
             </div>
 
@@ -74,11 +75,11 @@ export function PriorityPanel({ currentUser, open, onClose }: PriorityPanelProps
               return (
                 <div key={priority} className={`flex flex-col gap-2 rounded-lg p-3 ${PRIORITY_TINT_CLASSES[priority]}`}>
                   <div className="flex items-center gap-2">
-                    <Badge tone={PRIORITY_TONE[priority]}>{PRIORITY_LABELS[priority]}</Badge>
+                    <Badge tone={PRIORITY_TONE[priority]}>{t(TASK_PRIORITY_KEYS[priority])}</Badge>
                     <span className="text-xs text-fg-faint">{items.length}</span>
                   </div>
                   {items.length === 0 ? (
-                    <p className="text-xs text-fg-faint">Không có việc nào</p>
+                    <p className="text-xs text-fg-faint">{t("common.noTasks")}</p>
                   ) : (
                     <ul className="flex flex-col gap-1.5">
                       {items.map((task) => (

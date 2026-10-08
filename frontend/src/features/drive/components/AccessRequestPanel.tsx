@@ -19,10 +19,12 @@ import {
 } from "../hooks/useDrive";
 import type { FolderAccessRequest, FolderRequestStatus } from "../types";
 
-const STATUS_LABELS: Record<FolderRequestStatus, string> = {
-  PENDING: "Chờ duyệt",
-  APPROVED: "Đã duyệt",
-  REJECTED: "Đã từ chối",
+import type { TranslationKey } from "@/lib/i18n/dictionary";
+import { useI18n } from "@/lib/i18n/useI18n";
+const STATUS_KEYS: Record<FolderRequestStatus, TranslationKey> = {
+  PENDING: "drive.accessRequestPanel.pending",
+  APPROVED: "drive.accessRequestPanel.approved",
+  REJECTED: "common.declined",
 };
 
 const STATUS_TONE: Record<FolderRequestStatus, "info" | "success" | "danger"> = {
@@ -45,6 +47,7 @@ interface AccessRequestPanelProps {
 }
 
 export function AccessRequestPanel({ currentUser }: AccessRequestPanelProps) {
+  const { t } = useI18n();
   const { data: requests, isLoading } = useAccessRequests();
   const { data: catalog } = useCatalog();
   const createRequest = useCreateAccessRequest();
@@ -66,23 +69,23 @@ export function AccessRequestPanel({ currentUser }: AccessRequestPanelProps) {
     try {
       await createRequest.mutateAsync({ catalogFolderId: Number(catalogFolderId) });
       setCatalogFolderId("");
-      showToast("success", "Đã gửi yêu cầu");
+      showToast("success", t("drive.accessRequestPanel.requestSent"));
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không gửi được yêu cầu");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("common.couldnTSendTheRequest"));
     }
   }
 
   function handleApprove(id: number) {
     approve.mutate(id, {
-      onSuccess: () => showToast("success", "Đã duyệt yêu cầu"),
-      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : "Không duyệt được yêu cầu"),
+      onSuccess: () => showToast("success", t("drive.accessRequestPanel.requestApproved")),
+      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("drive.accessRequestPanel.couldnTApproveTheRequest")),
     });
   }
 
   function handleReject(id: number) {
     reject.mutate(id, {
-      onSuccess: () => showToast("success", "Đã từ chối yêu cầu"),
-      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : "Không từ chối được yêu cầu"),
+      onSuccess: () => showToast("success", t("drive.accessRequestPanel.requestDeclined")),
+      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("drive.accessRequestPanel.couldnTDeclineTheRequest")),
     });
   }
 
@@ -94,19 +97,19 @@ export function AccessRequestPanel({ currentUser }: AccessRequestPanelProps) {
         <Table<FolderAccessRequest>
           columns={[
             { header: "Folder", cell: (r) => r.googleFolderName ?? "-" },
-            { header: "Thuộc phòng", cell: (r) => r.ownerDepartmentName ?? "-" },
-            { header: "Người xin", cell: (r) => `${r.requesterUserName} (${r.requesterDepartmentName})` },
-            { header: "Trạng thái", cell: (r) => <Badge tone={STATUS_TONE[r.status]}>{STATUS_LABELS[r.status]}</Badge> },
+            { header: t("drive.accessRequestPanel.department"), cell: (r) => r.ownerDepartmentName ?? "-" },
+            { header: t("drive.accessRequestPanel.requestedBy"), cell: (r) => `${r.requesterUserName} (${r.requesterDepartmentName})` },
+            { header: t("common.status"), cell: (r) => <Badge tone={STATUS_TONE[r.status]}>{t(STATUS_KEYS[r.status])}</Badge> },
             {
               header: "",
               cell: (r) =>
                 r.status === "PENDING" && canDecide(currentUser, r) ? (
                   <div className="flex gap-2">
                     <Button onClick={() => handleApprove(r.id)} loading={approve.isPending}>
-                      Duyệt
+                      {t("common.approve")}
                     </Button>
                     <Button variant="danger" onClick={() => handleReject(r.id)} loading={reject.isPending}>
-                      Từ chối
+                      {t("common.decline")}
                     </Button>
                   </div>
                 ) : null,
@@ -116,8 +119,8 @@ export function AccessRequestPanel({ currentUser }: AccessRequestPanelProps) {
           getRowKey={(r) => r.id}
           emptyState={
             <EmptyState
-              title="Chưa có yêu cầu truy cập folder nào"
-              description={canRequest ? "Gửi yêu cầu đầu tiên bằng form bên dưới." : undefined}
+              title={t("drive.accessRequestPanel.noFolderAccessRequestsYet")}
+              description={canRequest ? t("drive.accessRequestPanel.sendTheFirstRequestWithThe") : undefined}
             />
           }
         />
@@ -127,11 +130,11 @@ export function AccessRequestPanel({ currentUser }: AccessRequestPanelProps) {
         <form onSubmit={handleCreate} className="flex items-end gap-2 rounded border border-line p-4">
           <div className="flex-1">
             <Select
-              label="Xin quyền vào folder"
+              label={t("drive.accessRequestPanel.requestAccessToAFolder")}
               value={catalogFolderId}
               onChange={(e) => setCatalogFolderId(e.target.value)}
               options={[
-                { value: "", label: "-- Chọn folder --" },
+                { value: "", label: t("drive.accessRequestPanel.chooseAFolder") },
                 ...requestableFolders.map((f) => ({
                   value: String(f.id),
                   label: `${f.googleFolderName} (${f.departmentName})`,
@@ -141,7 +144,7 @@ export function AccessRequestPanel({ currentUser }: AccessRequestPanelProps) {
             />
           </div>
           <Button type="submit" loading={createRequest.isPending}>
-            Gửi yêu cầu
+            {t("drive.accessRequestPanel.sendRequest")}
           </Button>
         </form>
       )}

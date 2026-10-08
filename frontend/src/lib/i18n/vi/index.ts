@@ -1,0 +1,22 @@
+import { app } from "./app";
+import { auth } from "./auth";
+import { calendar } from "./calendar";
+import { common } from "./common";
+import { crm } from "./crm";
+import { drive } from "./drive";
+import { kpi } from "./kpi";
+import { legal } from "./legal";
+import { layout } from "./layout";
+import { lib } from "./lib";
+import { messages } from "./messages";
+import { notes } from "./notes";
+import { notifications } from "./notifications";
+import { onboarding } from "./onboarding";
+import { organization } from "./organization";
+import { projects } from "./projects";
+import { settings } from "./settings";
+import { tasks } from "./tasks";
+import { timer } from "./timer";
+import { ui } from "./ui";
+
+export const VI = { ...app, ...auth, ...calendar, ...common, ...crm, ...drive, ...kpi, ...legal, ...layout, ...lib, ...messages, ...notes, ...notifications, ...onboarding, ...organization, ...projects, ...settings, ...tasks, ...timer, ...ui };

@@ -12,9 +12,10 @@ import {
   type WindowGeometry,
   type WindowLimits,
 } from "@/lib/floatingWindow";
-import { formatClock, PHASE_LABELS, type PomodoroPhase } from "../pomodoro";
+import { formatClock, PHASE_KEYS, type PomodoroPhase } from "../pomodoro";
 import { usePomodoro } from "./PomodoroProvider";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 const LIMITS: WindowLimits = { minWidth: 240, minHeight: 230, margin: 8 };
 const WINDOW_SIZE = { width: 280, height: 260 };
 const STORAGE_PREFIX = "orbit-pomodoro-window:";
@@ -35,6 +36,7 @@ function openingGeometry(): WindowGeometry {
 
 /** Header button that shows the clock while it runs, and opens the focus-timer window. */
 export function PomodoroControl({ userId }: { userId: number }) {
+  const { t } = useI18n();
   const pomodoro = usePomodoro();
   const [open, setOpen] = useState(false);
   const [geometry, setGeometry] = useState<WindowGeometry | null>(null);
@@ -76,10 +78,10 @@ export function PomodoroControl({ userId }: { userId: number }) {
     <>
       <button
         type="button"
-        title="Đồng hồ tập trung"
+        title={t("common.focusTimer")}
         data-tour="timer"
         aria-label={
-          active ? `Đồng hồ tập trung, còn ${formatClock(remaining)}` : "Đồng hồ tập trung"
+          active ? t("timer.pomodoroControl.focusTimerVLeft", { v: formatClock(remaining) }) : t("common.focusTimer")
         }
         aria-pressed={open}
         onClick={() => setOpen((value) => !value)}
@@ -102,7 +104,7 @@ export function PomodoroControl({ userId }: { userId: number }) {
 
       {open && geometry && (
         <FloatingWindow
-          title="Đồng hồ tập trung"
+          title={t("common.focusTimer")}
           geometry={geometry}
           collapsed={collapsed}
           limits={LIMITS}
@@ -114,27 +116,27 @@ export function PomodoroControl({ userId }: { userId: number }) {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              title="Đóng cửa sổ (đồng hồ vẫn chạy)"
-              aria-label="Đóng cửa sổ đồng hồ"
+              title={t("timer.pomodoroControl.closeWindowTheTimerKeepsRunning")}
+              aria-label={t("timer.pomodoroControl.closeTimerWindow")}
               className="flex h-6 items-center rounded px-1.5 text-xs text-fg-muted hover:bg-surface-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
-              Đóng
+              {t("common.close")}
             </button>
           }
         >
           <div className="flex flex-1 flex-col items-center justify-between gap-3 py-1">
             <Tabs
-              label="Chế độ"
+              label={t("timer.pomodoroControl.mode")}
               variant="solid"
               value={state.phase}
               onChange={(phase) => pomodoro.select(phase)}
-              items={PHASES.map((phase) => ({ id: phase, label: PHASE_LABELS[phase] }))}
+              items={PHASES.map((phase) => ({ id: phase, label: t(PHASE_KEYS[phase]) }))}
             />
 
             <p
               className="font-mono text-5xl font-semibold tabular-nums text-fg"
               role="timer"
-              aria-label={`${PHASE_LABELS[state.phase]}, còn ${formatClock(remaining)}`}
+              aria-label={t("timer.pomodoroControl.vV2Left", { v: t(PHASE_KEYS[state.phase]), v2: formatClock(remaining) })}
             >
               {formatClock(remaining)}
             </p>
@@ -147,7 +149,7 @@ export function PomodoroControl({ userId }: { userId: number }) {
                   className="flex items-center gap-1.5 rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   <Pause size={16} weight="fill" aria-hidden />
-                  Tạm dừng
+                  {t("timer.pomodoroControl.pause")}
                 </button>
               ) : (
                 <button
@@ -156,14 +158,14 @@ export function PomodoroControl({ userId }: { userId: number }) {
                   className="flex items-center gap-1.5 rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   <Play size={16} weight="fill" aria-hidden />
-                  {state.status === "paused" ? "Tiếp tục" : "Bắt đầu"}
+                  {state.status === "paused" ? t("common.continue") : t("common.getStarted")}
                 </button>
               )}
               <button
                 type="button"
                 onClick={pomodoro.resetPhase}
-                title="Đặt lại chế độ này"
-                aria-label="Đặt lại chế độ này"
+                title={t("timer.pomodoroControl.resetThisMode")}
+                aria-label={t("timer.pomodoroControl.resetThisMode")}
                 className="flex h-9 w-9 items-center justify-center rounded border border-line text-fg-soft hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               >
                 <ArrowCounterClockwise size={16} aria-hidden />
@@ -171,14 +173,14 @@ export function PomodoroControl({ userId }: { userId: number }) {
             </div>
 
             <p className="text-xs text-fg-muted">
-              Đã xong {state.completedFocus} vòng tập trung
+              {t("timer.pomodoroControl.focusRoundsDone", { count: state.completedFocus })}
               {state.completedFocus > 0 && (
                 <button
                   type="button"
                   onClick={pomodoro.resetAll}
                   className="ml-2 underline hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                 >
-                  Xoá
+                  {t("common.delete")}
                 </button>
               )}
             </p>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { WarningCircle } from "@phosphor-icons/react";
 import { describeInvalidField } from "@/lib/fieldValidation";
+import { useI18n } from "@/lib/i18n/useI18n";
 
 /**
  * The message under a form field. A role="alert" so a screen reader announces it, and an icon plus text,
@@ -24,11 +25,12 @@ export function FieldError({ id, message }: { id: string; message: string }) {
 type NativeField = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
 /**
- * Replaces the browser's own validation bubble (English, unstyled) with a Vietnamese message shown under the
+ * Replaces the browser's own validation bubble (in the browser's language, unstyled) with a message in the app's language shown under the
  * field. `handleInvalid` goes on the control's onInvalid, `clear` on its change/input events. The first invalid
  * field of a form gets the focus, which the browser no longer does once its bubble is cancelled.
  */
 export function useNativeValidationMessage(label: string) {
+  const { t } = useI18n();
   const [message, setMessage] = useState<string | null>(null);
 
   function handleInvalid(event: React.FormEvent<NativeField>) {
@@ -48,6 +50,7 @@ export function useNativeValidationMessage(label: string) {
           validationMessage: field.validationMessage,
         },
         label,
+        t,
       ),
     );
     if (field.form?.querySelector(":invalid") === field) {

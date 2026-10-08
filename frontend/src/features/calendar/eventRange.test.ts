@@ -40,7 +40,8 @@ describe("eventRange", () => {
   });
 
   it("formatSpan shows a date range for trips", () => {
-    expect(formatSpan({ startAt: at("2026-10-05T00:00:00"), endAt: at("2026-10-09T23:59:59") })).toBe("5/10 - 9/10");
+    expect(formatSpan({ startAt: at("2026-10-05T00:00:00"), endAt: at("2026-10-09T23:59:59") }, "vi-VN")).toBe("5/10 - 9/10");
+    expect(formatSpan({ startAt: at("2026-10-05T00:00:00"), endAt: at("2026-10-09T23:59:59") }, "en-US")).toBe("10/5 - 10/9");
   });
 
   it("a trip becomes a first-day to last-day range", () => {

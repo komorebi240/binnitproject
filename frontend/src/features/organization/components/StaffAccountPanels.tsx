@@ -12,11 +12,14 @@ import {
 } from "../hooks/useOrganization";
 import type { UserSummary } from "../types";
 
+import { RichText } from "@/components/i18n/RichText";
+import { useI18n } from "@/lib/i18n/useI18n";
 /**
  * The manager never sees or sets a password: the staff member gets the same emailed code as "Quên mật
  * khẩu" and chooses their own. Only the people the server lets manage this user can do it.
  */
 export function ResetPasswordPanel({ user }: { user: UserSummary }) {
+  const { t } = useI18n();
   const sendReset = useSendStaffPasswordReset();
   const { showToast } = useToast();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -24,18 +27,16 @@ export function ResetPasswordPanel({ user }: { user: UserSummary }) {
   function handleSend() {
     setErrorMessage(null);
     sendReset.mutate(user.id, {
-      onSuccess: () => showToast("success", `Đã gửi email đặt lại mật khẩu cho ${user.fullName}`),
+      onSuccess: () => showToast("success", t("organization.staffAccountPanels.passwordResetEmailSentToFullname", { fullName: user.fullName })),
       onError: (err) =>
-        setErrorMessage(err instanceof ApiRequestError ? err.message : "Không gửi được email"),
+        setErrorMessage(err instanceof ApiRequestError ? err.message : t("organization.staffAccountPanels.couldnTSendTheEmail")),
     });
   }
 
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm text-fg-soft">
-        Gửi mã đặt lại mật khẩu đến email đã đăng ký của <strong>{user.fullName}</strong>. Họ nhập
-        mã ở trang &ldquo;Quên mật khẩu&rdquo; để tự đặt mật khẩu mới; bạn sẽ không biết mật khẩu
-        của họ.
+        <RichText text={t("organization.staffAccountPanels.resetPasswordIntro")} values={{ name: <strong>{user.fullName}</strong> }} />
       </p>
       {errorMessage && (
         <p role="alert" className="text-sm text-danger">
@@ -44,7 +45,7 @@ export function ResetPasswordPanel({ user }: { user: UserSummary }) {
       )}
       <div>
         <Button variant="secondary" onClick={handleSend} loading={sendReset.isPending}>
-          Gửi email đặt lại mật khẩu
+          {t("organization.staffAccountPanels.sendPasswordResetEmail")}
         </Button>
       </div>
     </div>
@@ -56,6 +57,7 @@ export function ResetPasswordPanel({ user }: { user: UserSummary }) {
  * NEW address, then the code (which the staff member reads from that mailbox) confirms the change.
  */
 export function ChangeEmailPanel({ user }: { user: UserSummary }) {
+  const { t } = useI18n();
   const requestChange = useRequestStaffEmailChange();
   const confirmChange = useConfirmStaffEmailChange();
   const { showToast } = useToast();
@@ -74,7 +76,7 @@ export function ChangeEmailPanel({ user }: { user: UserSummary }) {
     setErrorMessage(null);
     requestChange.mutate(
       { userId: user.id, email: email.trim() },
-      { onSuccess: () => setStep("code"), onError: fail("Không gửi được mã xác nhận") },
+      { onSuccess: () => setStep("code"), onError: fail(t("organization.staffAccountPanels.couldnTSendTheConfirmationCode")) },
     );
   }
 
@@ -85,12 +87,12 @@ export function ChangeEmailPanel({ user }: { user: UserSummary }) {
       { userId: user.id, otp: code.trim() },
       {
         onSuccess: () => {
-          showToast("success", `Đã đổi email của ${user.fullName}`);
+          showToast("success", t("organization.staffAccountPanels.changedFullnameSEmail", { fullName: user.fullName }));
           setStep("email");
           setEmail("");
           setCode("");
         },
-        onError: fail("Mã không đúng hoặc đã hết hạn"),
+        onError: fail(t("organization.staffAccountPanels.theCodeIsWrongOrHas")),
       },
     );
   }
@@ -99,11 +101,10 @@ export function ChangeEmailPanel({ user }: { user: UserSummary }) {
     return (
       <form onSubmit={handleRequest} className="flex flex-col gap-2">
         <p className="text-sm text-fg-soft">
-          Nhập email mới của <strong>{user.fullName}</strong>. Một mã xác nhận sẽ được gửi đến email
-          mới đó.
+          <RichText text={t("organization.staffAccountPanels.changeEmailIntro")} values={{ name: <strong>{user.fullName}</strong> }} />
         </p>
         <Input
-          label="Email mới"
+          label={t("organization.staffAccountPanels.newEmail")}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -117,7 +118,7 @@ export function ChangeEmailPanel({ user }: { user: UserSummary }) {
         )}
         <div>
           <Button type="submit" variant="secondary" loading={requestChange.isPending}>
-            Gửi mã xác nhận
+            {t("organization.staffAccountPanels.sendConfirmationCode")}
           </Button>
         </div>
       </form>
@@ -127,11 +128,13 @@ export function ChangeEmailPanel({ user }: { user: UserSummary }) {
   return (
     <form onSubmit={handleConfirm} className="flex flex-col gap-2">
       <p className="text-sm text-fg-soft">
-        Đã gửi mã 6 số đến <strong>{email.trim()}</strong>. Nhờ {user.fullName} đọc mã trong hộp thư
-        đó và nhập vào đây (mã có hiệu lực 15 phút). Email cũ sẽ nhận thông báo khi đổi xong.
+        <RichText
+          text={t("organization.staffAccountPanels.codeSentIntro", { name: user.fullName })}
+          values={{ email: <strong>{email.trim()}</strong> }}
+        />
       </p>
       <Input
-        label="Mã xác nhận"
+        label={t("organization.staffAccountPanels.confirmationCode")}
         value={code}
         onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
         inputMode="numeric"
@@ -145,10 +148,10 @@ export function ChangeEmailPanel({ user }: { user: UserSummary }) {
       )}
       <div className="flex gap-2">
         <Button type="submit" loading={confirmChange.isPending} disabled={code.length !== 6}>
-          Xác nhận đổi email
+          {t("organization.staffAccountPanels.confirmEmailChange")}
         </Button>
         <Button type="button" variant="secondary" onClick={() => setStep("email")}>
-          Nhập lại email
+          {t("organization.staffAccountPanels.reEnterTheEmail")}
         </Button>
       </div>
     </form>

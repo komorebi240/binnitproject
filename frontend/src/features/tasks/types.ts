@@ -1,6 +1,19 @@
+import type { TranslationKey } from "@/lib/i18n/dictionary";
+
 export type AssigneeType = "USER" | "DEPARTMENT";
 export type TaskStatus = "ASSIGNED" | "ACCEPTED" | "DECLINED" | "DONE" | "CANCELLED";
 export type TaskPriority = "LOW" | "MEDIUM" | "HIGH";
+
+/** Message keys of the labels every screen shows for a task's status and priority (translate with `t`). */
+export const TASK_STATUS_KEYS: Record<TaskStatus, TranslationKey> = {
+  ASSIGNED: "common.awaitingResponse",
+  ACCEPTED: "common.accepted",
+  DECLINED: "common.declined",
+  DONE: "common.done",
+  CANCELLED: "common.cancelled",
+};
+
+export const TASK_PRIORITY_KEYS: Record<TaskPriority, TranslationKey> = { LOW: "common.low", MEDIUM: "common.medium", HIGH: "common.high" };
 
 export interface TaskAttachment {
   id: number;

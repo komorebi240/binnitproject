@@ -16,10 +16,12 @@ import {
   useDeleteEvent,
   useMyCalendarEvents,
 } from "../hooks/useCalendar";
-import { coversDay, EMPTY_EVENT_FORM, formatSpan, toEventInput, TYPE_LABELS, upcomingEvents } from "../eventRange";
+import { coversDay, EMPTY_EVENT_FORM, formatSpan, toEventInput, TYPE_KEYS, upcomingEvents } from "../eventRange";
 import type { CalendarEvent, CalendarEventType } from "../types";
 import { CalendarEventFields } from "./CalendarEventFields";
 
+import { useI18n } from "@/lib/i18n/useI18n";
+import { weekdayShortKey } from "@/lib/weekdays";
 const TYPE_DOT: Record<CalendarEventType, string> = {
   MEETING: "bg-primary",
   DEADLINE: "bg-danger",
@@ -27,7 +29,8 @@ const TYPE_DOT: Record<CalendarEventType, string> = {
   OTHER: "bg-fg-faint",
 };
 
-const WEEKDAY_LABELS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+// Monday first, as `Date.getDay()` numbers (0 = Sunday)
+const WEEKDAYS_MONDAY_FIRST = [1, 2, 3, 4, 5, 6, 0];
 
 function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -48,15 +51,16 @@ function buildMonthGrid(monthDate: Date): Date[] {
 }
 
 function EventRow({ event, onDelete, deleting }: { event: CalendarEvent; onDelete: () => void; deleting: boolean }) {
+  const { t, intlLocale } = useI18n();
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 rounded border border-line px-3 py-2 text-sm">
       <span className="flex min-w-0 items-center gap-2">
-        <Badge tone={event.status === "PENDING" ? "warning" : "neutral"}>{TYPE_LABELS[event.eventType]}</Badge>
+        <Badge tone={event.status === "PENDING" ? "warning" : "neutral"}>{t(TYPE_KEYS[event.eventType])}</Badge>
         <span className="truncate">{event.title}</span>
-        <span className="shrink-0 text-fg-muted">{formatSpan(event)}</span>
+        <span className="shrink-0 text-fg-muted">{formatSpan(event, intlLocale)}</span>
       </span>
       <Button variant="danger" onClick={onDelete} loading={deleting}>
-        Xoá
+        {t("common.delete")}
       </Button>
     </li>
   );
@@ -69,6 +73,7 @@ function EventRow({ event, onDelete, deleting }: { event: CalendarEvent; onDelet
  * grid only what is coming up is listed (not the whole history).
  */
 export function CalendarView() {
+  const { t, intlLocale } = useI18n();
   const { data: events, isLoading } = useMyCalendarEvents();
   const createEvent = useCreateOwnEvent();
   const acceptEvent = useAcceptEvent();
@@ -95,10 +100,10 @@ export function CalendarView() {
     try {
       await createEvent.mutateAsync(toEventInput(form));
       setForm(EMPTY_EVENT_FORM);
-      showToast("success", "Đã thêm sự kiện");
+      showToast("success", t("calendar.calendarView.eventAdded"));
       setCreating(false);
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không thêm được sự kiện");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("calendar.calendarView.couldnTAddTheEvent"));
     }
   }
 
@@ -111,26 +116,26 @@ export function CalendarView() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold text-fg">Lịch của tôi</h2>
-        <PlusButton label="Thêm sự kiện" onClick={() => setCreating(true)} />
+        <h2 className="text-lg font-semibold text-fg">{t("common.myCalendar")}</h2>
+        <PlusButton label={t("common.addAnEvent")} onClick={() => setCreating(true)} />
       </div>
 
       {pendingEvents.length > 0 && (
-        <Alert tone="warning" title="Sự kiện chờ bạn xác nhận" className="p-4">
+        <Alert tone="warning" title={t("calendar.calendarView.eventsWaitingForYourConfirmation")} className="p-4">
           {pendingEvents.map((e) => (
             <div key={e.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span>
-                {e.title} - {formatSpan(e)}
+                {e.title} - {formatSpan(e, intlLocale)}
                 {e.createdByName && !e.createdBySelf && (
-                  <span className="opacity-80"> (thêm bởi {e.createdByName})</span>
+                  <span className="opacity-80"> {t("calendar.calendarView.addedByName", { name: e.createdByName })}</span>
                 )}
               </span>
               <div className="flex gap-2">
                 <Button onClick={() => acceptEvent.mutate(e.id)} loading={acceptEvent.isPending}>
-                  Chấp nhận
+                  {t("calendar.calendarView.accept")}
                 </Button>
                 <Button variant="danger" onClick={() => declineEvent.mutate(e.id)} loading={declineEvent.isPending}>
-                  Từ chối
+                  {t("common.decline")}
                 </Button>
               </div>
             </div>
@@ -147,7 +152,11 @@ export function CalendarView() {
             ←
           </Button>
           <p className="text-sm font-semibold text-fg">
-            Tháng {monthDate.getMonth() + 1}/{monthDate.getFullYear()}
+            {t("calendar.calendarView.monthYear", {
+              month: monthDate.getMonth() + 1,
+              monthName: monthDate.toLocaleDateString(intlLocale, { month: "long" }),
+              year: monthDate.getFullYear(),
+            })}
           </p>
           <Button
             variant="secondary"
@@ -158,9 +167,9 @@ export function CalendarView() {
         </div>
 
         <div className="grid grid-cols-7 gap-px overflow-hidden rounded border border-line bg-line text-xs">
-          {WEEKDAY_LABELS.map((label) => (
-            <div key={label} className="bg-surface-muted/70 px-2 py-1 text-center font-medium text-fg-muted">
-              {label}
+          {WEEKDAYS_MONDAY_FIRST.map((weekday) => (
+            <div key={weekday} className="bg-surface-muted/70 px-2 py-1 text-center font-medium text-fg-muted">
+              {t(weekdayShortKey(weekday))}
             </div>
           ))}
           {grid.map((day) => {
@@ -172,7 +181,7 @@ export function CalendarView() {
                 type="button"
                 key={day.toISOString()}
                 onClick={() => setSelectedDay(day)}
-                aria-label={`Ngày ${day.getDate()}/${day.getMonth() + 1}${dayEvents.length > 0 ? `, ${dayEvents.length} sự kiện` : ""}`}
+                aria-label={t("calendar.calendarView.vV2V32", { v: day.getDate(), v2: day.getMonth() + 1, v3: dayEvents.length > 0 ? t("calendar.calendarView.eventCountSuffix", { count: dayEvents.length }) : "" })}
                 className={`min-h-20 bg-surface/60 p-1 text-left transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${isCurrentMonth ? "" : "bg-surface-muted/40 text-fg-faint"}`}
               >
                 <span
@@ -187,7 +196,7 @@ export function CalendarView() {
                       {e.title}
                     </span>
                   ))}
-                  {dayEvents.length > 3 && <span className="text-[11px] text-fg-faint">+{dayEvents.length - 3} nữa</span>}
+                  {dayEvents.length > 3 && <span className="text-[11px] text-fg-faint">{t("calendar.calendarView.moreCount", { count: dayEvents.length - 3 })}</span>}
                 </span>
               </button>
             );
@@ -196,9 +205,9 @@ export function CalendarView() {
       </section>
 
       <section className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-fg-soft">Sự kiện sắp tới</p>
+        <p className="text-sm font-medium text-fg-soft">{t("common.upcomingEvents")}</p>
         {coming.length === 0 ? (
-          <p className="text-sm text-fg-faint">Không có sự kiện sắp tới</p>
+          <p className="text-sm text-fg-faint">{t("calendar.calendarView.noUpcomingEvents")}</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
             {coming.map((e) => (
@@ -210,11 +219,11 @@ export function CalendarView() {
 
       {selectedDay && (
         <Modal
-          title={`Ngày ${selectedDay.getDate()}/${selectedDay.getMonth() + 1}/${selectedDay.getFullYear()}`}
+          title={t("calendar.calendarView.vV2V3", { v: selectedDay.getDate(), v2: selectedDay.getMonth() + 1, v3: selectedDay.getFullYear() })}
           onClose={() => setSelectedDay(null)}
         >
           {selectedEvents.length === 0 ? (
-            <p className="text-sm text-fg-faint">Không có sự kiện trong ngày này</p>
+            <p className="text-sm text-fg-faint">{t("calendar.calendarView.noEventsOnThisDay")}</p>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {selectedEvents.map((e) => (
@@ -226,7 +235,7 @@ export function CalendarView() {
       )}
 
       {creating && (
-        <Modal title="Thêm sự kiện mới" onClose={() => setCreating(false)}>
+        <Modal title={t("calendar.calendarView.addANewEvent")} onClose={() => setCreating(false)}>
           <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <CalendarEventFields form={form} onChange={setForm} />
             {errorMessage && (
@@ -236,10 +245,10 @@ export function CalendarView() {
             )}
             <div className="flex gap-2 sm:col-span-2">
               <Button type="submit" loading={createEvent.isPending}>
-                Thêm sự kiện
+                {t("common.addAnEvent")}
               </Button>
               <Button type="button" variant="secondary" onClick={() => setCreating(false)}>
-                Huỷ
+                {t("common.cancel")}
               </Button>
             </div>
           </form>

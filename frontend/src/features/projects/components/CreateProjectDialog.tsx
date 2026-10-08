@@ -12,8 +12,10 @@ import type { UserProfile } from "@/features/auth/types";
 import { useDepartments } from "@/features/organization/hooks/useOrganization";
 import { useCreateProject } from "../hooks/useProjects";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 /** An executive picks which department owns the project; a department head's own department always does. */
 export function CreateProjectDialog({ currentUser, onClose }: { currentUser: UserProfile; onClose: () => void }) {
+  const { t } = useI18n();
   const { data: departments } = useDepartments();
   const createProject = useCreateProject();
   const { navigateActiveTab } = useTabs();
@@ -38,7 +40,7 @@ export function CreateProjectDialog({ currentUser, onClose }: { currentUser: Use
     event.preventDefault();
     setErrorMessage(null);
     if (ownerDepartmentId === undefined) {
-      setErrorMessage("Hãy chọn phòng ban chủ trì.");
+      setErrorMessage(t("projects.createProjectDialog.chooseTheLeadingDepartment"));
       return;
     }
     try {
@@ -49,22 +51,22 @@ export function CreateProjectDialog({ currentUser, onClose }: { currentUser: Use
         supportDepartmentIds: supportIds.filter((id) => id !== ownerDepartmentId),
         inviteNote: inviteNote.trim() || undefined,
       });
-      showToast("success", "Đã tạo dự án");
+      showToast("success", t("projects.createProjectDialog.projectCreated"));
       onClose();
       navigateActiveTab(`/dashboard/projects/${project.id}`);
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không tạo được dự án");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("projects.createProjectDialog.couldnTCreateTheProject"));
     }
   }
 
   return (
-    <Modal title="Tạo dự án mới" onClose={onClose} widthClassName="max-w-xl">
+    <Modal title={t("projects.createProjectDialog.createANewProject")} onClose={onClose} widthClassName="max-w-xl">
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <Input label="Tên dự án" value={name} onChange={(e) => setName(e.target.value)} maxLength={200} required />
-        <Input label="Mô tả (tuỳ chọn)" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} />
+        <Input label={t("projects.createProjectDialog.projectName")} value={name} onChange={(e) => setName(e.target.value)} maxLength={200} required />
+        <Input label={t("common.descriptionOptional")} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} />
         {isExecutive && (
           <Select
-            label="Phòng ban chủ trì"
+            label={t("projects.createProjectDialog.leadingDepartment")}
             value={ownerId ? String(ownerId) : ""}
             onChange={(e) => {
               const id = e.target.value ? Number(e.target.value) : undefined;
@@ -72,7 +74,7 @@ export function CreateProjectDialog({ currentUser, onClose }: { currentUser: Use
               setSupportIds((current) => current.filter((x) => x !== id));
             }}
             options={[
-              { value: "", label: "-- Chọn phòng ban --" },
+              { value: "", label: t("common.chooseADepartment") },
               ...(departments ?? []).map((d) => ({ value: String(d.id), label: d.name })),
             ]}
             required
@@ -80,9 +82,9 @@ export function CreateProjectDialog({ currentUser, onClose }: { currentUser: Use
         )}
 
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="text-sm font-medium text-fg-soft">Mời phòng ban hỗ trợ (tuỳ chọn)</legend>
+          <legend className="text-sm font-medium text-fg-soft">{t("projects.createProjectDialog.inviteSupportingDepartmentsOptional")}</legend>
           {supportCandidates.length === 0 ? (
-            <p className="text-sm text-fg-faint">Chưa có phòng ban nào khác để mời.</p>
+            <p className="text-sm text-fg-faint">{t("projects.createProjectDialog.thereAreNoOtherDepartmentsTo")}</p>
           ) : (
             <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
               {supportCandidates.map((d) => (
@@ -95,7 +97,7 @@ export function CreateProjectDialog({ currentUser, onClose }: { currentUser: Use
           )}
         </fieldset>
         {supportIds.length > 0 && (
-          <Input label="Lời nhắn kèm lời mời (tuỳ chọn)" value={inviteNote} onChange={(e) => setInviteNote(e.target.value)} maxLength={500} />
+          <Input label={t("projects.createProjectDialog.messageWithTheInvitationOptional")} value={inviteNote} onChange={(e) => setInviteNote(e.target.value)} maxLength={500} />
         )}
 
         {errorMessage && (
@@ -105,10 +107,10 @@ export function CreateProjectDialog({ currentUser, onClose }: { currentUser: Use
         )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Huỷ
+            {t("common.cancel")}
           </Button>
           <Button type="submit" loading={createProject.isPending}>
-            Tạo dự án
+            {t("projects.createProjectDialog.createProject")}
           </Button>
         </div>
       </form>

@@ -3,6 +3,7 @@
 import { useDepartmentMembers } from "../hooks/useOrganization";
 import { MemberList } from "./MemberList";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface DepartmentMemberListProps {
   departmentId: number;
   departmentName: string;
@@ -14,13 +15,14 @@ interface DepartmentMemberListProps {
  * MemberList, shared with TeamMemberList.
  */
 export function DepartmentMemberList({ departmentId, departmentName }: DepartmentMemberListProps) {
+  const { t } = useI18n();
   const { data: members, isLoading } = useDepartmentMembers(departmentId);
   return (
     <MemberList
       members={members}
       isLoading={isLoading}
       contextLabel={departmentName}
-      emptyTitle="Phòng ban này chưa có nhân sự nào"
+      emptyTitle={t("organization.departmentMemberList.thisDepartmentHasNoStaffYet")}
     />
   );
 }

@@ -10,6 +10,8 @@ import { ProfileAvatarForm } from "./ProfileAvatarForm";
 import { RecoveryEmailForm } from "./RecoveryEmailForm";
 import { ThemePicker } from "./ThemePicker";
 
+import { RichText } from "@/components/i18n/RichText";
+import { useI18n } from "@/lib/i18n/useI18n";
 interface SettingsViewProps {
   onOpenDrive: () => void;
 }
@@ -17,6 +19,7 @@ interface SettingsViewProps {
 /** Extracted from the old app/dashboard/settings/page.tsx so TabContentRenderer can render it
  * per-tab; the Drive link is a callback now (tab navigation) rather than a real <Link>. */
 export function SettingsView({ onOpenDrive }: SettingsViewProps) {
+  const { t } = useI18n();
   const { data: currentUser } = useCurrentUser();
   const { startTour } = useTour();
   if (!currentUser) return null;
@@ -40,20 +43,25 @@ export function SettingsView({ onOpenDrive }: SettingsViewProps) {
         <KpiConfigForm currentUser={currentUser} />
       </div>
       <div className="pt-8">
-        <h2 className="mb-2 text-lg font-semibold text-fg">Hướng dẫn sử dụng</h2>
-        <p className="mb-3 text-sm text-fg-muted">Xem lại vòng làm quen với các tính năng chính của Orbit.</p>
+        <h2 className="mb-2 text-lg font-semibold text-fg">{t("settings.settingsView.userGuide")}</h2>
+        <p className="mb-3 text-sm text-fg-muted">{t("settings.settingsView.watchTheTourOfOrbitS")}</p>
         <Button variant="secondary" onClick={startTour}>
-          Xem lại hướng dẫn
+          {t("settings.settingsView.watchTheGuideAgain")}
         </Button>
       </div>
       <div className="pt-8">
         <h2 className="mb-2 text-lg font-semibold text-fg">Google Drive</h2>
         <p className="text-sm text-fg-muted">
-          Quản lý kết nối và danh mục folder ở{" "}
-          <button type="button" onClick={onOpenDrive} className="text-primary-text hover:underline">
-            trang Google Drive
-          </button>
-          .
+          <RichText
+            text={t("settings.settingsView.manageDriveIntro")}
+            values={{
+              link: (
+                <button type="button" onClick={onOpenDrive} className="text-primary-text hover:underline">
+                  {t("settings.settingsView.googleDrivePage")}
+                </button>
+              ),
+            }}
+          />
         </p>
       </div>
     </div>

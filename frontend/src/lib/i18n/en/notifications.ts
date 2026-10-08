@@ -1,0 +1,25 @@
+import type { notifications as vi } from "../vi/notifications";
+
+export const notifications: Record<keyof typeof vi, string> = {
+  "notifications.notificationBell.markAllAsRead": "Mark all as read",
+  "notifications.notificationBell.noNotificationsYet": "No notifications yet",
+  "notifications.text.calendarInvite.body": "{actor} added \"{title}\" to your calendar",
+  "notifications.text.calendarInvite.title": "A new event needs your confirmation",
+  "notifications.text.folderRequest.body": "{actor} asked for access to \"{folder}\"",
+  "notifications.text.folderRequest.title": "New folder access request",
+  "notifications.text.message.attachment": "Sent an attachment",
+  "notifications.text.message.title": "New message from {actor}",
+  "notifications.text.projectInvited.body": "{actor} invited your department to join \"{project}\"",
+  "notifications.text.projectInvited.title": "Project invitation",
+  "notifications.text.projectMemberAdded.body": "{actor} added you to \"{project}\"",
+  "notifications.text.projectMemberAdded.title": "You were added to a project",
+  "notifications.text.projectResponded.accepted": "{department} accepted joining \"{project}\"",
+  "notifications.text.projectResponded.declined": "{department} declined to join \"{project}\"",
+  "notifications.text.projectResponded.title": "Project invitation response",
+  "notifications.text.taskAccepted.body": "{actor} accepted \"{title}\"",
+  "notifications.text.taskAssigned.body": "{actor} assigned \"{title}\"",
+  "notifications.text.taskAssigned.title": "You have a new task",
+  "notifications.text.taskCompleted.body": "{actor} completed \"{title}\"",
+  "notifications.text.taskDeclined.body": "{actor} declined \"{title}\"",
+  "notifications.text.taskUpdate.title": "Task update",
+};

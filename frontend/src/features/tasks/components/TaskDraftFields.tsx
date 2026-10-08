@@ -12,6 +12,7 @@ import {
   TASK_ATTACHMENT_ACCEPT,
 } from "../types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -26,6 +27,7 @@ export function ChecklistDraftEditor({
   items: string[];
   onChange: (items: string[]) => void;
 }) {
+  const { t } = useI18n();
   const [draft, setDraft] = useState("");
 
   function add() {
@@ -38,7 +40,7 @@ export function ChecklistDraftEditor({
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm font-medium text-fg-soft">
-        Checklist (tuỳ chọn, {items.length}/{MAX_CHECKLIST_ITEMS})
+        {t("tasks.taskDraftFields.checklistOptionalCount", { count: items.length, max: MAX_CHECKLIST_ITEMS })}
       </p>
       {items.length > 0 && (
         <ul className="flex flex-col gap-1">
@@ -51,7 +53,7 @@ export function ChecklistDraftEditor({
               <button
                 type="button"
                 onClick={() => onChange(items.filter((_, i) => i !== index))}
-                aria-label={`Bỏ mục ${text}`}
+                aria-label={t("tasks.taskDraftFields.removeItemText", { text })}
                 className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-fg-faint hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               >
                 <X size={14} aria-hidden />
@@ -72,8 +74,8 @@ export function ChecklistDraftEditor({
               add();
             }
           }}
-          placeholder="Thêm một bước..."
-          aria-label="Mục checklist mới"
+          placeholder={t("tasks.taskChecklist.addAStep")}
+          aria-label={t("tasks.taskChecklist.newChecklistItem")}
           className="min-w-0 flex-1 rounded border border-line bg-surface px-2.5 py-1.5 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         />
         <Button
@@ -83,7 +85,7 @@ export function ChecklistDraftEditor({
           disabled={!draft.trim() || items.length >= MAX_CHECKLIST_ITEMS}
         >
           <Plus size={14} aria-hidden className="mr-1 inline" />
-          Thêm
+          {t("common.add")}
         </Button>
       </div>
     </div>
@@ -98,6 +100,7 @@ export function AttachmentDraftPicker({
   files: File[];
   onChange: (files: File[]) => void;
 }) {
+  const { t } = useI18n();
   const inputRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
 
@@ -107,9 +110,9 @@ export function AttachmentDraftPicker({
     const accepted: File[] = [];
     for (const file of picked) {
       if (file.size > MAX_TASK_ATTACHMENT_BYTES) {
-        showToast("error", `${file.name}: tối đa 5MB`);
+        showToast("error", t("tasks.taskDraftFields.name5mbAtMost", { name: file.name }));
       } else if (files.length + accepted.length >= MAX_TASK_ATTACHMENTS) {
-        showToast("error", `Tối đa ${MAX_TASK_ATTACHMENTS} tệp`);
+        showToast("error", t("tasks.taskDraftFields.atMostMaxTaskAttachmentsFiles", { MAX_TASK_ATTACHMENTS }));
         break;
       } else {
         accepted.push(file);
@@ -122,7 +125,7 @@ export function AttachmentDraftPicker({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-medium text-fg-soft">
-          Tài liệu đính kèm (tuỳ chọn, {files.length}/{MAX_TASK_ATTACHMENTS})
+          {t("tasks.taskDraftFields.attachmentsOptionalCount", { count: files.length, max: MAX_TASK_ATTACHMENTS })}
         </p>
         <input
           ref={inputRef}
@@ -131,17 +134,17 @@ export function AttachmentDraftPicker({
           accept={TASK_ATTACHMENT_ACCEPT}
           onChange={handlePick}
           className="hidden"
-          aria-label="Chọn tệp đính kèm"
+          aria-label={t("common.chooseAnAttachment")}
         />
         <Button
           type="button"
           variant="secondary"
           onClick={() => inputRef.current?.click()}
           disabled={files.length >= MAX_TASK_ATTACHMENTS}
-          title="Ảnh, PDF, Word, Excel, PowerPoint, ZIP, TXT, CSV - tối đa 5MB mỗi tệp"
+          title={t("tasks.taskDraftFields.imagesPdfWordExcelPowerpointZip")}
         >
           <Paperclip size={14} aria-hidden className="mr-1 inline" />
-          Chọn tệp
+          {t("tasks.taskDraftFields.chooseFiles")}
         </Button>
       </div>
       {files.length > 0 && (
@@ -157,7 +160,7 @@ export function AttachmentDraftPicker({
               <button
                 type="button"
                 onClick={() => onChange(files.filter((_, i) => i !== index))}
-                aria-label={`Bỏ tệp ${file.name}`}
+                aria-label={t("tasks.taskDraftFields.removeFileName", { name: file.name })}
                 className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-fg-faint hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               >
                 <X size={14} aria-hidden />

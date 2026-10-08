@@ -20,17 +20,10 @@ import {
   useRestoreTask,
   useTasksList,
 } from "../hooks/useTasks";
-import type { Task, TaskPriority, TaskStatus } from "../types";
+import { TASK_PRIORITY_KEYS, TASK_STATUS_KEYS, type Task, type TaskPriority, type TaskStatus } from "../types";
 import { TaskDetailModal } from "./TaskDetailModal";
 
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  ASSIGNED: "Chờ phản hồi",
-  ACCEPTED: "Đã nhận",
-  DECLINED: "Đã từ chối",
-  DONE: "Hoàn thành",
-  CANCELLED: "Đã huỷ",
-};
-
+import { useI18n } from "@/lib/i18n/useI18n";
 const STATUS_TONE: Record<TaskStatus, "neutral" | "info" | "success" | "warning" | "danger"> = {
   ASSIGNED: "info",
   ACCEPTED: "warning",
@@ -39,7 +32,6 @@ const STATUS_TONE: Record<TaskStatus, "neutral" | "info" | "success" | "warning"
   CANCELLED: "neutral",
 };
 
-const PRIORITY_LABELS: Record<TaskPriority, string> = { LOW: "Thấp", MEDIUM: "Trung bình", HIGH: "Cao" };
 const PRIORITY_TONE: Record<TaskPriority, "neutral" | "warning" | "danger"> = {
   LOW: "neutral",
   MEDIUM: "warning",
@@ -74,6 +66,7 @@ interface TaskListProps {
 }
 
 export function TaskList({ currentUser }: TaskListProps) {
+  const { t } = useI18n();
   const { data: tasks, isLoading } = useTasksList();
   const accept = useAcceptTask();
   const decline = useDeclineTask();
@@ -91,61 +84,61 @@ export function TaskList({ currentUser }: TaskListProps) {
   }
 
   function handleAccept(id: number) {
-    accept.mutate(id, { onSuccess: () => showToast("success", "Đã nhận việc"), onError: onErrorToast("Không nhận được việc") });
+    accept.mutate(id, { onSuccess: () => showToast("success", t("tasks.taskList.taskAccepted")), onError: onErrorToast(t("tasks.taskList.couldnTAcceptTheTask")) });
   }
   function handleDecline(id: number) {
-    decline.mutate(id, { onSuccess: () => showToast("success", "Đã từ chối việc"), onError: onErrorToast("Không từ chối được việc") });
+    decline.mutate(id, { onSuccess: () => showToast("success", t("tasks.taskList.taskDeclined")), onError: onErrorToast(t("tasks.taskList.couldnTDeclineTheTask")) });
   }
   function handleComplete(id: number) {
-    complete.mutate(id, { onSuccess: () => showToast("success", "Đã hoàn thành việc"), onError: onErrorToast("Không cập nhật được việc") });
+    complete.mutate(id, { onSuccess: () => showToast("success", t("tasks.taskList.taskCompleted")), onError: onErrorToast(t("tasks.taskList.couldnTUpdateTheTask")) });
   }
   function handleCancel(id: number) {
-    cancel.mutate(id, { onSuccess: () => showToast("success", "Đã huỷ việc"), onError: onErrorToast("Không huỷ được việc") });
+    cancel.mutate(id, { onSuccess: () => showToast("success", t("tasks.taskList.taskCancelled")), onError: onErrorToast(t("tasks.taskList.couldnTCancelTheTask")) });
   }
   function handleRestore(id: number) {
-    restore.mutate(id, { onSuccess: () => showToast("success", "Đã thêm lại việc"), onError: onErrorToast("Không thêm lại được việc") });
+    restore.mutate(id, { onSuccess: () => showToast("success", t("tasks.taskBoardView.taskRestored")), onError: onErrorToast(t("tasks.taskBoardView.couldnTRestoreTheTask")) });
   }
   function handleDelete(id: number) {
-    remove.mutate(id, { onSuccess: () => showToast("success", "Đã xoá việc"), onError: onErrorToast("Không xoá được việc") });
+    remove.mutate(id, { onSuccess: () => showToast("success", t("tasks.taskBoardView.taskDeleted")), onError: onErrorToast(t("tasks.taskBoardView.couldnTDeleteTheTask")) });
   }
 
-  const activeTasks = useMemo(() => (tasks ?? []).filter((t) => t.status !== "DONE" && t.status !== "CANCELLED"), [tasks]);
-  const doneTasks = useMemo(() => (tasks ?? []).filter((t) => t.status === "DONE"), [tasks]);
-  const cancelledTasks = useMemo(() => (tasks ?? []).filter((t) => t.status === "CANCELLED"), [tasks]);
+  const activeTasks = useMemo(() => (tasks ?? []).filter((task) => task.status !== "DONE" && task.status !== "CANCELLED"), [tasks]);
+  const doneTasks = useMemo(() => (tasks ?? []).filter((task) => task.status === "DONE"), [tasks]);
+  const cancelledTasks = useMemo(() => (tasks ?? []).filter((task) => task.status === "CANCELLED"), [tasks]);
 
   const columns = [
-    { header: "Việc", cell: (t: Task) => t.title },
-    { header: "Giao cho", cell: (t: Task) => t.assigneeUserName ?? `Phòng ${t.assigneeDepartmentName}` },
-    { header: "Người giao", cell: (t: Task) => t.assignedByUserName },
-    { header: "Ưu tiên", cell: (t: Task) => <Badge tone={PRIORITY_TONE[t.priority]}>{PRIORITY_LABELS[t.priority]}</Badge> },
-    { header: "Trạng thái", cell: (t: Task) => <Badge tone={STATUS_TONE[t.status]}>{STATUS_LABELS[t.status]}</Badge> },
+    { header: t("tasks.taskList.task"), cell: (task: Task) => task.title },
+    { header: t("tasks.taskList.assignedTo"), cell: (task: Task) => task.assigneeUserName ?? t("tasks.taskList.departmentAssigneedepartmentname", { assigneeDepartmentName: task.assigneeDepartmentName ?? "" }) },
+    { header: t("tasks.taskList.assignedBy"), cell: (task: Task) => task.assignedByUserName },
+    { header: t("tasks.taskList.priority"), cell: (task: Task) => <Badge tone={PRIORITY_TONE[task.priority]}>{t(TASK_PRIORITY_KEYS[task.priority])}</Badge> },
+    { header: t("common.status"), cell: (task: Task) => <Badge tone={STATUS_TONE[task.status]}>{t(TASK_STATUS_KEYS[task.status])}</Badge> },
     {
       header: "",
-      cell: (t: Task) => (
+      cell: (task: Task) => (
         <div className="flex gap-2">
-          {t.status === "ASSIGNED" && canActOnTask(currentUser, t) && (
+          {task.status === "ASSIGNED" && canActOnTask(currentUser, task) && (
             <>
-              <Button onClick={() => handleAccept(t.id)} loading={accept.isPending}>
-                Nhận
+              <Button onClick={() => handleAccept(task.id)} loading={accept.isPending}>
+                {t("tasks.taskList.accept")}
               </Button>
-              <Button variant="secondary" onClick={() => handleDecline(t.id)} loading={decline.isPending}>
-                Từ chối
+              <Button variant="secondary" onClick={() => handleDecline(task.id)} loading={decline.isPending}>
+                {t("common.decline")}
               </Button>
             </>
           )}
-          {t.status === "ACCEPTED" && canActOnTask(currentUser, t) && (
+          {task.status === "ACCEPTED" && canActOnTask(currentUser, task) && (
             <Button
-              onClick={() => handleComplete(t.id)}
+              onClick={() => handleComplete(task.id)}
               loading={complete.isPending}
-              disabled={t.checklist.length > 0}
-              title={t.checklist.length > 0 ? "Tick đủ checklist trong chi tiết việc để hoàn thành" : undefined}
+              disabled={task.checklist.length > 0}
+              title={task.checklist.length > 0 ? t("tasks.taskList.tickTheWholeChecklistInThe") : undefined}
             >
-              Hoàn thành
+              {t("common.done")}
             </Button>
           )}
-          {(t.status === "ASSIGNED" || t.status === "ACCEPTED") && canCancelTask(currentUser, t) && (
-            <Button variant="danger" onClick={() => handleCancel(t.id)} loading={cancel.isPending}>
-              Huỷ
+          {(task.status === "ASSIGNED" || task.status === "ACCEPTED") && canCancelTask(currentUser, task) && (
+            <Button variant="danger" onClick={() => handleCancel(task.id)} loading={cancel.isPending}>
+              {t("common.cancel")}
             </Button>
           )}
         </div>
@@ -154,19 +147,19 @@ export function TaskList({ currentUser }: TaskListProps) {
   ];
 
   const cancelledColumns = [
-    { header: "Việc", cell: (t: Task) => <span className="text-fg-muted line-through">{t.title}</span> },
-    { header: "Giao cho", cell: (t: Task) => t.assigneeUserName ?? `Phòng ${t.assigneeDepartmentName}` },
-    { header: "Người giao", cell: (t: Task) => t.assignedByUserName },
-    { header: "Ưu tiên", cell: (t: Task) => <Badge tone={PRIORITY_TONE[t.priority]}>{PRIORITY_LABELS[t.priority]}</Badge> },
+    { header: t("tasks.taskList.task"), cell: (task: Task) => <span className="text-fg-muted line-through">{task.title}</span> },
+    { header: t("tasks.taskList.assignedTo"), cell: (task: Task) => task.assigneeUserName ?? t("tasks.taskList.departmentAssigneedepartmentname", { assigneeDepartmentName: task.assigneeDepartmentName ?? "" }) },
+    { header: t("tasks.taskList.assignedBy"), cell: (task: Task) => task.assignedByUserName },
+    { header: t("tasks.taskList.priority"), cell: (task: Task) => <Badge tone={PRIORITY_TONE[task.priority]}>{t(TASK_PRIORITY_KEYS[task.priority])}</Badge> },
     {
       header: "",
-      cell: (t: Task) => (
+      cell: (task: Task) => (
         <ActionMenu
           size="sm"
-          label={`Tuỳ chọn cho việc ${t.title}`}
+          label={t("tasks.taskList.optionsForTaskTitle", { title: task.title })}
           items={[
-            { label: "Thêm lại", onSelect: () => handleRestore(t.id), disabled: restore.isPending },
-            { label: "Xoá", onSelect: () => handleDelete(t.id), disabled: remove.isPending, danger: true },
+            { label: t("tasks.taskBoardView.restore"), onSelect: () => handleRestore(task.id), disabled: restore.isPending },
+            { label: t("common.delete"), onSelect: () => handleDelete(task.id), disabled: remove.isPending, danger: true },
           ]}
         />
       ),
@@ -182,13 +175,13 @@ export function TaskList({ currentUser }: TaskListProps) {
       <Table<Task>
         columns={columns}
         rows={activeTasks}
-        getRowKey={(t) => t.id}
-        onRowClick={(t) => setDetailTaskId(t.id)}
+        getRowKey={(task) => task.id}
+        onRowClick={(task) => setDetailTaskId(task.id)}
         emptyState={
           <EmptyState
-            title="Chưa có việc nào trong phạm vi của bạn"
+            title={t("tasks.taskList.noTasksInYourScopeYet")}
             description={
-              currentUser.authorityLevel !== "EMPLOYEE" ? "Giao việc đầu tiên bằng form bên dưới." : undefined
+              currentUser.authorityLevel !== "EMPLOYEE" ? t("tasks.taskList.assignTheFirstTaskWithThe") : undefined
             }
           />
         }
@@ -202,11 +195,11 @@ export function TaskList({ currentUser }: TaskListProps) {
             className="flex items-center gap-1.5 rounded text-sm font-medium text-fg-soft hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             {showDone ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
-            Đã hoàn thành ({doneTasks.length})
+            {t("tasks.taskBoardView.completedCount", { count: doneTasks.length })}
           </button>
           {showDone && (
             <div className="animate-fade-in mt-2">
-              <Table<Task> columns={columns} rows={doneTasks} getRowKey={(t) => t.id} onRowClick={(t) => setDetailTaskId(t.id)} emptyState={null} />
+              <Table<Task> columns={columns} rows={doneTasks} getRowKey={(task) => task.id} onRowClick={(task) => setDetailTaskId(task.id)} emptyState={null} />
             </div>
           )}
         </div>
@@ -220,11 +213,11 @@ export function TaskList({ currentUser }: TaskListProps) {
             className="flex items-center gap-1.5 rounded text-sm font-medium text-fg-soft hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             {showCancelled ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
-            Đã huỷ ({cancelledTasks.length})
+            {t("tasks.taskBoardView.cancelledCount", { count: cancelledTasks.length })}
           </button>
           {showCancelled && (
             <div className="animate-fade-in mt-2">
-              <Table<Task> columns={cancelledColumns} rows={cancelledTasks} getRowKey={(t) => t.id} onRowClick={(t) => setDetailTaskId(t.id)} emptyState={null} />
+              <Table<Task> columns={cancelledColumns} rows={cancelledTasks} getRowKey={(task) => task.id} onRowClick={(task) => setDetailTaskId(task.id)} emptyState={null} />
             </div>
           )}
         </div>

@@ -24,6 +24,7 @@ import { MessageBubble } from "./MessageBubble";
 import { ColleagueSearch } from "./ColleagueSearch";
 import { MessageComposer } from "./MessageComposer";
 
+import { useI18n, type I18n } from "@/lib/i18n/useI18n";
 interface MessengerViewProps {
   currentUser: UserProfile;
   /** Pre-selects a conversation (was `?with=` - tabs aren't URL-driven, so TabContentRenderer
@@ -36,10 +37,10 @@ interface MessengerViewProps {
 
 type ListView = "active" | "archived";
 
-function previewOf(c: Conversation): string {
-  if (c.lastMessageRecalled) return "Tin nhắn đã thu hồi";
+function previewOf(c: Conversation, t: I18n["t"]): string {
+  if (c.lastMessageRecalled) return t("messages.messageBubble.messageRecalled");
   if (c.lastMessageBody) return c.lastMessageBody;
-  if (c.lastMessageAttachmentName) return `Tệp: ${c.lastMessageAttachmentName}`;
+  if (c.lastMessageAttachmentName) return t("messages.messengerView.fileLastmessageattachmentname", { lastMessageAttachmentName: c.lastMessageAttachmentName });
   return "";
 }
 
@@ -49,6 +50,7 @@ export function MessengerView({
   initialWith = null,
   initialWithName = null,
 }: MessengerViewProps) {
+  const { t } = useI18n();
   const [listView, setListView] = useState<ListView>("active");
   const { data: activeConversations, isLoading: conversationsLoading } = useConversations(false);
   const { data: archivedConversations } = useConversations(true);
@@ -78,7 +80,7 @@ export function MessengerView({
     activeConversation?.otherUserName ??
     (activeUserId === Number(initialWith) ? initialWithName : null) ??
     pickedName ??
-    (activeUserId ? `Người dùng #${activeUserId}` : null);
+    (activeUserId ? t("messages.messengerView.userActiveuserid", { activeUserId }) : null);
 
   function handleArchive(userId: number, archived: boolean) {
     setOpenMenuUserId(null);
@@ -86,11 +88,11 @@ export function MessengerView({
       { userId, archived },
       {
         onSuccess: () => {
-          showToast("success", archived ? "Đã chuyển vào Lưu trữ" : "Đã đưa ra khỏi Lưu trữ");
+          showToast("success", archived ? t("messages.messengerView.movedToArchive") : t("messages.messengerView.movedOutOfArchive"));
           if (archived && userId === activeUserId) setActiveUserId(null);
         },
         onError: (err) =>
-          showToast("error", err instanceof ApiRequestError ? err.message : "Không thực hiện được"),
+          showToast("error", err instanceof ApiRequestError ? err.message : t("common.couldnTDoThat")),
       },
     );
   }
@@ -100,11 +102,11 @@ export function MessengerView({
     recallMessage.mutate(messageToRecall.id, {
       onSuccess: () => {
         setMessageToRecall(null);
-        showToast("success", "Đã thu hồi tin nhắn");
+        showToast("success", t("messages.messengerView.messageRecalled"));
       },
       onError: (err) => {
         setMessageToRecall(null);
-        showToast("error", err instanceof ApiRequestError ? err.message : "Không thu hồi được");
+        showToast("error", err instanceof ApiRequestError ? err.message : t("common.couldnTRecallIt"));
       },
     });
   }
@@ -115,18 +117,18 @@ export function MessengerView({
         className={`${activeUserId != null ? "hidden md:flex" : "flex"} w-full shrink-0 flex-col gap-2 overflow-y-auto md:w-64 rounded-lg glass-card p-3`}
       >
         <Tabs
-          label="Danh sách hội thoại"
+          label={t("messages.messengerView.conversationList")}
           variant="segmented"
           value={listView}
           onChange={setListView}
           items={[
-            { id: "active", label: "Tin nhắn" },
+            { id: "active", label: t("common.messages") },
             {
               id: "archived",
               label: (
                 <>
                   <Archive size={14} aria-hidden />
-                  Lưu trữ
+                  {t("messages.messengerView.archive")}
                   {(archivedConversations ?? []).length > 0 && (
                     <span className="text-fg-faint">{archivedConversations?.length}</span>
                   )}
@@ -152,11 +154,11 @@ export function MessengerView({
           <EmptyState
             title={
               listView === "archived"
-                ? "Chưa có hội thoại nào được lưu trữ"
-                : "Chưa có hội thoại nào"
+                ? t("messages.messengerView.noArchivedConversationsYet")
+                : t("messages.messengerView.noConversationsYet")
             }
             description={
-              listView === "archived" ? undefined : "Nhắn tin cho ai đó từ trang Phòng ban."
+              listView === "archived" ? undefined : t("messages.messengerView.messageSomeoneFromTheDepartmentsPage")
             }
           />
         ) : (
@@ -168,7 +170,7 @@ export function MessengerView({
                   className="flex w-full items-center gap-2 rounded bg-surface-muted px-2 py-2 text-left text-sm"
                 >
                   <Avatar avatarUrl={null} fullName={activeName ?? "?"} size="sm" />
-                  {activeName ?? `Người dùng #${activeUserId}`}
+                  {activeName ?? t("messages.messengerView.userActiveuserid", { activeUserId })}
                 </button>
               </li>
             )}
@@ -188,7 +190,7 @@ export function MessengerView({
                   <span className="min-w-0 flex-1">
                     <span className="flex w-full items-center justify-between font-medium text-fg">
                       <span className="truncate">
-                        {c.otherUserName ?? `Người dùng #${c.otherUserId}`}
+                        {c.otherUserName ?? t("messages.messengerView.userOtheruserid", { otherUserId: c.otherUserId })}
                       </span>
                       {c.unreadCount > 0 && (
                         <span className="ml-2 rounded-full bg-danger px-1.5 py-0.5 text-[10px] text-danger-foreground">
@@ -199,7 +201,7 @@ export function MessengerView({
                     <span
                       className={`block w-full truncate text-xs text-fg-muted ${c.lastMessageRecalled ? "italic" : ""}`}
                     >
-                      {previewOf(c)}
+                      {previewOf(c, t)}
                     </span>
                   </span>
                 </button>
@@ -208,7 +210,7 @@ export function MessengerView({
                   onClick={() =>
                     setOpenMenuUserId(openMenuUserId === c.otherUserId ? null : c.otherUserId)
                   }
-                  aria-label="Tuỳ chọn hội thoại"
+                  aria-label={t("messages.messengerView.conversationOptions")}
                   className="absolute right-1 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded text-fg-faint transition-colors duration-150 hover:bg-line hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                 >
                   <DotsThreeVertical size={16} weight="bold" aria-hidden />
@@ -217,7 +219,7 @@ export function MessengerView({
                   <>
                     <button
                       type="button"
-                      aria-label="Đóng"
+                      aria-label={t("common.close")}
                       onClick={() => setOpenMenuUserId(null)}
                       className="fixed inset-0 z-20 cursor-default"
                     />
@@ -228,7 +230,7 @@ export function MessengerView({
                         className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-fg-soft hover:bg-surface-muted"
                       >
                         <Archive size={14} aria-hidden />
-                        {listView === "active" ? "Lưu trữ" : "Bỏ lưu trữ"}
+                        {listView === "active" ? t("messages.messengerView.archive") : t("messages.messengerView.unarchive")}
                       </button>
                     </div>
                   </>
@@ -244,7 +246,7 @@ export function MessengerView({
       >
         {activeUserId == null ? (
           <div className="flex flex-1 items-center justify-center text-sm text-fg-faint">
-            Chọn một hội thoại để bắt đầu
+            {t("messages.messengerView.chooseAConversationToStart")}
           </div>
         ) : (
           <>
@@ -252,7 +254,7 @@ export function MessengerView({
               <button
                 type="button"
                 onClick={() => setActiveUserId(null)}
-                aria-label="Quay lại danh sách hội thoại"
+                aria-label={t("messages.messengerView.backToTheConversationList")}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded text-fg-soft hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary md:hidden"
               >
                 <ArrowLeft size={18} aria-hidden />
@@ -300,20 +302,19 @@ export function MessengerView({
 
       {messageToRecall && (
         <Modal
-          title="Thu hồi tin nhắn?"
+          title={t("messages.messengerView.recallThisMessage")}
           onClose={() => setMessageToRecall(null)}
           widthClassName="max-w-sm"
         >
           <p className="text-sm text-fg-soft">
-            Nội dung và tệp đính kèm sẽ bị xoá cho cả hai bên, chỉ còn dòng &quot;Tin nhắn đã thu
-            hồi&quot;. Không thể hoàn tác.
+            {t("messages.messengerView.theTextAndAttachmentAreDeleted")}
           </p>
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setMessageToRecall(null)}>
-              Huỷ
+              {t("common.cancel")}
             </Button>
             <Button variant="danger" onClick={confirmRecall} loading={recallMessage.isPending}>
-              Thu hồi
+              {t("common.recall")}
             </Button>
           </div>
         </Modal>

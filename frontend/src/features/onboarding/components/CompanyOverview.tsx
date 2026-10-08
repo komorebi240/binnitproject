@@ -16,12 +16,14 @@ import { CompanyEditDialog } from "./CompanyEditDialog";
 import { CompanyImageButton } from "./CompanyImageButton";
 import { CompanyLogo } from "./CompanyLogo";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 /**
  * The company's own page, opened from the company badge in the header: banner, logo, introduction and the
  * departments. Every member sees the same page; an executive also gets quick settings (edit the text, change
  * the logo and banner, jump to department management).
  */
 export function CompanyOverview({ currentUser }: { currentUser: UserProfile }) {
+  const { t } = useI18n();
   const { data: company, isLoading } = useCompany();
   const { data: departments, isLoading: departmentsLoading } = useDepartments();
   const { navigateActiveTab } = useTabs();
@@ -61,21 +63,21 @@ export function CompanyOverview({ currentUser }: { currentUser: UserProfile }) {
             )}
           </div>
           <p className="max-w-3xl whitespace-pre-wrap break-words text-sm text-fg-soft">
-            {company.description ?? (isExecutive ? "Chưa có phần giới thiệu. Bấm \"Sửa thông tin\" để thêm." : "Công ty chưa có phần giới thiệu.")}
+            {company.description ?? (isExecutive ? t("onboarding.companyOverview.noDescriptionYetClickEditDetails") : t("onboarding.companyOverview.theCompanyHasNoDescriptionYet"))}
           </p>
 
           {isExecutive && (
-            <div className="flex flex-wrap gap-2 border-t border-line/60 pt-3" aria-label="Cài đặt nhanh">
+            <div className="flex flex-wrap gap-2 border-t border-line/60 pt-3" aria-label={t("onboarding.companyOverview.quickSettings")}>
               <Button variant="secondary" onClick={() => setEditing(true)}>
-                Sửa thông tin
+                {t("onboarding.companyOverview.editDetails")}
               </Button>
               <CompanyImageButton kind="logo" hasImage={company.logoUrl !== null} />
               <CompanyImageButton kind="banner" hasImage={company.bannerUrl !== null} />
               <Button variant="secondary" onClick={() => navigateActiveTab("/dashboard/departments")}>
-                Quản lý phòng ban
+                {t("onboarding.companyOverview.manageDepartments")}
               </Button>
               <Button variant="secondary" onClick={() => navigateActiveTab("/dashboard/settings")}>
-                Cài đặt
+                {t("common.settings")}
               </Button>
             </div>
           )}
@@ -84,12 +86,12 @@ export function CompanyOverview({ currentUser }: { currentUser: UserProfile }) {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold text-fg">
-          Phòng ban{departments ? ` (${departments.length})` : ""}
+          {t("common.departments")}{departments ? ` (${departments.length})` : ""}
         </h2>
         {departmentsLoading ? (
           <Skeleton rows={2} />
         ) : (departments ?? []).length === 0 ? (
-          <EmptyState title="Công ty chưa có phòng ban nào" />
+          <EmptyState title={t("onboarding.companyOverview.theCompanyHasNoDepartmentsYet")} />
         ) : (
           <AnimatedList className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-3">
             {(departments ?? []).map((department) => (
@@ -102,7 +104,7 @@ export function CompanyOverview({ currentUser }: { currentUser: UserProfile }) {
                   <DepartmentAvatar department={department} />
                   <span className="min-w-0">
                     <span className="block truncate font-medium text-fg">{department.name}</span>
-                    <span className="mt-0.5 line-clamp-3 text-sm text-fg-muted">{department.description ?? "Chưa có mô tả."}</span>
+                    <span className="mt-0.5 line-clamp-3 text-sm text-fg-muted">{department.description ?? t("common.noDescriptionYet")}</span>
                   </span>
                 </button>
               </li>

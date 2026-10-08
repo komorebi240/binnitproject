@@ -14,6 +14,7 @@ import { DottedBackdrop, HELD_BACK, OrbitHalo } from "./LandingDecor";
 import { useRevealOnInput } from "../useRevealOnInput";
 import { OrbitIntroLogo } from "./OrbitIntroLogo";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 /**
  * The sign-in and registration windows (forms, registration wizard) are not needed to show the logo and the two
  * buttons, so their code is a separate chunk, fetched shortly after the landing has settled (see below) or on demand.
@@ -85,6 +86,7 @@ function LandingButton({
  * page, buttons included, at once.
  */
 export function AuthLanding({ initialView = null }: { initialView?: AuthView | null }) {
+  const { t } = useI18n();
   const [phase, setPhase] = useState<Phase>("pending");
   const [animated, setAnimated] = useState(true);
   const [view, setView] = useState<AuthView | null>(null);
@@ -203,7 +205,7 @@ export function AuthLanding({ initialView = null }: { initialView?: AuthView | n
 
   return (
     <AuthPageShell backdrop={<DottedBackdrop />}>
-      <h1 className="sr-only">Orbit - đăng nhập hoặc bắt đầu</h1>
+      <h1 className="sr-only">{t("auth.authLanding.orbitSignInOrGetStarted")}</h1>
 
       {/* Logo, slogan and the two actions form one group; the rings are centred on it, so they enclose all of it. */}
       <div ref={groupRef} className="relative flex w-full flex-col items-center">
@@ -234,16 +236,16 @@ export function AuthLanding({ initialView = null }: { initialView?: AuthView | n
 
         <nav
           ref={actionsRef}
-          aria-label="Đăng nhập hoặc bắt đầu"
+          aria-label={t("auth.authLanding.signInOrGetStarted")}
           className="relative mt-9 flex w-full max-w-xs flex-col items-stretch gap-3 sm:max-w-none sm:flex-row sm:items-center sm:justify-center sm:gap-4"
         >
-          <LandingButton label="Đăng nhập" heldBack={heldBack} onClick={() => setView("login")} />
-          <LandingButton label="Bắt đầu" primary heldBack={heldBack} onClick={() => setView("register")} />
+          <LandingButton label={t("common.signIn")} heldBack={heldBack} onClick={() => setView("login")} />
+          <LandingButton label={t("common.getStarted")} primary heldBack={heldBack} onClick={() => setView("register")} />
           {/* Where the buttons will be: a faint hint for people with a pointer, once the page has been still for a moment. */}
           {waiting && window.matchMedia("(hover: hover)").matches && (
             <p aria-hidden className="landing-hint pointer-events-none absolute inset-0 flex items-center justify-center gap-2 text-sm text-fg-muted">
               <CursorClick size={18} />
-              Di chuyển chuột để tiếp tục
+              {t("auth.authLanding.moveYourMouseToContinue")}
             </p>
           )}
         </nav>

@@ -11,6 +11,7 @@ import {
   type WindowLimits,
 } from "@/lib/floatingWindow";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface FloatingWindowProps {
   /** Shown in the title bar, which is also the drag handle. */
   title: string;
@@ -79,6 +80,7 @@ export function FloatingWindow({
   headerActions,
   children,
 }: FloatingWindowProps) {
+  const { t } = useI18n();
   const activeRef = useRef<ActiveInteraction | null>(null);
   const geometryRef = useRef(geometry);
   geometryRef.current = geometry;
@@ -176,8 +178,8 @@ export function FloatingWindow({
         <div
           role="button"
           tabIndex={0}
-          aria-label={`Di chuyển cửa sổ "${title}" (phím mũi tên; giữ Shift để đổi cỡ)`}
-          title="Kéo để di chuyển"
+          aria-label={t("ui.floatingWindow.moveWindowTitleArrowKeysHold", { title })}
+          title={t("ui.floatingWindow.dragToMove")}
           onKeyDown={handleKeyDown}
           {...pointerHandlers({ kind: "move" })}
           className="flex min-w-0 flex-1 cursor-grab touch-none select-none items-center gap-1 rounded active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
@@ -188,8 +190,8 @@ export function FloatingWindow({
         <button
           type="button"
           onClick={() => onCollapsedChange(!collapsed)}
-          title={collapsed ? "Mở ra" : "Thu gọn"}
-          aria-label={collapsed ? "Mở ra" : "Thu gọn"}
+          title={collapsed ? t("ui.floatingWindow.expand") : t("common.collapse")}
+          aria-label={collapsed ? t("ui.floatingWindow.expand") : t("common.collapse")}
           aria-expanded={!collapsed}
           className="flex h-6 w-6 items-center justify-center rounded text-fg-faint hover:bg-surface-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         >

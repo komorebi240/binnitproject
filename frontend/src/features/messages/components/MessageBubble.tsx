@@ -10,6 +10,7 @@ import type { PresenceStatus } from "@/features/auth/types";
 import { downloadAttachment } from "../api/messageApi";
 import type { Message, MessageAttachment } from "../types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -17,10 +18,11 @@ function formatSize(bytes: number): string {
 }
 
 function ImageAttachment({ attachment }: { attachment: MessageAttachment }) {
+  const { t } = useI18n();
   const src = useAuthedBlobUrl(`/messages/attachments/${attachment.id}`);
   const [open, setOpen] = useState(false);
   if (!src) {
-    return <div className="h-32 w-48 animate-pulse rounded bg-black/10" aria-label="Đang tải ảnh" />;
+    return <div className="h-32 w-48 animate-pulse rounded bg-black/10" aria-label={t("messages.messageBubble.loadingImage")} />;
   }
   return (
     <>
@@ -39,6 +41,7 @@ function ImageAttachment({ attachment }: { attachment: MessageAttachment }) {
 }
 
 function FileAttachment({ attachment }: { attachment: MessageAttachment }) {
+  const { t } = useI18n();
   const { showToast } = useToast();
   const [downloading, setDownloading] = useState(false);
 
@@ -53,7 +56,7 @@ function FileAttachment({ attachment }: { attachment: MessageAttachment }) {
       link.click();
       URL.revokeObjectURL(url);
     } catch {
-      showToast("error", "Không tải được tệp");
+      showToast("error", t("common.couldnTLoadTheFile"));
     } finally {
       setDownloading(false);
     }
@@ -88,6 +91,7 @@ interface MessageBubbleProps {
 
 /** One chat message with the sender's avatar, an optional image/file attachment, and (own messages only) a recall menu. */
 export function MessageBubble({ message, isMine, senderName, senderAvatarUrl, senderPresence, onRecall }: MessageBubbleProps) {
+  const { t, intlLocale } = useI18n();
   const [menuOpen, setMenuOpen] = useState(false);
   const canRecall = isMine && !message.recalled;
 
@@ -107,7 +111,7 @@ export function MessageBubble({ message, isMine, senderName, senderAvatarUrl, se
         {(message.recalled || message.body || (message.attachment && !message.attachment.image)) && (
           <div className={`flex max-w-full flex-col gap-1.5 rounded-lg px-3 py-1.5 text-sm ${bubbleClassName}`}>
             {message.recalled ? (
-              <span>Tin nhắn đã thu hồi</span>
+              <span>{t("messages.messageBubble.messageRecalled")}</span>
             ) : (
               <>
                 {message.attachment && !message.attachment.image && <FileAttachment attachment={message.attachment} />}
@@ -117,7 +121,7 @@ export function MessageBubble({ message, isMine, senderName, senderAvatarUrl, se
           </div>
         )}
         <span className="text-[10px] text-fg-faint">
-          {new Date(message.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+          {new Date(message.createdAt).toLocaleTimeString(intlLocale, { hour: "2-digit", minute: "2-digit" })}
         </span>
       </div>
 
@@ -126,14 +130,14 @@ export function MessageBubble({ message, isMine, senderName, senderAvatarUrl, se
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
-            aria-label="Tuỳ chọn tin nhắn"
+            aria-label={t("messages.messageBubble.messageOptions")}
             className="flex h-7 w-7 items-center justify-center rounded text-fg-faint opacity-0 transition-opacity duration-150 hover:bg-surface-muted hover:text-fg-soft focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary group-hover:opacity-100"
           >
             <DotsThreeVertical size={16} weight="bold" aria-hidden />
           </button>
           {menuOpen && (
             <>
-              <button type="button" aria-label="Đóng" onClick={() => setMenuOpen(false)} className="fixed inset-0 z-20 cursor-default" />
+              <button type="button" aria-label={t("common.close")} onClick={() => setMenuOpen(false)} className="fixed inset-0 z-20 cursor-default" />
               <div className="animate-fade-in absolute bottom-8 right-0 z-30 w-32 rounded glass py-1 text-sm">
                 <button
                   type="button"
@@ -143,7 +147,7 @@ export function MessageBubble({ message, isMine, senderName, senderAvatarUrl, se
                   }}
                   className="block w-full px-3 py-1.5 text-left text-danger hover:bg-surface-muted"
                 >
-                  Thu hồi
+                  {t("common.recall")}
                 </button>
               </div>
             </>

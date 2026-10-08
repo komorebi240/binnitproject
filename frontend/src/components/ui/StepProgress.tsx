@@ -5,6 +5,7 @@ import { Check } from "@phosphor-icons/react";
 import { gsap, prefersReducedMotion, useGSAP } from "@/lib/motion";
 import { stepProgressRatio } from "@/lib/motionMath";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 export interface ProgressStep {
   id: string;
   label: string;
@@ -23,6 +24,7 @@ interface StepProgressProps {
  * jumps to its final look). The current step is exposed to screen readers with `aria-current="step"`.
  */
 export function StepProgress({ steps, currentId, label }: StepProgressProps) {
+  const { t } = useI18n();
   const rootRef = useRef<HTMLOListElement>(null);
   const fillRef = useRef<HTMLSpanElement>(null);
   const shownIndexRef = useRef<number | null>(null);
@@ -69,7 +71,7 @@ export function StepProgress({ steps, currentId, label }: StepProgressProps) {
                     : "border-line-strong bg-surface text-fg-faint"
               }`}
             >
-              {done ? <Check size={14} weight="bold" aria-label="Đã xong" /> : index + 1}
+              {done ? <Check size={14} weight="bold" aria-label={t("common.done3")} /> : index + 1}
             </span>
             <span className={`text-center transition-colors duration-200 ${active ? "font-medium text-fg" : "text-fg-muted"}`}>{step.label}</span>
           </li>

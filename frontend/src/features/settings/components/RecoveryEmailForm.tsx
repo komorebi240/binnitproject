@@ -8,12 +8,14 @@ import { ApiRequestError } from "@/lib/api/client";
 import type { UserProfile } from "@/features/auth/types";
 import { useUpdateProfile } from "../hooks/useSettings";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface RecoveryEmailFormProps {
   currentUser: UserProfile;
 }
 
 /** "bind gmail" - the email used both for account contact and forgot-password OTP delivery. */
 export function RecoveryEmailForm({ currentUser }: RecoveryEmailFormProps) {
+  const { t } = useI18n();
   const [email, setEmail] = useState(currentUser.email ?? "");
   const [phone, setPhone] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -26,17 +28,17 @@ export function RecoveryEmailForm({ currentUser }: RecoveryEmailFormProps) {
 
     try {
       await updateProfile.mutateAsync({ email, phone: phone || undefined });
-      showToast("success", "Đã cập nhật email khôi phục");
+      showToast("success", t("settings.recoveryEmailForm.recoveryEmailUpdated"));
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không cập nhật được email");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("settings.recoveryEmailForm.couldnTUpdateTheEmail"));
     }
   }
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold text-fg">Email khôi phục mật khẩu</h2>
+      <h2 className="text-lg font-semibold text-fg">{t("settings.recoveryEmailForm.passwordRecoveryEmail")}</h2>
       <p className="text-sm text-fg-muted">
-        Email này nhận mã OTP khi bạn dùng chức năng &quot;Quên mật khẩu&quot; ở màn hình đăng nhập.
+        {t("settings.recoveryEmailForm.thisEmailReceivesTheOneTime")}
       </p>
       <form onSubmit={handleSubmit} className="flex max-w-sm flex-col gap-3">
         <Input
@@ -46,14 +48,14 @@ export function RecoveryEmailForm({ currentUser }: RecoveryEmailFormProps) {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <Input label="Số điện thoại (tuỳ chọn)" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        <Input label={t("common.phoneNumberOptional")} value={phone} onChange={(e) => setPhone(e.target.value)} />
         {errorMessage && (
           <p role="alert" className="text-sm text-danger">
             {errorMessage}
           </p>
         )}
         <Button type="submit" loading={updateProfile.isPending}>
-          Lưu
+          {t("common.save")}
         </Button>
       </form>
     </section>

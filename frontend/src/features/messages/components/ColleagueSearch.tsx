@@ -9,6 +9,7 @@ import type { UserProfile } from "@/features/auth/types";
 import type { PresenceStatus } from "@/features/auth/types";
 import { useDepartmentMembers, useUsers } from "@/features/organization/hooks/useOrganization";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 const MAX_RESULTS = 6;
 
 interface ColleagueSearchProps {
@@ -30,6 +31,7 @@ interface Person {
  * executive, who belongs to no department - everyone in the company.
  */
 export function ColleagueSearch({ currentUser, onPick }: ColleagueSearchProps) {
+  const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const companyWide = currentUser.departmentId == null && currentUser.authorityLevel === "EXECUTIVE";
@@ -56,21 +58,21 @@ export function ColleagueSearch({ currentUser, onPick }: ColleagueSearchProps) {
   return (
     <div className="flex flex-col gap-1">
       <label className="relative block">
-        <span className="sr-only">{companyWide ? "Tìm người trong công ty" : "Tìm đồng nghiệp cùng phòng ban"}</span>
+        <span className="sr-only">{companyWide ? t("messages.colleagueSearch.findPeopleInTheCompany") : t("common.findColleaguesInYourDepartment")}</span>
         <MagnifyingGlass size={14} aria-hidden className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-fg-faint" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => window.setTimeout(() => setFocused(false), 150)}
-          placeholder={companyWide ? "Tìm người trong công ty..." : `Tìm người ở ${currentUser.departmentName ?? "phòng ban"}...`}
+          placeholder={companyWide ? t("messages.colleagueSearch.findPeopleInTheCompany2") : t("messages.colleagueSearch.findPeopleInV", { v: currentUser.departmentName ?? t("messages.colleagueSearch.department") })}
           className="w-full rounded border border-line bg-surface py-1.5 pl-7 pr-2 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         />
       </label>
       {showList && (
         <ul className="flex flex-col gap-0.5 rounded border border-line/60 bg-surface p-1">
           {colleagues.length === 0 ? (
-            <li className="px-2 py-2 text-center text-xs text-fg-faint">Không có ai phù hợp</li>
+            <li className="px-2 py-2 text-center text-xs text-fg-faint">{t("messages.colleagueSearch.noOneMatches")}</li>
           ) : (
             colleagues.map((m) => (
               <li key={m.userId}>

@@ -7,21 +7,27 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { onboardingErrorMessage } from "../errors";
+import { TermsAgreement } from "@/features/legal/components/TermsAgreement";
+import { useCurrentTerms } from "@/features/legal/hooks/useTerms";
 import { useCurrentUser, useLogout } from "@/features/auth/hooks/useAuth";
 import { useAcceptInvitation, useInvitationPreview } from "../hooks/useOnboarding";
-import { LEVEL_LABELS } from "../types";
+import { LEVEL_LABEL_KEYS } from "../types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 /**
  * Invitee side of an email invitation. The company, role and email come from the invitation (shown
  * read-only); the person only chooses a username, their name and a password. An invalid, used,
  * revoked or expired link all look the same on purpose (the backend answers them identically).
  */
 export function AcceptInvitationForm({ token }: { token: string }) {
+  const { t } = useI18n();
   const router = useRouter();
   const { data: preview, isLoading, isError } = useInvitationPreview(token);
   const acceptInvitation = useAcceptInvitation(token);
   const { data: currentUser } = useCurrentUser();
   const logout = useLogout();
+  const { data: terms } = useCurrentTerms();
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const [username, setUsername] = useState("");
   const [fullName, setFullName] = useState("");
@@ -38,11 +44,11 @@ export function AcceptInvitationForm({ token }: { token: string }) {
     return (
       <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center">
         <p className="text-sm text-fg-soft">
-          Bạn đang đăng nhập bằng tài khoản <strong>{currentUser.fullName}</strong> ({currentUser.companyName}).
+          {t("onboarding.acceptInvitationForm.youReSignedInAs")} <strong>{currentUser.fullName}</strong> ({currentUser.companyName}).
         </p>
-        <p className="text-sm text-fg-muted">Hãy đăng xuất để tạo tài khoản mới từ lời mời này.</p>
+        <p className="text-sm text-fg-muted">{t("onboarding.acceptInvitationForm.signOutToCreateANew")}</p>
         <Button loading={logout.isPending} onClick={() => logout.mutate(undefined, { onSuccess: () => window.location.reload() })}>
-          Đăng xuất và tiếp tục
+          {t("onboarding.acceptInvitationForm.signOutAndContinue")}
         </Button>
       </div>
     );
@@ -52,11 +58,11 @@ export function AcceptInvitationForm({ token }: { token: string }) {
     return (
       <div className="flex w-full max-w-sm flex-col items-center gap-3 text-center">
         <p role="alert" className="text-sm text-danger">
-          Lời mời này không hợp lệ hoặc đã hết hạn.
+          {t("onboarding.acceptInvitationForm.thisInvitationIsInvalidOrHas")}
         </p>
-        <p className="text-sm text-fg-muted">Hãy nhờ người mời gửi lại lời mời mới.</p>
+        <p className="text-sm text-fg-muted">{t("onboarding.acceptInvitationForm.askThePersonWhoInvitedYou")}</p>
         <Link href="/login" className="text-sm text-primary-text hover:underline">
-          Đến trang đăng nhập
+          {t("onboarding.acceptInvitationForm.goToTheSignInPage")}
         </Link>
       </div>
     );
@@ -66,14 +72,15 @@ export function AcceptInvitationForm({ token }: { token: string }) {
     event.preventDefault();
     setErrorMessage(null);
     if (password !== confirmPassword) {
-      setErrorMessage("Mật khẩu nhập lại không khớp");
+      setErrorMessage(t("onboarding.acceptInvitationForm.thePasswordsDonTMatch"));
       return;
     }
+    if (!terms) return;
     try {
-      await acceptInvitation.mutateAsync({ username: username.trim(), fullName: fullName.trim(), password });
+      await acceptInvitation.mutateAsync({ username: username.trim(), fullName: fullName.trim(), password, acceptedTermsVersion: terms.version });
       router.push("/dashboard");
     } catch (err) {
-      setErrorMessage(onboardingErrorMessage(err, "Không tạo được tài khoản"));
+      setErrorMessage(onboardingErrorMessage(err, t("onboarding.acceptInvitationForm.couldnTCreateTheAccount"), t));
     }
   }
 
@@ -81,24 +88,24 @@ export function AcceptInvitationForm({ token }: { token: string }) {
     <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4">
       <div className="rounded-lg glass-card p-3 text-sm">
         <p className="text-fg-muted">
-          <span className="font-medium text-fg">{preview.inviterName}</span> mời bạn tham gia
+          <span className="font-medium text-fg">{preview.inviterName}</span> {t("onboarding.acceptInvitationForm.invitesYouToJoin")}
         </p>
         <p className="mt-0.5 text-base font-semibold text-fg">{preview.companyName}</p>
-        <p className="mt-1 text-fg-muted">Vai trò: {LEVEL_LABELS[preview.authorityLevel]}</p>
+        <p className="mt-1 text-fg-muted">{t("onboarding.acceptInvitationForm.role")} {t(LEVEL_LABEL_KEYS[preview.authorityLevel])}</p>
       </div>
       <Input label="Email" type="email" value={preview.email} readOnly disabled />
       <Input
-        label="Tên đăng nhập"
+        label={t("common.username")}
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         autoComplete="username"
         pattern="[A-Za-z0-9._\-]{3,100}"
-        title="3-100 ký tự: chữ, số, dấu chấm, gạch dưới hoặc gạch ngang"
+        title={t("onboarding.acceptInvitationForm.3100CharactersLettersDigitsDots")}
         required
       />
-      <Input label="Họ tên" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" maxLength={200} required />
+      <Input label={t("common.fullName")} value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" maxLength={200} required />
       <Input
-        label="Mật khẩu (8-72 ký tự)"
+        label={t("onboarding.acceptInvitationForm.password872Characters")}
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
@@ -108,7 +115,7 @@ export function AcceptInvitationForm({ token }: { token: string }) {
         required
       />
       <Input
-        label="Nhập lại mật khẩu"
+        label={t("onboarding.acceptInvitationForm.reEnterThePassword")}
         type="password"
         value={confirmPassword}
         onChange={(e) => setConfirmPassword(e.target.value)}
@@ -122,8 +129,9 @@ export function AcceptInvitationForm({ token }: { token: string }) {
           {errorMessage}
         </p>
       )}
-      <Button type="submit" loading={acceptInvitation.isPending}>
-        Tạo tài khoản và vào Orbit
+      <TermsAgreement agreed={agreedToTerms} onChange={setAgreedToTerms} />
+      <Button type="submit" loading={acceptInvitation.isPending} disabled={!agreedToTerms || !terms}>
+        {t("onboarding.acceptInvitationForm.createAccountAndEnterOrbit")}
       </Button>
     </form>
   );

@@ -1,0 +1,28 @@
+import type { calendar as vi } from "../vi/calendar";
+
+export const calendar: Record<keyof typeof vi, string> = {
+  "calendar.addEventForUserForm.couldnTAddTheEvent": "Couldn't add the event",
+  "calendar.addEventForUserForm.eventSentWaitingForThemTo": "Event sent, waiting for them to confirm",
+  "calendar.addEventForUserForm.sendEvent": "Send event",
+  "calendar.calendarEventFields.businessTripFrom": "Business trip from",
+  "calendar.calendarEventFields.startTime": "Start time",
+  "calendar.calendarEventFields.to": "To",
+  "calendar.calendarEventFields.type": "Type",
+  "calendar.calendarView.accept": "Accept",
+  "calendar.calendarView.addANewEvent": "Add a new event",
+  "calendar.calendarView.addedByName": "(added by {name})",
+  "calendar.calendarView.couldnTAddTheEvent": "Couldn't add the event",
+  "calendar.calendarView.eventAdded": "Event added",
+  "calendar.calendarView.eventCountSuffix_one": ", {count} event",
+  "calendar.calendarView.eventCountSuffix_other": ", {count} events",
+  "calendar.calendarView.eventsWaitingForYourConfirmation": "Events waiting for your confirmation",
+  "calendar.calendarView.monthYear": "{monthName} {year}",
+  "calendar.calendarView.moreCount": "+{count} more",
+  "calendar.calendarView.noEventsOnThisDay": "No events on this day",
+  "calendar.calendarView.noUpcomingEvents": "No upcoming events",
+  "calendar.calendarView.vV2V3": "{v}/{v2}/{v3}",
+  "calendar.calendarView.vV2V32": "{v}/{v2}{v3}",
+  "calendar.eventRange.businessTrip": "Business trip",
+  "calendar.eventRange.meeting": "Meeting",
+  "calendar.eventRange.other": "Other",
+};

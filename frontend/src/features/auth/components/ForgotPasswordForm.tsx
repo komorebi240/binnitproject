@@ -11,12 +11,14 @@ import { StepTransition } from "@/components/ui/StepTransition";
 import { ApiRequestError } from "@/lib/api/client";
 import { useForgotPassword, useResetPassword } from "../hooks/useAuth";
 
+import type { TranslationKey } from "@/lib/i18n/dictionary";
+import { useI18n } from "@/lib/i18n/useI18n";
 type Step = "request" | "reset" | "done";
 
-const STEPS: { id: Step; label: string }[] = [
-  { id: "request", label: "Nhận mã" },
-  { id: "reset", label: "Mật khẩu mới" },
-  { id: "done", label: "Hoàn tất" },
+const STEPS: { id: Step; labelKey: TranslationKey }[] = [
+  { id: "request", labelKey: "auth.forgotPasswordForm.getACode" },
+  { id: "reset", labelKey: "common.newPassword" },
+  { id: "done", labelKey: "common.done2" },
 ];
 
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -29,6 +31,7 @@ const REDIRECT_AFTER_SECONDS = 4;
  * (see AuthController/AuthServiceImpl), so this screen must not either.
  */
 export function ForgotPasswordForm() {
+  const { t } = useI18n();
   const [step, setStep] = useState<Step>("request");
   const [username, setUsername] = useState("");
   const [otp, setOtp] = useState("");
@@ -66,12 +69,12 @@ export function ForgotPasswordForm() {
     try {
       await forgotPassword.mutateAsync(username);
       setInfoMessage(
-        "Nếu tài khoản tồn tại, mã OTP đã được gửi tới email đã đăng ký. Hãy kiểm tra cả thư mục spam.",
+        t("auth.forgotPasswordForm.ifTheAccountExistsAOne"),
       );
       setCooldown(RESEND_COOLDOWN_SECONDS);
       setStep("reset");
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không gửi được yêu cầu");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("common.couldnTSendTheRequest"));
     }
   }
 
@@ -80,7 +83,7 @@ export function ForgotPasswordForm() {
     setErrorMessage(null);
 
     if (newPassword !== confirmPassword) {
-      setErrorMessage("Mật khẩu mới nhập lại không khớp");
+      setErrorMessage(t("common.theNewPasswordsDonTMatch"));
       return;
     }
 
@@ -88,7 +91,7 @@ export function ForgotPasswordForm() {
       await resetPassword.mutateAsync({ username, otp, newPassword });
       setStep("done");
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không đặt lại được mật khẩu");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("auth.forgotPasswordForm.couldnTResetThePassword"));
     }
   }
 
@@ -97,7 +100,7 @@ export function ForgotPasswordForm() {
 
   return (
     <div className="flex w-full flex-col items-center gap-5">
-      <StepProgress steps={STEPS} currentId={step} label="Các bước đặt lại mật khẩu" />
+      <StepProgress steps={STEPS.map(({ id, labelKey }) => ({ id, label: t(labelKey) }))} currentId={step} label={t("auth.forgotPasswordForm.passwordResetSteps")} />
 
       <StepTransition
         stepKey={step}
@@ -107,14 +110,14 @@ export function ForgotPasswordForm() {
         {step === "request" && (
           <form onSubmit={handleRequestOtp} className="flex w-full flex-col gap-4">
             <Input
-              label="Tên đăng nhập hoặc email"
+              label={t("auth.forgotPasswordForm.usernameOrEmail")}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
               required
             />
             <Button type="submit" loading={forgotPassword.isPending}>
-              Gửi mã OTP
+              {t("auth.forgotPasswordForm.sendCode")}
             </Button>
           </form>
         )}
@@ -123,7 +126,7 @@ export function ForgotPasswordForm() {
           <form onSubmit={handleResetPassword} className="flex w-full flex-col gap-4">
             {infoMessage && <Alert tone="success">{infoMessage}</Alert>}
             <Input
-              label="Mã OTP"
+              label={t("auth.forgotPasswordForm.oneTimeCode")}
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
               inputMode="numeric"
@@ -131,7 +134,7 @@ export function ForgotPasswordForm() {
               required
             />
             <Input
-              label="Mật khẩu mới"
+              label={t("common.newPassword")}
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -141,7 +144,7 @@ export function ForgotPasswordForm() {
             />
             <div className="flex flex-col gap-1">
               <Input
-                label="Nhập lại mật khẩu mới"
+                label={t("common.reEnterTheNewPassword")}
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -153,11 +156,11 @@ export function ForgotPasswordForm() {
                 aria-live="polite"
                 className={`min-h-4 text-xs transition-colors duration-150 ${passwordsMatch ? "text-success-text" : "text-danger-text"}`}
               >
-                {!confirmTyped ? null : passwordsMatch ? "Mật khẩu khớp" : "Mật khẩu chưa khớp"}
+                {!confirmTyped ? null : passwordsMatch ? t("auth.forgotPasswordForm.passwordsMatch") : t("auth.forgotPasswordForm.passwordsDonTMatch")}
               </p>
             </div>
             <Button type="submit" loading={resetPassword.isPending}>
-              Đặt lại mật khẩu
+              {t("auth.forgotPasswordForm.resetPassword")}
             </Button>
             <div className="flex items-center justify-between text-sm">
               <button
@@ -168,7 +171,7 @@ export function ForgotPasswordForm() {
                 }}
                 className="text-fg-muted hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
               >
-                Đổi tên đăng nhập
+                {t("auth.forgotPasswordForm.changeUsername")}
               </button>
               <button
                 type="button"
@@ -176,7 +179,7 @@ export function ForgotPasswordForm() {
                 disabled={cooldown > 0 || forgotPassword.isPending}
                 className="text-fg-muted hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:no-underline disabled:opacity-60"
               >
-                {cooldown > 0 ? `Gửi lại mã (${cooldown}s)` : "Gửi lại mã"}
+                {cooldown > 0 ? t("common.resendCodeCooldownS", { cooldown }) : t("common.resendCode")}
               </button>
             </div>
           </form>
@@ -184,13 +187,12 @@ export function ForgotPasswordForm() {
 
         {step === "done" && (
           <div className="flex w-full flex-col items-center gap-3 py-2 text-center" role="status">
-            <AnimatedCheck label="Đã đặt lại mật khẩu" />
-            <h2 className="text-lg font-semibold text-fg">Đã đặt lại mật khẩu</h2>
+            <AnimatedCheck label={t("auth.forgotPasswordForm.passwordReset")} />
+            <h2 className="text-lg font-semibold text-fg">{t("auth.forgotPasswordForm.passwordReset")}</h2>
             <p className="text-sm text-fg-muted">
-              Bạn có thể đăng nhập bằng mật khẩu mới. Tự chuyển về trang đăng nhập sau {redirectIn}
-              s.
+              {t("auth.forgotPasswordForm.youCanNowSignInWith", { seconds: redirectIn })}
             </p>
-            <Button onClick={() => router.push("/login?open=login")}>Đăng nhập ngay</Button>
+            <Button onClick={() => router.push("/login?open=login")}>{t("auth.forgotPasswordForm.signInNow")}</Button>
           </div>
         )}
       </StepTransition>

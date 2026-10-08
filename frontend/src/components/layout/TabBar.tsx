@@ -10,6 +10,7 @@ import { sideOf } from "@/lib/tabSplit";
 import { describeTab } from "./tabMeta";
 import { useTabDrag, type DragView, type StripId } from "./useTabDrag";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 type ChipState = "focused" | "partner" | "idle";
 
 const CHIP_STATE_CLASSES: Record<ChipState, string> = {
@@ -102,7 +103,8 @@ function TabChip({
   onSelect: () => void;
   onClose: () => void;
 }) {
-  const { label, icon: TabIcon } = describeTab(tab.path);
+  const { t } = useI18n();
+  const { labelKey, icon: TabIcon } = describeTab(tab.path);
   return (
     <div
       ref={drag.chipRef}
@@ -113,14 +115,14 @@ function TabChip({
     >
       <button type="button" onClick={onSelect} className="flex min-w-0 flex-1 items-center gap-1.5">
         <TabIcon size={14} aria-hidden className="shrink-0" />
-        <span className="truncate">{label}</span>
+        <span className="truncate">{t(labelKey)}</span>
       </button>
       {canClose && (
         <button
           type="button"
           onClick={onClose}
           data-no-drag
-          aria-label={`Đóng tab ${label}`}
+          aria-label={t("layout.tabBar.closeTabLabel", { label: t(labelKey) })}
           className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-fg-faint opacity-0 transition-opacity duration-150 hover:bg-line hover:text-fg-soft focus-visible:opacity-100 group-hover:opacity-100"
         >
           <X size={11} weight="bold" aria-hidden />
@@ -134,7 +136,8 @@ const GHOST_LIFT = "scale(1.06) rotate(-1.5deg)";
 
 /** The chip while it is being dragged: lifts off the bar (always drawn solid, even for a background tab), follows the pointer, glides home on release. */
 function FloatingChip({ view, tab }: { view: DragView; tab: Tab }) {
-  const { label, icon: TabIcon } = describeTab(tab.path);
+  const { t } = useI18n();
+  const { labelKey, icon: TabIcon } = describeTab(tab.path);
   const [lifted, setLifted] = useState(false);
   useEffect(() => {
     // One frame at rest first, so the lift animates instead of starting already tilted.
@@ -157,18 +160,19 @@ function FloatingChip({ view, tab }: { view: DragView; tab: Tab }) {
       }}
     >
       <TabIcon size={14} aria-hidden className="shrink-0" />
-      <span className="truncate">{label}</span>
+      <span className="truncate">{t(labelKey)}</span>
     </div>
   );
 }
 
 function NewTabButton({ onClick }: { onClick: () => void }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
       onClick={onClick}
-      title="Mở tab mới"
-      aria-label="Mở tab mới"
+      title={t("layout.tabBar.openANewTab")}
+      aria-label={t("layout.tabBar.openANewTab")}
       className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center self-center rounded text-fg-muted transition-colors duration-150 hover:bg-white/60 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
     >
       <Plus size={16} aria-hidden />
@@ -177,12 +181,13 @@ function NewTabButton({ onClick }: { onClick: () => void }) {
 }
 
 function SplitToggle({ split, onClick }: { split: boolean; onClick: () => void }) {
+  const { t } = useI18n();
   return (
     <button
       type="button"
       onClick={onClick}
-      title={split ? "Tắt chia đôi màn hình" : "Chia đôi màn hình"}
-      aria-label={split ? "Tắt chia đôi màn hình" : "Chia đôi màn hình"}
+      title={split ? t("layout.tabBar.turnOffSplitScreen") : t("common.splitScreen")}
+      aria-label={split ? t("layout.tabBar.turnOffSplitScreen") : t("common.splitScreen")}
       aria-pressed={split}
       data-tour="split-screen"
       className={`mb-0.5 ml-auto hidden h-7 shrink-0 items-center gap-1.5 self-center rounded px-2 text-xs font-medium transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary md:flex ${
@@ -190,7 +195,7 @@ function SplitToggle({ split, onClick }: { split: boolean; onClick: () => void }
       }`}
     >
       <Columns size={16} aria-hidden />
-      {split ? "Bỏ chia đôi" : "Chia đôi"}
+      {split ? t("layout.tabBar.unsplit") : t("layout.tabBar.split")}
     </button>
   );
 }

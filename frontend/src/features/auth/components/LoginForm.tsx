@@ -10,6 +10,7 @@ import { ApiRequestError } from "@/lib/api/client";
 import { gsap, prefersReducedMotion, useGSAP } from "@/lib/motion";
 import { useLogin } from "../hooks/useAuth";
 
+import { useI18n, type I18n } from "@/lib/i18n/useI18n";
 /** Only the user NAME is remembered on this device, never the password. */
 const REMEMBERED_USERNAME_KEY = "orbit-login-username";
 
@@ -30,20 +31,22 @@ function saveRememberedUsername(username: string | null) {
   }
 }
 
-/** Vietnamese text for a failed sign-in; a wrong user and a wrong password are deliberately indistinguishable. */
-function loginErrorMessage(err: unknown): string {
+/** Text for a failed sign-in; a wrong user and a wrong password are deliberately indistinguishable. */
+function loginErrorMessage(err: unknown, t: I18n["t"]): string {
   if (err instanceof ApiRequestError) {
-    if (err.status === 401) return "Tên đăng nhập hoặc mật khẩu không đúng.";
-    if (err.status === 429) return "Bạn thử quá nhiều lần. Vui lòng đợi ít phút rồi thử lại.";
+    if (err.status === 401) return t("auth.loginForm.incorrectUsernameOrPassword");
+    if (err.status === 429) return t("auth.loginForm.tooManyAttemptsPleaseWaitA");
   }
-  return "Đăng nhập thất bại, vui lòng thử lại.";
+  return t("auth.loginForm.signInFailedPleaseTryAgain");
 }
 
 export function LoginForm({ onRegisterClick }: { onRegisterClick?: () => void }) {
+  const { t } = useI18n();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
+  const [sessionEnded, setSessionEnded] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const login = useLogin();
   const router = useRouter();
@@ -56,6 +59,8 @@ export function LoginForm({ onRegisterClick }: { onRegisterClick?: () => void })
       setUsername(saved);
       setRemember(true);
     }
+    // The dashboard sends someone here with ?expired=1 when their sign-in ended while they were using it.
+    setSessionEnded(new URLSearchParams(window.location.search).get("expired") === "1");
   }, []);
 
   // A wrong password shakes the form once, so the failure is felt as well as read.
@@ -86,15 +91,16 @@ export function LoginForm({ onRegisterClick }: { onRegisterClick?: () => void })
     } catch (err) {
       // Deliberately generic - the backend already collapses "wrong password" and "no such
       // user" into one message so this screen can't be used to enumerate usernames.
-      setErrorMessage(loginErrorMessage(err));
+      setErrorMessage(loginErrorMessage(err, t));
       setPassword("");
     }
   }
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="flex w-full flex-col gap-4">
+      {sessionEnded && !errorMessage && <Alert tone="info">{t("auth.loginForm.sessionEnded")}</Alert>}
       <Input
-        label="Tên đăng nhập"
+        label={t("common.username")}
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         autoComplete="username"
@@ -104,7 +110,7 @@ export function LoginForm({ onRegisterClick }: { onRegisterClick?: () => void })
       />
       <div className="flex flex-col gap-1.5">
         <Input
-          label="Mật khẩu"
+          label={t("common.password")}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -116,7 +122,7 @@ export function LoginForm({ onRegisterClick }: { onRegisterClick?: () => void })
         />
         {capsLock && (
           <p role="status" className="animate-fade-in text-xs text-warning-text">
-            Caps Lock đang bật - mật khẩu phân biệt chữ hoa và chữ thường.
+            {t("auth.loginForm.capsLockIsOnPasswordsAre")}
           </p>
         )}
       </div>
@@ -129,34 +135,34 @@ export function LoginForm({ onRegisterClick }: { onRegisterClick?: () => void })
             onChange={(e) => setRemember(e.target.checked)}
             className="h-4 w-4 rounded border-line-strong accent-primary"
           />
-          Ghi nhớ tên đăng nhập
+          {t("auth.loginForm.rememberMyUsername")}
         </label>
         <Link
           href="/forgot-password"
           className="font-medium text-primary-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         >
-          Quên mật khẩu?
+          {t("auth.loginForm.forgotPassword")}
         </Link>
       </div>
 
       {errorMessage && <Alert tone="danger">{errorMessage}</Alert>}
 
       <Button type="submit" loading={login.isPending} className="w-full py-2.5">
-        {login.isPending ? "Đang đăng nhập" : "Đăng nhập"}
+        {login.isPending ? t("auth.loginForm.signingIn") : t("common.signIn")}
       </Button>
 
       <div className="mt-2 flex items-center gap-3 text-xs text-fg-faint" role="separator">
         <span className="h-px flex-1 bg-line" />
-        Chưa có doanh nghiệp?
+        {t("auth.loginForm.noCompanyYet")}
         <span className="h-px flex-1 bg-line" />
       </div>
       {onRegisterClick ? (
         <button type="button" onClick={onRegisterClick} className={buttonClassName("secondary", "w-full")}>
-          Đăng ký doanh nghiệp
+          {t("auth.authWindows.registerYourCompany")}
         </button>
       ) : (
         <Link href="/register" className={buttonClassName("secondary", "w-full")}>
-          Đăng ký doanh nghiệp
+          {t("auth.authWindows.registerYourCompany")}
         </Link>
       )}
     </form>

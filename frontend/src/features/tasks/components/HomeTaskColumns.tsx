@@ -5,27 +5,28 @@ import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import type { UserProfile } from "@/features/auth/types";
 import { useTasksList } from "../hooks/useTasks";
-import type { Task, TaskPriority, TaskStatus } from "../types";
+import { TASK_PRIORITY_KEYS, type Task, type TaskPriority, type TaskStatus } from "../types";
 import { ChecklistProgress } from "./TaskChecklist";
 import { TaskDetailModal } from "./TaskDetailModal";
+import type { TranslationKey } from "@/lib/i18n/dictionary";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 const RECENT_DONE_LIMIT = 8;
 
 interface ColumnSpec {
   status: TaskStatus;
-  label: string;
+  labelKey: TranslationKey;
   /** Lightly tinted zone per status (Kanban-style); white cards on top keep text contrast. */
   tintClassName: string;
   dotClassName: string;
 }
 
 const COLUMNS: ColumnSpec[] = [
-  { status: "ASSIGNED", label: "Cần làm", tintClassName: "bg-warning/10", dotClassName: "bg-warning" },
-  { status: "ACCEPTED", label: "Đang làm", tintClassName: "bg-primary/10", dotClassName: "bg-primary" },
-  { status: "DONE", label: "Hoàn thành", tintClassName: "bg-success/10", dotClassName: "bg-success" },
+  { status: "ASSIGNED", labelKey: "tasks.homeTaskColumns.toDo", tintClassName: "bg-warning/10", dotClassName: "bg-warning" },
+  { status: "ACCEPTED", labelKey: "common.inProgress", tintClassName: "bg-primary/10", dotClassName: "bg-primary" },
+  { status: "DONE", labelKey: "common.done", tintClassName: "bg-success/10", dotClassName: "bg-success" },
 ];
 
-const PRIORITY_LABELS: Record<TaskPriority, string> = { HIGH: "Cao", MEDIUM: "Trung bình", LOW: "Thấp" };
 const PRIORITY_TONE: Record<TaskPriority, "danger" | "warning" | "neutral"> = {
   HIGH: "danger",
   MEDIUM: "warning",
@@ -40,6 +41,7 @@ function isOverdue(task: Task, now: Date): boolean {
 
 /** Home page's lower half: the caller's own tasks in three status columns. */
 export function HomeTaskColumns({ currentUser }: { currentUser: UserProfile }) {
+  const { t, intlLocale } = useI18n();
   const { data: tasks } = useTasksList();
   const [detailTaskId, setDetailTaskId] = useState<number | null>(null);
   const now = new Date();
@@ -55,7 +57,7 @@ export function HomeTaskColumns({ currentUser }: { currentUser: UserProfile }) {
   }
 
   if (mine.length === 0) {
-    return <EmptyState title="Bạn chưa có việc nào" description="Dùng nút + ở mục Công việc để tự thêm việc cho mình." />;
+    return <EmptyState title={t("tasks.homeTaskColumns.youHaveNoTasksYet")} description={t("tasks.homeTaskColumns.useTheButtonInTasksTo")} />;
   }
 
   return (
@@ -66,11 +68,11 @@ export function HomeTaskColumns({ currentUser }: { currentUser: UserProfile }) {
           <section key={column.status} className={`flex flex-col gap-2 rounded-lg p-3 ${column.tintClassName}`}>
             <div className="flex items-center gap-2">
               <span className={`h-2 w-2 rounded-full ${column.dotClassName}`} aria-hidden />
-              <h3 className="text-sm font-semibold text-fg">{column.label}</h3>
+              <h3 className="text-sm font-semibold text-fg">{t(column.labelKey)}</h3>
               <span className="text-xs text-fg-muted">{items.length}</span>
             </div>
             {items.length === 0 ? (
-              <p className="text-xs text-fg-faint">Không có việc nào</p>
+              <p className="text-xs text-fg-faint">{t("common.noTasks")}</p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {items.map((task) => (
@@ -82,12 +84,12 @@ export function HomeTaskColumns({ currentUser }: { currentUser: UserProfile }) {
                    >
                     <p className="break-words font-medium text-fg">{task.title}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
-                      <Badge tone={PRIORITY_TONE[task.priority]}>{PRIORITY_LABELS[task.priority]}</Badge>
+                      <Badge tone={PRIORITY_TONE[task.priority]}>{t(TASK_PRIORITY_KEYS[task.priority])}</Badge>
                       <ChecklistProgress task={task} />
                       {task.dueDate && (
                         <span className={isOverdue(task, now) ? "font-medium text-danger" : ""}>
-                          {isOverdue(task, now) ? "Quá hạn " : "Hạn "}
-                          {new Date(task.dueDate).toLocaleDateString("vi-VN")}
+                          {isOverdue(task, now) ? t("tasks.homeTaskColumns.overdue") : t("tasks.homeTaskColumns.due")}
+                          {new Date(task.dueDate).toLocaleDateString(intlLocale)}
                         </span>
                       )}
                     </div>

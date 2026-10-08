@@ -4,12 +4,14 @@ import { Alert } from "@/components/ui/Alert";
 import { useCurrentUser } from "@/features/auth/hooks/useAuth";
 import { DrivePanel } from "./DrivePanel";
 
-const DRIVE_ERROR_LABELS: Record<string, string> = {
-  expired_or_invalid_state: "Phiên kết nối đã hết hạn, vui lòng thử lại.",
-  no_refresh_token: "Google không cấp quyền truy cập lâu dài - thử ngắt kết nối trong tài khoản Google rồi kết nối lại.",
-  missing_code: "Kết nối bị huỷ hoặc thiếu thông tin từ Google.",
-  connection_failed: "Kết nối Google Drive thất bại.",
-  access_denied: "Bạn đã từ chối cấp quyền trên Google.",
+import type { TranslationKey } from "@/lib/i18n/dictionary";
+import { useI18n } from "@/lib/i18n/useI18n";
+const DRIVE_ERROR_KEYS: Record<string, TranslationKey> = {
+  expired_or_invalid_state: "drive.driveTabContent.theConnectionSessionExpiredPleaseTry",
+  no_refresh_token: "drive.driveTabContent.googleDidnTGrantLongTerm",
+  missing_code: "drive.driveTabContent.theConnectionWasCancelledOrGoogle",
+  connection_failed: "drive.driveTabContent.connectingGoogleDriveFailed",
+  access_denied: "drive.driveTabContent.youDeclinedAccessOnGoogle",
 };
 
 interface DriveTabContentProps {
@@ -20,6 +22,7 @@ interface DriveTabContentProps {
 }
 
 export function DriveTabContent({ driveConnected, driveError }: DriveTabContentProps) {
+  const { t } = useI18n();
   const { data: currentUser } = useCurrentUser();
   if (!currentUser) return null;
 
@@ -28,10 +31,10 @@ export function DriveTabContent({ driveConnected, driveError }: DriveTabContentP
       {(driveConnected || driveError) && (
         <div className="mb-4">
           {driveConnected && (
-            <Alert tone="success">Đã kết nối Google Drive thành công.</Alert>
+            <Alert tone="success">{t("drive.driveTabContent.googleDriveConnectedSuccessfully")}</Alert>
           )}
           {driveError && (
-            <Alert tone="danger">{DRIVE_ERROR_LABELS[driveError] ?? `Kết nối Google Drive thất bại (${driveError}).`}</Alert>
+            <Alert tone="danger">{DRIVE_ERROR_KEYS[driveError] ? t(DRIVE_ERROR_KEYS[driveError]) : t("drive.driveTabContent.connectingGoogleDriveFailedDriveerror", { driveError })}</Alert>
           )}
         </div>
       )}

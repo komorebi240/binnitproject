@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { X } from "@phosphor-icons/react";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface ModalProps {
   title: string;
   onClose: () => void;
@@ -13,6 +14,7 @@ interface ModalProps {
 
 /** Dimmed overlay + centered dialog; closes on Escape or an overlay click. */
 export function Modal({ title, onClose, children, widthClassName = "max-w-lg" }: ModalProps) {
+  const { t } = useI18n();
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export function Modal({ title, onClose, children, widthClassName = "max-w-lg" }:
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
-      <button type="button" aria-label="Đóng" onClick={onClose} className="absolute inset-0 cursor-default bg-black/45" />
+      <button type="button" aria-label={t("common.close")} onClick={onClose} className="absolute inset-0 cursor-default bg-black/45" />
       <div
         ref={panelRef}
         role="dialog"
@@ -40,7 +42,7 @@ export function Modal({ title, onClose, children, widthClassName = "max-w-lg" }:
           <button
             type="button"
             onClick={onClose}
-            aria-label="Đóng"
+            aria-label={t("common.close")}
             className="flex h-8 w-8 items-center justify-center rounded text-fg-faint transition-colors duration-150 hover:bg-surface-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             <X size={18} aria-hidden />

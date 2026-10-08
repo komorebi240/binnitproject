@@ -10,11 +10,15 @@ export type NotificationType =
   | "PROJECT_RESPONDED"
   | "PROJECT_MEMBER_ADDED";
 
+/** The values a notification text was built from (who, which task...); null for notifications older than the field. */
+export type NotificationParams = Record<string, string>;
+
 export interface Notification {
   id: number;
   type: NotificationType;
   title: string;
   body: string | null;
+  params: NotificationParams | null;
   relatedEntityType: string | null;
   relatedEntityId: number | null;
   read: boolean;

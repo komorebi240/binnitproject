@@ -1,6 +1,8 @@
 "use client";
 
 import { CalendarView } from "@/features/calendar/components/CalendarView";
+import { CrmPanel } from "@/features/crm/components/CrmPanel";
+import { DatasetView } from "@/features/crm/components/DatasetView";
 import { DriveTabContent } from "@/features/drive/components/DriveTabContent";
 import { MessengerView } from "@/features/messages/components/MessengerView";
 import { BroadcastComposer } from "@/features/messages/components/BroadcastComposer";
@@ -24,7 +26,9 @@ import {
   type Tab,
 } from "./TabsContext";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 function TabPage({ tab }: { tab: Tab }) {
+  const { t } = useI18n();
   const { data: currentUser } = useCurrentUser();
   const { navigateActiveTab } = useTabs();
   if (!currentUser) return null;
@@ -53,7 +57,21 @@ function TabPage({ tab }: { tab: Tab }) {
     );
   }
 
+  const crmMatch = pathname.match(/^\/dashboard\/crm\/(\d+)$/);
+  if (crmMatch) {
+    return (
+      <DatasetView
+        datasetId={Number(crmMatch[1])}
+        currentUser={currentUser}
+        onBack={() => navigateActiveTab("/dashboard/crm")}
+        onDeleted={() => navigateActiveTab("/dashboard/crm")}
+      />
+    );
+  }
+
   switch (pathname) {
+    case "/dashboard/crm":
+      return <CrmPanel currentUser={currentUser} />;
     case "/dashboard/projects":
       return <ProjectsPanel currentUser={currentUser} />;
     case "/dashboard/departments":
@@ -65,7 +83,7 @@ function TabPage({ tab }: { tab: Tab }) {
     case "/dashboard/messages":
       return (
         <>
-          <h1 className="mb-4 text-lg font-semibold text-fg">Tin nhắn</h1>
+          <h1 className="mb-4 text-lg font-semibold text-fg">{t("common.messages")}</h1>
           {currentUser.systemAccount && <BroadcastComposer />}
           <Suspense fallback={null}>
             <MessengerView
@@ -138,6 +156,7 @@ interface TabPaneProps {
  * A pane narrower than NARROW_PANE_PX gets the `pane-narrow` class so its content can fall back to fewer columns.
  */
 function TabPane({ tab, visible, split, focused, side, onFocusPane }: TabPaneProps) {
+  const { t } = useI18n();
   const ref = useRef<HTMLElement>(null);
   const narrow = usePaneNarrow(ref, visible);
 
@@ -160,7 +179,7 @@ function TabPane({ tab, visible, split, focused, side, onFocusPane }: TabPanePro
       ref={ref}
       style={{ order: side === "right" ? 3 : 1 }}
       onPointerDownCapture={split && !focused ? onFocusPane : undefined}
-      aria-label={split ? (focused ? "Khung đang làm việc" : "Khung bên cạnh") : undefined}
+      aria-label={split ? (focused ? t("layout.tabContentRenderer.activePane") : t("layout.tabContentRenderer.otherPane")) : undefined}
       className={`min-w-0 flex-1 overflow-y-auto py-6 ${layout} ${narrow ? "pane-narrow" : ""}`}
     >
       <TabPage tab={tab} />
@@ -174,6 +193,7 @@ function TabPane({ tab, visible, split, focused, side, onFocusPane }: TabPanePro
  * tab strips above stay aligned with the panes (both read the same `--split-left`).
  */
 function SplitDivider() {
+  const { t } = useI18n();
   const { splitRatio, setSplitRatio } = useTabs();
 
   function ratioFromPointer(event: React.PointerEvent<HTMLElement>): number | null {
@@ -186,7 +206,7 @@ function SplitDivider() {
     <div
       role="separator"
       aria-orientation="vertical"
-      aria-label="Đổi độ rộng hai khung: kéo, hoặc dùng phím mũi tên trái phải; nhấp đúp để chia đều"
+      aria-label={t("layout.tabContentRenderer.resizeTheTwoPanesDragOr")}
       aria-valuemin={Math.round(MIN_SPLIT_RATIO * 100)}
       aria-valuemax={Math.round(MAX_SPLIT_RATIO * 100)}
       aria-valuenow={Math.round(splitRatio * 100)}

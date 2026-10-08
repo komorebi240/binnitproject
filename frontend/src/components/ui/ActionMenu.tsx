@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { createPortal } from "react-dom";
 import { DotsThreeVertical } from "@phosphor-icons/react";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 export interface ActionMenuItem {
   label: string;
   onSelect: () => void;
@@ -28,7 +29,9 @@ const TRIGGER_GAP = 4;
  * otherwise (the bug on the last rows of a long table). Closes on Escape, outside click, scroll
  * and resize; focus moves into the menu and returns to the trigger.
  */
-export function ActionMenu({ items, label = "Tuỳ chọn", size = "md" }: ActionMenuProps) {
+export function ActionMenu({ items, label, size = "md" }: ActionMenuProps) {
+  const { t } = useI18n();
+  const menuLabel = label ?? t("common.options");
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -93,7 +96,7 @@ export function ActionMenu({ items, label = "Tuỳ chọn", size = "md" }: Actio
         ref={triggerRef}
         type="button"
         onClick={() => (open ? close() : setOpen(true))}
-        aria-label={label}
+        aria-label={menuLabel}
         aria-haspopup="menu"
         aria-expanded={open}
         className={`flex items-center justify-center rounded text-fg-faint transition-colors duration-150 hover:bg-surface-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${triggerSize}`}
@@ -104,7 +107,7 @@ export function ActionMenu({ items, label = "Tuỳ chọn", size = "md" }: Actio
       {open &&
         createPortal(
           <>
-            <button type="button" aria-label="Đóng menu" onClick={close} className="fixed inset-0 z-40 cursor-default" />
+            <button type="button" aria-label={t("common.closeMenu")} onClick={close} className="fixed inset-0 z-40 cursor-default" />
             <div
               ref={menuRef}
               role="menu"

@@ -1,13 +1,15 @@
 /** Pomodoro clock as plain functions of the state and the current time, so it is easy to test and to restore after a reload. */
 
+import type { TranslationKey } from "@/lib/i18n/dictionary";
+
 export type PomodoroPhase = "focus" | "short" | "long";
 export type PomodoroStatus = "idle" | "running" | "paused";
 
 export const PHASE_MINUTES: Record<PomodoroPhase, number> = { focus: 25, short: 5, long: 15 };
-export const PHASE_LABELS: Record<PomodoroPhase, string> = {
-  focus: "Tập trung",
-  short: "Nghỉ ngắn",
-  long: "Nghỉ dài",
+export const PHASE_KEYS: Record<PomodoroPhase, TranslationKey> = {
+  focus: "timer.pomodoro.focus",
+  short: "timer.pomodoro.shortBreak",
+  long: "timer.pomodoro.longBreak",
 };
 /** Every Nth finished focus round is followed by the long break. */
 export const ROUNDS_BEFORE_LONG_BREAK = 4;

@@ -7,6 +7,7 @@ import { searchFeatures } from "./featureSearch";
 import { useTabs } from "./TabsContext";
 import type { AuthorityLevel } from "@/features/auth/types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface QuickSearchProps {
   currentUserAuthorityLevel: AuthorityLevel;
 }
@@ -19,20 +20,21 @@ interface QuickSearchProps {
  * a UX mirror, not an authorization decision).
  */
 export function QuickSearch({ currentUserAuthorityLevel }: QuickSearchProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const { navigateActiveTab } = useTabs();
 
-  const groups = searchFeatures(query, currentUserAuthorityLevel);
+  const groups = searchFeatures(query, currentUserAuthorityLevel, t);
   // One flat list so arrow keys walk pages and their sub-features in the order they are drawn.
   const results = groups.flatMap((group) => [
-    { key: group.entry.href, href: group.entry.href, label: group.entry.label, icon: group.entry.icon, child: false },
+    { key: group.entry.href, href: group.entry.href, label: t(group.entry.labelKey), icon: group.entry.icon, child: false },
     ...group.children.map((child) => ({
-      key: `${group.entry.href}#${child.label}`,
+      key: `${group.entry.href}#${child.labelKey}`,
       href: group.entry.href,
-      label: child.label,
+      label: t(child.labelKey),
       icon: group.entry.icon,
       child: true,
     })),
@@ -82,8 +84,8 @@ export function QuickSearch({ currentUserAuthorityLevel }: QuickSearchProps) {
     <>
       <button
         type="button"
-        title="Tìm kiếm nhanh (Ctrl+K)"
-        aria-label="Tìm kiếm nhanh"
+        title={t("layout.quickSearch.quickSearchCtrlK")}
+        aria-label={t("common.quickSearch")}
         data-tour="search"
         onClick={() => setOpen(true)}
         className="flex h-9 w-9 items-center justify-center rounded transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
@@ -93,7 +95,7 @@ export function QuickSearch({ currentUserAuthorityLevel }: QuickSearchProps) {
 
       {open && (
         <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/20 pt-24">
-          <button type="button" aria-label="Đóng" onClick={() => setOpen(false)} className="animate-fade-in fixed inset-0 cursor-default bg-black/20" />
+          <button type="button" aria-label={t("common.close")} onClick={() => setOpen(false)} className="animate-fade-in fixed inset-0 cursor-default bg-black/20" />
           <div className="animate-pop-in relative glass-window w-full max-w-md origin-top rounded-lg">
             <div className="flex items-center gap-2 border-b border-line/60 px-3 py-2.5">
               <MagnifyingGlass size={18} className="text-fg-faint" aria-hidden />
@@ -105,14 +107,14 @@ export function QuickSearch({ currentUserAuthorityLevel }: QuickSearchProps) {
                   setActiveIndex(0);
                 }}
                 onKeyDown={handleKeyDown}
-                placeholder="Tìm tính năng, trang..."
+                placeholder={t("layout.quickSearch.searchFeaturesPages")}
                 className="flex-1 bg-transparent text-sm outline-none"
               />
               <kbd className="rounded border border-line px-1.5 py-0.5 text-[10px] text-fg-faint">Esc</kbd>
             </div>
             <ul className="max-h-72 overflow-y-auto py-1">
               {results.length === 0 ? (
-                <li className="px-3 py-6 text-center text-sm text-fg-faint">Không tìm thấy</li>
+                <li className="px-3 py-6 text-center text-sm text-fg-faint">{t("layout.quickSearch.noResults")}</li>
               ) : (
                 results.map((item, index) => {
                   const ItemIcon = item.icon;

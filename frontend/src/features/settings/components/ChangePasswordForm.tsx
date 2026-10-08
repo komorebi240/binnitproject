@@ -7,7 +7,9 @@ import { useToast } from "@/components/ui/Toast";
 import { ApiRequestError } from "@/lib/api/client";
 import { useChangePassword } from "../hooks/useSettings";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 export function ChangePasswordForm() {
+  const { t } = useI18n();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -20,7 +22,7 @@ export function ChangePasswordForm() {
     setErrorMessage(null);
 
     if (newPassword !== confirmPassword) {
-      setErrorMessage("Mật khẩu mới nhập lại không khớp");
+      setErrorMessage(t("common.theNewPasswordsDonTMatch"));
       return;
     }
 
@@ -29,18 +31,18 @@ export function ChangePasswordForm() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      showToast("success", "Đã đổi mật khẩu");
+      showToast("success", t("settings.changePasswordForm.passwordChanged"));
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không đổi được mật khẩu");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("settings.changePasswordForm.couldnTChangeThePassword"));
     }
   }
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold text-fg">Đổi mật khẩu</h2>
+      <h2 className="text-lg font-semibold text-fg">{t("common.changePassword")}</h2>
       <form onSubmit={handleSubmit} className="flex max-w-sm flex-col gap-3">
         <Input
-          label="Mật khẩu hiện tại"
+          label={t("settings.changePasswordForm.currentPassword")}
           type="password"
           value={currentPassword}
           onChange={(e) => setCurrentPassword(e.target.value)}
@@ -48,7 +50,7 @@ export function ChangePasswordForm() {
           required
         />
         <Input
-          label="Mật khẩu mới"
+          label={t("common.newPassword")}
           type="password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
@@ -57,7 +59,7 @@ export function ChangePasswordForm() {
           required
         />
         <Input
-          label="Nhập lại mật khẩu mới"
+          label={t("common.reEnterTheNewPassword")}
           type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
@@ -71,7 +73,7 @@ export function ChangePasswordForm() {
           </p>
         )}
         <Button type="submit" loading={changePassword.isPending}>
-          Đổi mật khẩu
+          {t("common.changePassword")}
         </Button>
       </form>
     </section>

@@ -14,10 +14,12 @@ import { TaskDetailModal } from "./TaskDetailModal";
 import { CreateOwnTaskForm } from "./CreateOwnTaskForm";
 import type { Task, TaskStatus } from "../types";
 import type { UserProfile } from "@/features/auth/types";
+import type { TranslationKey } from "@/lib/i18n/dictionary";
 
-const COLUMNS: { status: TaskStatus; label: string }[] = [
-  { status: "ASSIGNED", label: "Cần làm" },
-  { status: "ACCEPTED", label: "Đang làm" },
+import { useI18n } from "@/lib/i18n/useI18n";
+const COLUMNS: { status: TaskStatus; labelKey: TranslationKey }[] = [
+  { status: "ASSIGNED", labelKey: "tasks.homeTaskColumns.toDo" },
+  { status: "ACCEPTED", labelKey: "common.inProgress" },
 ];
 
 const PRIORITY_TONE: Record<Task["priority"], "danger" | "warning" | "neutral"> = {
@@ -28,12 +30,12 @@ const PRIORITY_TONE: Record<Task["priority"], "danger" | "warning" | "neutral"> 
 
 type PeriodFilter = "all" | "today" | "week" | "month" | "year";
 
-const PERIOD_LABELS: Record<PeriodFilter, string> = {
-  all: "Tất cả",
-  today: "Hôm nay",
-  week: "Tuần này",
-  month: "Tháng này",
-  year: "Năm nay",
+const PERIOD_KEYS: Record<PeriodFilter, TranslationKey> = {
+  all: "tasks.taskBoardView.all",
+  today: "tasks.taskBoardView.today",
+  week: "tasks.taskBoardView.thisWeek",
+  month: "tasks.taskBoardView.thisMonth",
+  year: "tasks.taskBoardView.thisYear",
 };
 
 /** Start of the Monday-based week containing `now`. */
@@ -70,6 +72,7 @@ function periodStart(period: PeriodFilter, now: Date): Date | null {
  * cards' month scoping.
  */
 export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
+  const { t, intlLocale } = useI18n();
   const { data: tasks } = useTasksList();
   const [detailTaskId, setDetailTaskId] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
@@ -94,16 +97,16 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
   function handleRestore(id: number) {
     setOpenMenuId(null);
     restoreTask.mutate(id, {
-      onSuccess: () => showToast("success", "Đã thêm lại việc"),
-      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : "Không thêm lại được việc"),
+      onSuccess: () => showToast("success", t("tasks.taskBoardView.taskRestored")),
+      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("tasks.taskBoardView.couldnTRestoreTheTask")),
     });
   }
 
   function handleDelete(id: number) {
     setOpenMenuId(null);
     deleteTask.mutate(id, {
-      onSuccess: () => showToast("success", "Đã xoá việc"),
-      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : "Không xoá được việc"),
+      onSuccess: () => showToast("success", t("tasks.taskBoardView.taskDeleted")),
+      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("tasks.taskBoardView.couldnTDeleteTheTask")),
     });
   }
 
@@ -115,7 +118,7 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
           <button
             type="button"
             onClick={() => setOpenMenuId(openMenuId === task.id ? null : task.id)}
-            aria-label="Tuỳ chọn"
+            aria-label={t("common.options")}
             className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-fg-faint transition-colors duration-150 hover:bg-surface-muted hover:text-fg-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             <DotsThreeVertical size={16} weight="bold" aria-hidden />
@@ -124,7 +127,7 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
 
         {openMenuId === task.id && (
           <>
-            <button type="button" aria-label="Đóng" onClick={() => setOpenMenuId(null)} className="fixed inset-0 z-20 cursor-default" />
+            <button type="button" aria-label={t("common.close")} onClick={() => setOpenMenuId(null)} className="fixed inset-0 z-20 cursor-default" />
             <div className="animate-fade-in absolute right-2 top-9 z-30 w-36 rounded glass py-1 text-sm">
               <button
                 type="button"
@@ -132,7 +135,7 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
                 disabled={restoreTask.isPending}
                 className="block w-full px-3 py-1.5 text-left text-fg-soft hover:bg-surface-muted disabled:opacity-50"
               >
-                Thêm lại
+                {t("tasks.taskBoardView.restore")}
               </button>
               <button
                 type="button"
@@ -140,7 +143,7 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
                 disabled={deleteTask.isPending}
                 className="block w-full px-3 py-1.5 text-left text-danger hover:bg-surface-muted disabled:opacity-50"
               >
-                Xoá
+                {t("common.delete")}
               </button>
             </div>
           </>
@@ -161,7 +164,7 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
         <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
           <Badge tone={PRIORITY_TONE[task.priority]}>{task.priority}</Badge>
           <ChecklistProgress task={task} />
-          {task.dueDate && <span>Deadline: {new Date(task.dueDate).toLocaleDateString("vi-VN")}</span>}
+          {task.dueDate && <span>Deadline: {new Date(task.dueDate).toLocaleDateString(intlLocale)}</span>}
         </div>
       </button>
     );
@@ -172,17 +175,17 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="w-48">
           <Select
-            label="Khoảng thời gian"
+            label={t("tasks.taskBoardView.timeRange")}
             value={period}
             onChange={(e) => setPeriod(e.target.value as PeriodFilter)}
-            options={(Object.keys(PERIOD_LABELS) as PeriodFilter[]).map((p) => ({ value: p, label: PERIOD_LABELS[p] }))}
+            options={(Object.keys(PERIOD_KEYS) as PeriodFilter[]).map((p) => ({ value: p, label: t(PERIOD_KEYS[p]) }))}
           />
         </div>
-        <PlusButton label="Tự thêm việc cho mình" onClick={() => setCreating(true)} />
+        <PlusButton label={t("tasks.taskBoardView.addATaskForYourself2")} onClick={() => setCreating(true)} />
       </div>
 
       {creating && (
-        <Modal title="Thêm việc cho mình" onClose={() => setCreating(false)}>
+        <Modal title={t("tasks.taskBoardView.addATaskForYourself")} onClose={() => setCreating(false)}>
           <CreateOwnTaskForm currentUser={currentUser} onDone={() => setCreating(false)} />
         </Modal>
       )}
@@ -193,12 +196,12 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
           return (
             <div key={column.status} className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-fg">{column.label}</p>
+                <p className="text-sm font-semibold text-fg">{t(column.labelKey)}</p>
                 <span className="text-xs text-fg-faint">{items.length}</span>
               </div>
               <div className="flex flex-col gap-2">
                 {items.length === 0 ? (
-                  <p className="text-xs text-fg-faint">Không có việc nào</p>
+                  <p className="text-xs text-fg-faint">{t("common.noTasks")}</p>
                 ) : (
                   items.map(renderCard)
                 )}
@@ -215,12 +218,12 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
           className="flex items-center gap-1.5 rounded text-sm font-medium text-fg-soft hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         >
           {showCompleted ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
-          Đã hoàn thành ({completedTasks.length})
+          {t("tasks.taskBoardView.completedCount", { count: completedTasks.length })}
         </button>
         {showCompleted && (
           <div className="animate-fade-in mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3 [.pane-narrow_&]:sm:grid-cols-1">
             {completedTasks.length === 0 ? (
-              <p className="text-xs text-fg-faint">Chưa có việc nào hoàn thành trong khoảng thời gian này</p>
+              <p className="text-xs text-fg-faint">{t("tasks.taskBoardView.noTaskCompletedInThisTime")}</p>
             ) : (
               completedTasks.map(renderCard)
             )}
@@ -235,12 +238,12 @@ export function TaskBoardView({ currentUser }: { currentUser: UserProfile }) {
           className="flex items-center gap-1.5 rounded text-sm font-medium text-fg-soft hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         >
           {showCancelled ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
-          Đã huỷ ({cancelledTasks.length})
+          {t("tasks.taskBoardView.cancelledCount", { count: cancelledTasks.length })}
         </button>
         {showCancelled && (
           <div className="animate-fade-in mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3 [.pane-narrow_&]:sm:grid-cols-1">
             {cancelledTasks.length === 0 ? (
-              <p className="text-xs text-fg-faint">Chưa có việc nào bị huỷ trong khoảng thời gian này</p>
+              <p className="text-xs text-fg-faint">{t("tasks.taskBoardView.noTaskCancelledInThisTime")}</p>
             ) : (
               cancelledTasks.map(renderCancelledCard)
             )}

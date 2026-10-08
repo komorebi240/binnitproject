@@ -1,10 +1,11 @@
+import type { TranslationKey } from "@/lib/i18n/dictionary";
 import type { CalendarEvent, CalendarEventType, CreateCalendarEventInput } from "./types";
 
-export const TYPE_LABELS: Record<CalendarEventType, string> = {
-  MEETING: "Họp",
-  DEADLINE: "Hạn chót",
-  BUSINESS_TRIP: "Công tác",
-  OTHER: "Khác",
+export const TYPE_KEYS: Record<CalendarEventType, TranslationKey> = {
+  MEETING: "calendar.eventRange.meeting",
+  DEADLINE: "common.deadline",
+  BUSINESS_TRIP: "calendar.eventRange.businessTrip",
+  OTHER: "calendar.eventRange.other",
 };
 
 export const UPCOMING_LIMIT = 8;
@@ -60,12 +61,12 @@ export function upcomingEvents<T extends EventSpan & Pick<CalendarEvent, "status
     .slice(0, limit);
 }
 
-/** "5/10 09:30" for a one-day event, "5/10 - 9/10" for a trip that spans several days. */
-export function formatSpan(event: EventSpan): string {
+/** "5/10 09:30" for a one-day event, "5/10 - 9/10" for a trip that spans several days (day and month in the order of `locale`). */
+export function formatSpan(event: EventSpan, locale: string): string {
   const start = new Date(event.startAt);
-  const label = (date: Date) => `${date.getDate()}/${date.getMonth() + 1}`;
+  const label = (date: Date) => date.toLocaleDateString(locale, { day: "numeric", month: "numeric" });
   if (!event.endAt || isSameDay(start, new Date(event.endAt))) {
-    return `${label(start)} ${start.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`;
+    return `${label(start)} ${start.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}`;
   }
   return `${label(start)} - ${label(new Date(event.endAt))}`;
 }

@@ -19,19 +19,14 @@ import {
   MAX_TASK_ATTACHMENTS,
   MAX_TASK_ATTACHMENT_BYTES,
   TASK_ATTACHMENT_ACCEPT,
+  TASK_PRIORITY_KEYS,
+  TASK_STATUS_KEYS,
   type TaskAttachment,
   type TaskPriority,
   type TaskStatus,
 } from "../types";
 
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  ASSIGNED: "Chờ phản hồi",
-  ACCEPTED: "Đã nhận",
-  DECLINED: "Đã từ chối",
-  DONE: "Hoàn thành",
-  CANCELLED: "Đã huỷ",
-};
-
+import { useI18n } from "@/lib/i18n/useI18n";
 const STATUS_TONE: Record<TaskStatus, "neutral" | "info" | "success" | "warning" | "danger"> = {
   ASSIGNED: "info",
   ACCEPTED: "warning",
@@ -40,7 +35,6 @@ const STATUS_TONE: Record<TaskStatus, "neutral" | "info" | "success" | "warning"
   CANCELLED: "neutral",
 };
 
-const PRIORITY_LABELS: Record<TaskPriority, string> = { LOW: "Thấp", MEDIUM: "Trung bình", HIGH: "Cao" };
 const PRIORITY_TONE: Record<TaskPriority, "neutral" | "warning" | "danger"> = {
   LOW: "neutral",
   MEDIUM: "warning",
@@ -49,12 +43,12 @@ const PRIORITY_TONE: Record<TaskPriority, "neutral" | "warning" | "danger"> = {
 
 const DRIVE_LINK_PATTERN = /^https:\/\/(drive|docs)\.google\.com\//i;
 
-function formatDate(value: string | null): string {
-  return value ? new Date(value).toLocaleDateString("vi-VN") : "-";
+function formatDate(value: string | null, locale: string): string {
+  return value ? new Date(value).toLocaleDateString(locale) : "-";
 }
 
-function formatDateTime(value: string | null): string {
-  return value ? new Date(value).toLocaleString("vi-VN") : "-";
+function formatDateTime(value: string | null, locale: string): string {
+  return value ? new Date(value).toLocaleString(locale) : "-";
 }
 
 function formatSize(bytes: number): string {
@@ -76,6 +70,7 @@ function PersonRow({
   currentUserId: number;
   onMessage: (userId: number, name: string) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-3 rounded border border-line px-3 py-2">
       <Avatar avatarUrl={null} fullName={name} size="sm" />
@@ -85,7 +80,7 @@ function PersonRow({
       </div>
       {userId != null && userId !== currentUserId && (
         <Button variant="secondary" onClick={() => onMessage(userId, name)}>
-          Nhắn tin
+          {t("common.message")}
         </Button>
       )}
     </div>
@@ -113,6 +108,7 @@ function AttachmentRow({
   removing: boolean;
   onRemove: (attachment: TaskAttachment) => void;
 }) {
+  const { t } = useI18n();
   const { showToast } = useToast();
   const [downloading, setDownloading] = useState(false);
 
@@ -127,7 +123,7 @@ function AttachmentRow({
       link.click();
       URL.revokeObjectURL(url);
     } catch {
-      showToast("error", "Không tải được tệp");
+      showToast("error", t("common.couldnTLoadTheFile"));
     } finally {
       setDownloading(false);
     }
@@ -144,7 +140,7 @@ function AttachmentRow({
         type="button"
         onClick={handleDownload}
         disabled={downloading}
-        title="Tải xuống"
+        title={t("tasks.taskDetailModal.download")}
         className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-60"
       >
         <span className="block truncate text-sm font-medium text-fg">{attachment.fileName}</span>
@@ -156,7 +152,7 @@ function AttachmentRow({
           type="button"
           onClick={() => onRemove(attachment)}
           disabled={removing}
-          aria-label={`Xoá tệp ${attachment.fileName}`}
+          aria-label={t("tasks.taskDetailModal.deleteFileFilename", { fileName: attachment.fileName })}
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-fg-faint hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
         >
           <X size={14} aria-hidden />
@@ -167,6 +163,7 @@ function AttachmentRow({
 }
 
 function DriveLinkSection({ taskId, driveUrl, canManage }: { taskId: number; driveUrl: string | null; canManage: boolean }) {
+  const { t } = useI18n();
   const updateDriveUrl = useUpdateTaskDriveUrl();
   const { showToast } = useToast();
   const [editing, setEditing] = useState(false);
@@ -178,9 +175,9 @@ function DriveLinkSection({ taskId, driveUrl, canManage }: { taskId: number; dri
       {
         onSuccess: () => {
           setEditing(false);
-          showToast("success", value ? "Đã lưu link Drive" : "Đã xoá link Drive");
+          showToast("success", value ? t("tasks.taskDetailModal.driveLinkSaved") : t("tasks.taskDetailModal.driveLinkRemoved"));
         },
-        onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : "Không lưu được link Drive"),
+        onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("tasks.taskDetailModal.couldnTSaveTheDriveLink")),
       },
     );
   }
@@ -189,7 +186,7 @@ function DriveLinkSection({ taskId, driveUrl, canManage }: { taskId: number; dri
     return (
       <div className="flex flex-col gap-2">
         <Input
-          label="Link Google Drive"
+          label={t("tasks.taskDetailModal.googleDriveLink")}
           type="url"
           placeholder="https://drive.google.com/..."
           value={draft}
@@ -197,10 +194,10 @@ function DriveLinkSection({ taskId, driveUrl, canManage }: { taskId: number; dri
         />
         <div className="flex gap-2">
           <Button onClick={() => save(draft.trim())} loading={updateDriveUrl.isPending}>
-            Lưu
+            {t("common.save")}
           </Button>
           <Button variant="secondary" onClick={() => setEditing(false)}>
-            Huỷ
+            {t("common.cancel")}
           </Button>
         </div>
       </div>
@@ -220,7 +217,7 @@ function DriveLinkSection({ taskId, driveUrl, canManage }: { taskId: number; dri
           <span className="truncate">{driveUrl}</span>
         </a>
       ) : (
-        <span className="text-sm text-fg-faint">Chưa có link Drive</span>
+        <span className="text-sm text-fg-faint">{t("tasks.taskDetailModal.noDriveLinkYet")}</span>
       )}
       {canManage && (
         <>
@@ -231,11 +228,11 @@ function DriveLinkSection({ taskId, driveUrl, canManage }: { taskId: number; dri
               setEditing(true);
             }}
           >
-            {driveUrl ? "Sửa" : "Thêm link"}
+            {driveUrl ? t("common.edit") : t("tasks.taskDetailModal.addLink")}
           </Button>
           {driveUrl && (
             <Button variant="secondary" onClick={() => save("")} loading={updateDriveUrl.isPending}>
-              Gỡ
+              {t("common.remove")}
             </Button>
           )}
         </>
@@ -256,6 +253,7 @@ interface TaskDetailModalProps {
  * server says `canManage` (it re-checks on every request).
  */
 export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
+  const { t, intlLocale } = useI18n();
   const { data: tasks } = useTasksList();
   const { data: currentUser } = useCurrentUser();
   const { navigateActiveTab } = useTabs();
@@ -277,14 +275,14 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
     event.target.value = ""; // allow re-picking the same file
     if (!file || !task) return;
     if (file.size > MAX_TASK_ATTACHMENT_BYTES) {
-      showToast("error", "Tệp tối đa 5MB");
+      showToast("error", t("common.filesCanBe5mbAtMost"));
       return;
     }
     addAttachment.mutate(
       { taskId: task.id, file },
       {
-        onSuccess: () => showToast("success", "Đã đính kèm tệp"),
-        onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : "Không đính kèm được tệp"),
+        onSuccess: () => showToast("success", t("tasks.taskDetailModal.fileAttached")),
+        onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("tasks.taskDetailModal.couldnTAttachTheFile")),
       },
     );
   }
@@ -294,8 +292,8 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
     removeAttachment.mutate(
       { taskId: task.id, attachmentId: attachment.id },
       {
-        onSuccess: () => showToast("success", "Đã xoá tệp"),
-        onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : "Không xoá được tệp"),
+        onSuccess: () => showToast("success", t("tasks.taskDetailModal.fileDeleted")),
+        onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("tasks.taskDetailModal.couldnTDeleteTheFile")),
       },
     );
   }
@@ -304,26 +302,26 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
   const canAddFiles = task.canManage && task.status !== "CANCELLED";
 
   return (
-    <Modal title="Chi tiết công việc" onClose={onClose}>
+    <Modal title={t("tasks.taskDetailModal.taskDetails")} onClose={onClose}>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <h4 className="break-words text-lg font-semibold text-fg">{task.title}</h4>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={STATUS_TONE[task.status]}>{STATUS_LABELS[task.status]}</Badge>
-            <Badge tone={PRIORITY_TONE[task.priority]}>Ưu tiên: {PRIORITY_LABELS[task.priority]}</Badge>
+            <Badge tone={STATUS_TONE[task.status]}>{t(TASK_STATUS_KEYS[task.status])}</Badge>
+            <Badge tone={PRIORITY_TONE[task.priority]}>{t("tasks.taskDetailModal.priorityValue", { priority: t(TASK_PRIORITY_KEYS[task.priority]) })}</Badge>
           </div>
         </div>
 
         <div>
-          <p className="mb-1 text-xs font-medium text-fg-muted">Mô tả</p>
+          <p className="mb-1 text-xs font-medium text-fg-muted">{t("common.description")}</p>
           <p className="whitespace-pre-wrap break-words text-sm text-fg">
-            {task.description || <span className="text-fg-faint">Không có mô tả</span>}
+            {task.description || <span className="text-fg-faint">{t("tasks.taskDetailModal.noDescription")}</span>}
           </p>
         </div>
 
         <div className="flex flex-col gap-2">
           <PersonRow
-            label="Người giao việc"
+            label={t("tasks.taskDetailModal.assignedBy")}
             name={task.assignedByUserName}
             userId={task.assignedByUserId}
             currentUserId={currentUser.userId}
@@ -331,7 +329,7 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
           />
           {task.assigneeType === "USER" ? (
             <PersonRow
-              label="Người thực hiện"
+              label={t("tasks.taskDetailModal.assignee")}
               name={task.assigneeUserName ?? "-"}
               userId={task.assigneeUserId}
               currentUserId={currentUser.userId}
@@ -339,7 +337,7 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
             />
           ) : (
             <div className="rounded border border-line px-3 py-2">
-              <p className="text-xs text-fg-muted">Giao cho phòng ban</p>
+              <p className="text-xs text-fg-muted">{t("tasks.taskDetailModal.assignedToADepartment")}</p>
               <p className="text-sm font-medium text-fg">{task.assigneeDepartmentName ?? "-"}</p>
             </div>
           )}
@@ -350,7 +348,7 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
         <section className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs font-medium text-fg-muted">
-              Tài liệu đính kèm ({task.attachments.length}/{MAX_TASK_ATTACHMENTS})
+              {t("tasks.taskDetailModal.attachmentsCount", { count: task.attachments.length, max: MAX_TASK_ATTACHMENTS })}
             </p>
             {canAddFiles && (
               <>
@@ -360,23 +358,23 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
                   accept={TASK_ATTACHMENT_ACCEPT}
                   onChange={handlePick}
                   className="hidden"
-                  aria-label="Chọn tệp đính kèm"
+                  aria-label={t("common.chooseAnAttachment")}
                 />
                 <Button
                   variant="secondary"
                   onClick={() => fileInputRef.current?.click()}
                   loading={addAttachment.isPending}
                   disabled={atLimit}
-                  title={atLimit ? "Đã đủ số tệp tối đa" : "Ảnh, PDF, Word, Excel, PowerPoint, ZIP, TXT, CSV - tối đa 5MB"}
+                  title={atLimit ? t("tasks.taskDetailModal.maximumNumberOfFilesReached") : t("tasks.taskDetailModal.imagesPdfWordExcelPowerpointZip")}
                 >
                   <Paperclip size={14} aria-hidden className="mr-1 inline" />
-                  Thêm tệp
+                  {t("tasks.taskDetailModal.addFile")}
                 </Button>
               </>
             )}
           </div>
           {task.attachments.length === 0 ? (
-            <p className="text-sm text-fg-faint">Chưa có tài liệu đính kèm</p>
+            <p className="text-sm text-fg-faint">{t("tasks.taskDetailModal.noAttachmentsYet")}</p>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {task.attachments.map((attachment) => (
@@ -400,17 +398,17 @@ export function TaskDetailModal({ taskId, onClose }: TaskDetailModalProps) {
 
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <div>
-            <dt className="text-xs text-fg-muted">Hạn chót</dt>
-            <dd className="text-fg">{formatDate(task.dueDate)}</dd>
+            <dt className="text-xs text-fg-muted">{t("common.deadline")}</dt>
+            <dd className="text-fg">{formatDate(task.dueDate, intlLocale)}</dd>
           </div>
           <div>
-            <dt className="text-xs text-fg-muted">Ngày tạo</dt>
-            <dd className="text-fg">{formatDateTime(task.createdAt)}</dd>
+            <dt className="text-xs text-fg-muted">{t("tasks.taskDetailModal.created")}</dt>
+            <dd className="text-fg">{formatDateTime(task.createdAt, intlLocale)}</dd>
           </div>
           {task.completedAt && (
             <div>
-              <dt className="text-xs text-fg-muted">Hoàn thành lúc</dt>
-              <dd className="text-fg">{formatDateTime(task.completedAt)}</dd>
+              <dt className="text-xs text-fg-muted">{t("tasks.taskDetailModal.completedAt")}</dt>
+              <dd className="text-fg">{formatDateTime(task.completedAt, intlLocale)}</dd>
             </div>
           )}
         </dl>

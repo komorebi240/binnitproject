@@ -1,4 +1,5 @@
 import type { AuthorityLevel } from "@/features/auth/types";
+import type { TranslationKey } from "@/lib/i18n/dictionary";
 
 export interface Company {
   id: number;
@@ -48,12 +49,15 @@ export interface RegisterCompanyInput {
   username: string;
   fullName: string;
   password: string;
+  /** The version of the terms the person has just read and accepted. */
+  acceptedTermsVersion: number;
 }
 
 export interface AcceptInvitationInput {
   username: string;
   fullName: string;
   password: string;
+  acceptedTermsVersion: number;
 }
 
 export interface UpdateCompanyInput {
@@ -67,9 +71,15 @@ export interface UpdateCompanyInput {
 export const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 export const LOGO_ACCEPT = "image/png,image/jpeg,image/webp";
 
-export const LEVEL_LABELS: Record<AuthorityLevel, string> = {
-  EXECUTIVE: "Điều hành (CEO/CTO/COO...)",
-  DEPARTMENT_HEAD: "Trưởng phòng",
-  TEAM_LEAD: "Trưởng nhóm",
-  EMPLOYEE: "Nhân viên",
+/** Message keys for an authority level: the long form for pickers, the short form for lists and badges. */
+export const LEVEL_LABEL_KEYS: Record<AuthorityLevel, TranslationKey> = {
+  EXECUTIVE: "common.executiveCeoCtoCoo",
+  DEPARTMENT_HEAD: "common.departmentHead",
+  TEAM_LEAD: "common.teamLead",
+  EMPLOYEE: "common.employee",
+};
+
+export const LEVEL_SHORT_LABEL_KEYS: Record<AuthorityLevel, TranslationKey> = {
+  ...LEVEL_LABEL_KEYS,
+  EXECUTIVE: "common.executive",
 };

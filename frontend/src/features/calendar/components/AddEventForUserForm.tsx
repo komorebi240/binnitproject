@@ -8,6 +8,7 @@ import { useCreateEventForUser } from "../hooks/useCalendar";
 import { EMPTY_EVENT_FORM, toEventInput } from "../eventRange";
 import { CalendarEventFields } from "./CalendarEventFields";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface AddEventForUserFormProps {
   userId: number;
   onDone: () => void;
@@ -18,6 +19,7 @@ interface AddEventForUserFormProps {
  * (it's private, see CalendarServiceImpl), only to propose a PENDING event they must accept.
  */
 export function AddEventForUserForm({ userId, onDone }: AddEventForUserFormProps) {
+  const { t } = useI18n();
   const createEvent = useCreateEventForUser();
   const { showToast } = useToast();
   const [form, setForm] = useState(EMPTY_EVENT_FORM);
@@ -31,10 +33,10 @@ export function AddEventForUserForm({ userId, onDone }: AddEventForUserFormProps
         userId,
         input: toEventInput(form),
       });
-      showToast("success", "Đã gửi lịch, chờ người đó xác nhận");
+      showToast("success", t("calendar.addEventForUserForm.eventSentWaitingForThemTo"));
       onDone();
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không thêm được lịch");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("calendar.addEventForUserForm.couldnTAddTheEvent"));
     }
   }
 
@@ -51,10 +53,10 @@ export function AddEventForUserForm({ userId, onDone }: AddEventForUserFormProps
       )}
       <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" loading={createEvent.isPending}>
-          Gửi lịch
+          {t("calendar.addEventForUserForm.sendEvent")}
         </Button>
         <Button type="button" variant="secondary" onClick={onDone}>
-          Huỷ
+          {t("common.cancel")}
         </Button>
       </div>
     </form>

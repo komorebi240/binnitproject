@@ -5,8 +5,10 @@ import { useTabs } from "@/components/layout/TabsContext";
 import { Bell } from "@phosphor-icons/react";
 import { useApproveAccessRequest, useRejectAccessRequest } from "@/features/drive/hooks/useDrive";
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications, useUnreadCount } from "../hooks/useNotifications";
+import { notificationText } from "../notificationText";
 import type { Notification } from "../types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 /** Where each notification type should take you when clicked - see NotificationServiceImpl/ CalendarServiceImpl/MessageServiceImpl for what relatedEntityId means per type. */
 function resolveTarget(notification: Notification): string | null {
   switch (notification.type) {
@@ -44,6 +46,7 @@ function resolveTarget(notification: Notification): string | null {
  * `useRejectAccessRequest` already take directly, no extra fetch needed.
  */
 export function NotificationBell() {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const { navigateActiveTab } = useTabs();
   const { data: unreadCount } = useUnreadCount();
@@ -78,10 +81,10 @@ export function NotificationBell() {
     <div className="relative">
       <button
         type="button"
-        title="Thông báo"
+        title={t("common.notifications")}
         data-tour="notifications"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Thông báo"
+        aria-label={t("common.notifications")}
         className="relative flex h-9 w-9 items-center justify-center rounded transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       >
         <Bell size={20} aria-hidden />
@@ -96,28 +99,30 @@ export function NotificationBell() {
         <>
           <button
             type="button"
-            aria-label="Đóng"
+            aria-label={t("common.close")}
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-20 cursor-default"
           />
           <div className="animate-pop-in absolute right-0 top-11 z-30 glass w-80 origin-top-right rounded-lg">
             <div className="flex items-center justify-between border-b border-line/60 px-3 py-2">
-              <p className="text-sm font-semibold text-fg">Thông báo</p>
+              <p className="text-sm font-semibold text-fg">{t("common.notifications")}</p>
               {count > 0 && (
                 <button
                   type="button"
                   onClick={() => markAllRead.mutate()}
                   className="text-xs text-primary-text hover:underline"
                 >
-                  Đánh dấu đã đọc hết
+                  {t("notifications.notificationBell.markAllAsRead")}
                 </button>
               )}
             </div>
             <div className="max-h-80 overflow-y-auto">
               {(notifications ?? []).length === 0 ? (
-                <p className="px-3 py-6 text-center text-sm text-fg-faint">Chưa có thông báo nào</p>
+                <p className="px-3 py-6 text-center text-sm text-fg-faint">{t("notifications.notificationBell.noNotificationsYet")}</p>
               ) : (
-                (notifications ?? []).map((n) => (
+                (notifications ?? []).map((n) => {
+                  const text = notificationText(n, t);
+                  return (
                   <div
                     key={n.id}
                     className={`border-b border-line/40 px-3 py-2 text-sm ${n.read ? "text-fg-muted" : "font-medium text-fg"}`}
@@ -127,8 +132,8 @@ export function NotificationBell() {
                       onClick={() => navigateTo(n)}
                       className="block w-full text-left transition-colors duration-150 hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                     >
-                      <p className="break-words">{n.title}</p>
-                      {n.body && <p className="mt-0.5 break-words text-xs font-normal text-fg-muted">{n.body}</p>}
+                      <p className="break-words">{text.title}</p>
+                      {text.body && <p className="mt-0.5 break-words text-xs font-normal text-fg-muted">{text.body}</p>}
                     </button>
                     {n.type === "FOLDER_ACCESS_REQUESTED" && n.relatedEntityId != null && (
                       <div className="mt-1.5 flex gap-2">
@@ -138,7 +143,7 @@ export function NotificationBell() {
                           disabled={approveFolderRequest.isPending}
                           className="rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
                         >
-                          Duyệt
+                          {t("common.approve")}
                         </button>
                         <button
                           type="button"
@@ -146,12 +151,13 @@ export function NotificationBell() {
                           disabled={rejectFolderRequest.isPending}
                           className="rounded bg-danger px-2 py-1 text-xs font-medium text-danger-foreground hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
                         >
-                          Từ chối
+                          {t("common.decline")}
                         </button>
                       </div>
                     )}
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

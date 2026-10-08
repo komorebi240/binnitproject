@@ -7,11 +7,17 @@ import { ApiRequestError } from "@/lib/api/client";
 import { useUploadCompanyBanner, useUploadCompanyLogo } from "../hooks/useOnboarding";
 import { LOGO_ACCEPT, MAX_LOGO_BYTES } from "../types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 const ACCEPTED_TYPES = LOGO_ACCEPT.split(",");
 
 const COPY = {
-  logo: { label: "logo", change: "Đổi logo", add: "Tải logo lên", done: "Đã cập nhật logo" },
-  banner: { label: "ảnh bìa", change: "Đổi ảnh bìa", add: "Tải ảnh bìa lên", done: "Đã cập nhật ảnh bìa" },
+  logo: { label: "onboarding.companyImageButton.logo", change: "onboarding.companyImageButton.changeLogo", add: "onboarding.companyImageButton.uploadLogo", done: "onboarding.companyImageButton.logoUpdated" },
+  banner: {
+    label: "onboarding.companyImageButton.coverImage",
+    change: "onboarding.companyImageButton.changeCoverImage",
+    add: "onboarding.companyImageButton.uploadCoverImage",
+    done: "onboarding.companyImageButton.coverImageUpdated",
+  },
 } as const;
 
 interface CompanyImageButtonProps {
@@ -21,6 +27,7 @@ interface CompanyImageButtonProps {
 
 /** Picks an image and uploads it as the company's logo or banner (executives only - the backend enforces it too). */
 export function CompanyImageButton({ kind, hasImage }: CompanyImageButtonProps) {
+  const { t } = useI18n();
   const uploadLogo = useUploadCompanyLogo();
   const uploadBanner = useUploadCompanyBanner();
   const upload = kind === "logo" ? uploadLogo : uploadBanner;
@@ -33,24 +40,24 @@ export function CompanyImageButton({ kind, hasImage }: CompanyImageButtonProps) 
     event.target.value = "";
     if (!file) return;
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      showToast("error", `Ảnh phải là PNG, JPEG hoặc WebP`);
+      showToast("error", t("onboarding.companyImageButton.theImageMustBePngJpeg"));
       return;
     }
     if (file.size > MAX_LOGO_BYTES) {
-      showToast("error", "Ảnh tối đa 2MB");
+      showToast("error", t("onboarding.companyImageButton.theImageCanBe2mbAt"));
       return;
     }
     upload.mutate(file, {
-      onSuccess: () => showToast("success", copy.done),
-      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : `Không tải được ${copy.label}`),
+      onSuccess: () => showToast("success", t(copy.done)),
+      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("onboarding.companyImageButton.couldnTUploadTheLabel", { label: t(copy.label) })),
     });
   }
 
   return (
     <>
-      <input ref={inputRef} type="file" accept={LOGO_ACCEPT} onChange={handlePick} className="hidden" aria-label={`Chọn ${copy.label} công ty`} />
+      <input ref={inputRef} type="file" accept={LOGO_ACCEPT} onChange={handlePick} className="hidden" aria-label={t("onboarding.companyImageButton.chooseTheCompanyLabel", { label: t(copy.label) })} />
       <Button variant="secondary" onClick={() => inputRef.current?.click()} loading={upload.isPending}>
-        {hasImage ? copy.change : copy.add}
+        {t(hasImage ? copy.change : copy.add)}
       </Button>
     </>
   );

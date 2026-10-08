@@ -22,18 +22,14 @@ import { StaffSettingsDialog } from "./StaffSettingsDialog";
 import { InviteStaffButton } from "@/features/onboarding/components/InviteStaffButton";
 import type { CreateUserInput, UserSummary } from "../types";
 
-const LEVEL_LABELS: Record<AuthorityLevel, string> = {
-  EXECUTIVE: "Điều hành (CEO/CTO/COO...)",
-  DEPARTMENT_HEAD: "Trưởng phòng",
-  TEAM_LEAD: "Trưởng nhóm",
-  EMPLOYEE: "Nhân viên",
-};
-
+import { LEVEL_LABEL_KEYS } from "@/features/onboarding/types";
+import { useI18n } from "@/lib/i18n/useI18n";
 interface UserManagerProps {
   currentUser: UserProfile;
 }
 
 export function UserManager({ currentUser }: UserManagerProps) {
+  const { t } = useI18n();
   const { data: users, isLoading } = useUsers();
   const { data: departments } = useDepartments();
   const createUser = useCreateUser();
@@ -92,10 +88,10 @@ export function UserManager({ currentUser }: UserManagerProps) {
         employeeCode: "",
         startDate: "",
       }));
-      showToast("success", "Đã thêm nhân sự");
+      showToast("success", t("organization.userManager.staffAdded"));
       setCreating(false);
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không tạo được người dùng");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("organization.userManager.couldnTCreateTheUser"));
     }
   }
 
@@ -103,9 +99,9 @@ export function UserManager({ currentUser }: UserManagerProps) {
     setUserActive.mutate(
       { id: user.id, active: !user.active },
       {
-        onSuccess: () => showToast("success", user.active ? "Đã khoá tài khoản" : "Đã mở khoá tài khoản"),
+        onSuccess: () => showToast("success", user.active ? t("organization.userManager.accountLocked") : t("organization.userManager.accountUnlocked")),
         onError: (err) =>
-          showToast("error", err instanceof ApiRequestError ? err.message : "Không đổi được trạng thái"),
+          showToast("error", err instanceof ApiRequestError ? err.message : t("common.couldnTChangeYourStatus")),
       },
     );
   }
@@ -117,9 +113,9 @@ export function UserManager({ currentUser }: UserManagerProps) {
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold text-fg">Nhân sự</h2>
+        <h2 className="text-lg font-semibold text-fg">{t("common.staff")}</h2>
         <PlusButton
-          label="Thêm nhân sự"
+          label={t("common.addStaff")}
           onClick={() => {
             setErrorMessage(null);
             setCreating(true);
@@ -133,30 +129,30 @@ export function UserManager({ currentUser }: UserManagerProps) {
       ) : (
         <Table<UserSummary>
           columns={[
-            { header: "Tên đăng nhập", cell: (u) => u.username },
+            { header: t("common.username"), cell: (u) => u.username },
             {
-              header: "Họ tên",
+              header: t("common.fullName"),
               cell: (u) => (
                 <button
                   type="button"
                   onClick={() => setManagingUserId(u.id)}
-                  title="Mở cửa sổ quản lý"
+                  title={t("organization.userManager.openManagementWindow")}
                   className="rounded text-left font-medium text-fg hover:text-primary-text hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                 >
                   {u.fullName}
                 </button>
               ),
             },
-            { header: "Vai trò", cell: (u) => LEVEL_LABELS[u.authorityLevel] },
-            { header: "Phòng ban", cell: (u) => (departments ?? []).find((d) => d.id === u.departmentId)?.name ?? "Chưa có" },
-            { header: "Chức danh", cell: (u) => u.title ?? "-" },
-            { header: "Mã NV", cell: (u) => u.employeeCode ?? "-" },
-            { header: "SĐT", cell: (u) => u.phone ?? "-" },
+            { header: t("common.role"), cell: (u) => t(LEVEL_LABEL_KEYS[u.authorityLevel]) },
+            { header: t("common.departments"), cell: (u) => (departments ?? []).find((d) => d.id === u.departmentId)?.name ?? t("organization.userManager.noneYet") },
+            { header: t("organization.userManager.jobTitle"), cell: (u) => u.title ?? "-" },
+            { header: t("organization.userManager.employeeId"), cell: (u) => u.employeeCode ?? "-" },
+            { header: t("organization.userManager.phone"), cell: (u) => u.phone ?? "-" },
             {
-              header: "Trạng thái",
+              header: t("common.status"),
               cell: (u) => (
                 <Badge tone={u.active ? "success" : "danger"}>
-                  {u.active ? "Đang hoạt động" : "Đã khoá"}
+                  {u.active ? t("organization.staffSettingsDialog.active") : t("organization.staffSettingsDialog.locked")}
                 </Badge>
               ),
             },
@@ -164,10 +160,10 @@ export function UserManager({ currentUser }: UserManagerProps) {
               header: "",
               cell: (u) => (
                 <ActionMenu
-                  label={`Tuỳ chọn cho ${u.fullName}`}
+                  label={t("organization.userManager.optionsForFullname", { fullName: u.fullName })}
                   items={[
-                    { label: "Quản lý", onSelect: () => setManagingUserId(u.id) },
-                    { label: "Xoá", onSelect: () => setDeletingUser(u), danger: true },
+                    { label: t("organization.userManager.manage"), onSelect: () => setManagingUserId(u.id) },
+                    { label: t("common.delete"), onSelect: () => setDeletingUser(u), danger: true },
                   ]}
                 />
               ),
@@ -177,24 +173,24 @@ export function UserManager({ currentUser }: UserManagerProps) {
           getRowKey={(u) => u.id}
           emptyState={
             <EmptyState
-              title="Chưa có nhân sự nào trong phạm vi của bạn"
-              description="Bấm + cạnh tiêu đề để thêm nhân sự đầu tiên."
+              title={t("organization.userManager.noStaffInYourScopeYet")}
+              description={t("organization.userManager.clickNextToTheTitleTo")}
             />
           }
         />
       )}
 
       {creating && (
-      <Modal title="Thêm nhân sự" onClose={() => setCreating(false)} widthClassName="max-w-2xl">
+      <Modal title={t("common.addStaff")} onClose={() => setCreating(false)} widthClassName="max-w-2xl">
       <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Input
-          label="Tên đăng nhập"
+          label={t("common.username")}
           value={form.username}
           onChange={(e) => setForm({ ...form, username: e.target.value })}
           required
         />
         <Input
-          label="Mật khẩu tạm thời"
+          label={t("organization.userManager.temporaryPassword")}
           type="password"
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -202,7 +198,7 @@ export function UserManager({ currentUser }: UserManagerProps) {
           required
         />
         <Input
-          label="Họ tên"
+          label={t("common.fullName")}
           value={form.fullName}
           onChange={(e) => setForm({ ...form, fullName: e.target.value })}
           required
@@ -214,28 +210,28 @@ export function UserManager({ currentUser }: UserManagerProps) {
           onChange={(e) => setForm({ ...form, email: e.target.value })}
         />
         <Select
-          label="Vai trò"
+          label={t("common.role")}
           value={form.authorityLevel}
           onChange={(e) => setForm({ ...form, authorityLevel: e.target.value as AuthorityLevel })}
-          options={allowedLevels.map((level) => ({ value: level, label: LEVEL_LABELS[level] }))}
+          options={allowedLevels.map((level) => ({ value: level, label: t(LEVEL_LABEL_KEYS[level]) }))}
         />
         <Input
-          label="Chức danh hiển thị (vd: CEO, CTO)"
+          label={t("organization.userManager.displayedJobTitleEGCeo")}
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
         />
         <Input
-          label="Số điện thoại (tuỳ chọn)"
+          label={t("common.phoneNumberOptional")}
           value={form.phone}
           onChange={(e) => setForm({ ...form, phone: e.target.value })}
         />
         <Input
-          label="Mã nhân viên (tuỳ chọn)"
+          label={t("organization.userManager.employeeIdOptional")}
           value={form.employeeCode}
           onChange={(e) => setForm({ ...form, employeeCode: e.target.value })}
         />
         <Input
-          label="Ngày vào làm (tuỳ chọn)"
+          label={t("organization.userManager.startDateOptional")}
           type="date"
           value={form.startDate}
           onChange={(e) => setForm({ ...form, startDate: e.target.value })}
@@ -243,11 +239,11 @@ export function UserManager({ currentUser }: UserManagerProps) {
 
         {isExecutive && form.authorityLevel !== "EXECUTIVE" && (
           <Select
-            label="Phòng ban"
+            label={t("common.departments")}
             value={form.departmentId ? String(form.departmentId) : ""}
             onChange={(e) => setForm({ ...form, departmentId: Number(e.target.value), teamId: undefined })}
             options={[
-              { value: "", label: "-- Chọn phòng ban --" },
+              { value: "", label: t("common.chooseADepartment") },
               ...(departments ?? []).map((d) => ({ value: String(d.id), label: d.name })),
             ]}
           />
@@ -257,11 +253,11 @@ export function UserManager({ currentUser }: UserManagerProps) {
           (form.authorityLevel === "TEAM_LEAD" || form.authorityLevel === "EMPLOYEE") &&
           form.departmentId && (
             <Select
-              label="Nhóm (tuỳ chọn cho nhân viên, bắt buộc cho trưởng nhóm)"
+              label={t("organization.transferPositionForm.teamOptionalForEmployeesRequiredFor")}
               value={form.teamId ? String(form.teamId) : ""}
               onChange={(e) => setForm({ ...form, teamId: e.target.value ? Number(e.target.value) : undefined })}
               options={[
-                { value: "", label: "-- Không thuộc nhóm nào --" },
+                { value: "", label: t("common.noTeam") },
                 ...(teamsInChosenDepartment ?? []).map((t) => ({ value: String(t.id), label: t.name })),
               ]}
             />
@@ -274,10 +270,10 @@ export function UserManager({ currentUser }: UserManagerProps) {
         )}
         <div className="flex gap-2 sm:col-span-2">
           <Button type="submit" loading={createUser.isPending}>
-            Thêm nhân sự
+            {t("common.addStaff")}
           </Button>
           <Button type="button" variant="secondary" onClick={() => setCreating(false)}>
-            Huỷ
+            {t("common.cancel")}
           </Button>
         </div>
       </form>
@@ -288,7 +284,7 @@ export function UserManager({ currentUser }: UserManagerProps) {
           user={deletingUser}
           onClose={() => setDeletingUser(null)}
           onDeleted={() => {
-            showToast("success", `Đã xoá ${deletingUser.fullName}`);
+            showToast("success", t("organization.userManager.deletedFullname", { fullName: deletingUser.fullName }));
             setDeletingUser(null);
           }}
         />

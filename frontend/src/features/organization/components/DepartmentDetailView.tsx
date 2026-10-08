@@ -14,6 +14,7 @@ import { DepartmentMemberList } from "./DepartmentMemberList";
 import { AddExistingStaffDialog } from "./AddExistingStaffDialog";
 import { TeamPanel, canManageDepartmentTeams } from "./TeamPanel";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface DepartmentDetailViewProps {
   departmentId: number;
   /** Where to send the active tab after a successful delete - a real route push doesn't apply
@@ -25,6 +26,7 @@ interface DepartmentDetailViewProps {
  * (which read the id via useParams()) so it can be rendered per-tab with an explicit prop
  * instead, now that tabs don't correspond to real Next.js routes. */
 export function DepartmentDetailView({ departmentId, onDeleted }: DepartmentDetailViewProps) {
+  const { t } = useI18n();
   const { data: currentUser } = useCurrentUser();
   const { data: departments, isLoading } = useDepartments();
   const deleteDepartment = useDeleteDepartment();
@@ -37,10 +39,10 @@ export function DepartmentDetailView({ departmentId, onDeleted }: DepartmentDeta
   function handleDelete() {
     deleteDepartment.mutate(departmentId, {
       onSuccess: () => {
-        showToast("success", "Đã xoá phòng ban");
+        showToast("success", t("organization.departmentDetailView.departmentDeleted"));
         onDeleted();
       },
-      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : "Không xoá được phòng ban"),
+      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("organization.departmentDetailView.couldnTDeleteTheDepartment")),
     });
   }
 
@@ -49,7 +51,7 @@ export function DepartmentDetailView({ departmentId, onDeleted }: DepartmentDeta
   }
 
   if (!department) {
-    return <p className="text-sm text-fg-muted">Không tìm thấy phòng ban.</p>;
+    return <p className="text-sm text-fg-muted">{t("organization.departmentDetailView.departmentNotFound")}</p>;
   }
 
   const isExecutive = currentUser.authorityLevel === "EXECUTIVE";
@@ -60,15 +62,15 @@ export function DepartmentDetailView({ departmentId, onDeleted }: DepartmentDeta
       <aside className="flex flex-col gap-3 rounded glass-card p-5 md:w-1/4 [.pane-narrow_&]:md:w-full">
         <DepartmentAvatar department={department} size="lg" />
         <h1 className="text-xl font-semibold text-fg">{department.name}</h1>
-        <p className="text-sm text-fg-soft">{department.description ?? "Chưa có mô tả."}</p>
+        <p className="text-sm text-fg-soft">{department.description ?? t("common.noDescriptionYet")}</p>
         {canEdit && (
           <Button variant="secondary" onClick={() => setEditing(true)}>
-            Chỉnh sửa
+            {t("organization.departmentDetailView.edit")}
           </Button>
         )}
         {isExecutive && (
           <Button variant="danger" onClick={handleDelete} loading={deleteDepartment.isPending}>
-            Xoá phòng ban
+            {t("organization.departmentDetailView.deleteDepartment")}
           </Button>
         )}
       </aside>
@@ -76,8 +78,8 @@ export function DepartmentDetailView({ departmentId, onDeleted }: DepartmentDeta
       <div className="flex flex-col gap-6 md:w-3/4 [.pane-narrow_&]:md:w-full">
         <section className="flex flex-col gap-3 rounded glass-card p-5">
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold text-fg">Nhân sự</h2>
-            {canEdit && <PlusButton label="Thêm nhân sự có sẵn vào phòng ban" onClick={() => setAddingStaff(true)} />}
+            <h2 className="text-base font-semibold text-fg">{t("common.staff")}</h2>
+            {canEdit && <PlusButton label={t("organization.departmentDetailView.addExistingStaffToTheDepartment")} onClick={() => setAddingStaff(true)} />}
           </div>
           <DepartmentMemberList departmentId={departmentId} departmentName={department.name} />
         </section>

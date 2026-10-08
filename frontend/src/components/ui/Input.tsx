@@ -4,6 +4,7 @@ import { type InputHTMLAttributes, forwardRef, useId, useState } from "react";
 import { Eye, EyeSlash } from "@phosphor-icons/react";
 import { FieldError, useNativeValidationMessage } from "./FieldError";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   /** A message from the server or the caller; it wins over the browser's own validation message. */
@@ -20,6 +21,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
  */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, id, className = "", type, onInvalid, onChange, ...props }, ref) => {
+  const { t } = useI18n();
     const generatedId = useId();
     const inputId = id ?? generatedId;
     const validation = useNativeValidationMessage(label);
@@ -60,7 +62,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             <button
               type="button"
               onClick={() => setRevealed((value) => !value)}
-              aria-label={revealed ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              aria-label={revealed ? t("ui.input.hidePassword") : t("ui.input.showPassword")}
               aria-pressed={revealed}
               className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r text-fg-muted transition-colors duration-150 hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >

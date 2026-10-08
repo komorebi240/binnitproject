@@ -8,8 +8,10 @@ import { ApiRequestError } from "@/lib/api/client";
 import { ATTACHMENT_ACCEPT, MAX_ATTACHMENT_BYTES } from "../types";
 import { useSendMessage } from "../hooks/useMessages";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 /** Pill-shaped input with a paperclip: sends text, or a picked file with the text as its caption. */
 export function MessageComposer({ recipientUserId }: { recipientUserId: number }) {
+  const { t } = useI18n();
   const sendMessage = useSendMessage(recipientUserId);
   const { showToast } = useToast();
   const [draft, setDraft] = useState("");
@@ -21,7 +23,7 @@ export function MessageComposer({ recipientUserId }: { recipientUserId: number }
     event.target.value = ""; // allow re-picking the same file after removing it
     if (!picked) return;
     if (picked.size > MAX_ATTACHMENT_BYTES) {
-      showToast("error", "Tệp tối đa 5MB");
+      showToast("error", t("common.filesCanBe5mbAtMost"));
       return;
     }
     setFile(picked);
@@ -36,7 +38,7 @@ export function MessageComposer({ recipientUserId }: { recipientUserId: number }
       setDraft("");
       setFile(null);
     } catch (err) {
-      showToast("error", err instanceof ApiRequestError ? err.message : "Không gửi được tin nhắn");
+      showToast("error", err instanceof ApiRequestError ? err.message : t("common.couldnTSendTheMessage"));
     }
   }
 
@@ -49,7 +51,7 @@ export function MessageComposer({ recipientUserId }: { recipientUserId: number }
           <button
             type="button"
             onClick={() => setFile(null)}
-            aria-label="Bỏ tệp đính kèm"
+            aria-label={t("messages.messageComposer.removeTheAttachment")}
             className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-line focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             <X size={12} aria-hidden />
@@ -57,12 +59,12 @@ export function MessageComposer({ recipientUserId }: { recipientUserId: number }
         </div>
       )}
       <div className="flex items-center gap-2 rounded-full border border-line bg-surface-muted px-2 py-1.5 shadow-sm transition-colors duration-150 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
-        <input ref={fileInputRef} type="file" accept={ATTACHMENT_ACCEPT} onChange={handlePick} className="hidden" aria-label="Chọn tệp đính kèm" />
+        <input ref={fileInputRef} type="file" accept={ATTACHMENT_ACCEPT} onChange={handlePick} className="hidden" aria-label={t("common.chooseAnAttachment")} />
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          title="Đính kèm ảnh hoặc tệp (tối đa 5MB)"
-          aria-label="Đính kèm ảnh hoặc tệp"
+          title={t("messages.messageComposer.attachAnImageOrFile5mb")}
+          aria-label={t("messages.messageComposer.attachAnImageOrFile")}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors duration-150 hover:bg-line hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
         >
           <Paperclip size={18} aria-hidden />
@@ -70,12 +72,12 @@ export function MessageComposer({ recipientUserId }: { recipientUserId: number }
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={file ? "Thêm chú thích (tuỳ chọn)..." : "Nhập tin nhắn..."}
+          placeholder={file ? t("messages.messageComposer.addACaptionOptional") : t("messages.messageComposer.typeAMessage")}
           maxLength={2000}
           className="flex-1 bg-transparent px-1 py-1.5 text-sm outline-none"
         />
         <Button type="submit" loading={sendMessage.isPending} className="rounded-full px-4">
-          Gửi
+          {t("common.send")}
         </Button>
       </div>
     </form>

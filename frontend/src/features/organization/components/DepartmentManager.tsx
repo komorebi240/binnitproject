@@ -4,54 +4,31 @@ import { useState } from "react";
 import { Plus } from "@phosphor-icons/react";
 import { useTabs } from "@/components/layout/TabsContext";
 import { AnimatedList } from "@/components/ui/AnimatedList";
-import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Input } from "@/components/ui/Input";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useToast } from "@/components/ui/Toast";
-import { ApiRequestError } from "@/lib/api/client";
 import type { UserProfile } from "@/features/auth/types";
-import { DepartmentAppearancePicker, DepartmentAvatar } from "../departmentAppearance";
-import { useCreateDepartment, useDepartments } from "../hooks/useOrganization";
+import { DepartmentAvatar } from "../departmentAppearance";
+import { useDepartments } from "../hooks/useOrganization";
+import { DepartmentCreateDialog } from "./DepartmentCreateDialog";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface DepartmentManagerProps {
   currentUser: UserProfile;
 }
 
 /**
  * Medium square tiles (Phase 7 plan) instead of a table - clicking one opens its own detail page
- * (`/dashboard/departments/[id]`) rather than expanding inline. Creating a department is still
- * EXECUTIVE-only - the backend independently enforces this too (`DepartmentController.create`'s
- * `@PreAuthorize("hasAuthority('EXECUTIVE')")`, unchanged by this phase).
+ * (`/dashboard/departments/[id]`) rather than expanding inline. Creating a department opens a window
+ * (`DepartmentCreateDialog`) and is still EXECUTIVE-only - the backend independently enforces this too
+ * (`DepartmentController.create`'s `@PreAuthorize("hasAuthority('EXECUTIVE')")`, unchanged by this phase).
  */
 export function DepartmentManager({ currentUser }: DepartmentManagerProps) {
+  const { t } = useI18n();
   const { data: departments, isLoading } = useDepartments();
-  const createDepartment = useCreateDepartment();
-  const { showToast } = useToast();
   const { navigateActiveTab } = useTabs();
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ name: "", description: "", color: "", icon: "" });
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isExecutive = currentUser.authorityLevel === "EXECUTIVE";
-
-  async function handleCreate(event: React.FormEvent) {
-    event.preventDefault();
-    setErrorMessage(null);
-    try {
-      await createDepartment.mutateAsync({
-        name: form.name,
-        description: form.description || undefined,
-        color: form.color || undefined,
-        icon: form.icon || undefined,
-      });
-      setForm({ name: "", description: "", color: "", icon: "" });
-      setCreating(false);
-      showToast("success", "Đã tạo phòng ban");
-    } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không tạo được phòng ban");
-    }
-  }
 
   if (isLoading) {
     return <Skeleton rows={3} />;
@@ -59,10 +36,10 @@ export function DepartmentManager({ currentUser }: DepartmentManagerProps) {
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold text-fg">Phòng ban</h2>
+      <h2 className="text-lg font-semibold text-fg">{t("common.departments")}</h2>
 
       {(departments ?? []).length === 0 && !isExecutive ? (
-        <EmptyState title="Chưa có phòng ban nào" />
+        <EmptyState title={t("organization.departmentManager.noDepartmentsYet")} />
       ) : (
         <AnimatedList as="div" className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 [.pane-narrow_&]:sm:grid-cols-2 [.pane-narrow_&]:md:grid-cols-2">
           {(departments ?? []).map((department) => (
@@ -82,47 +59,20 @@ export function DepartmentManager({ currentUser }: DepartmentManagerProps) {
             </button>
           ))}
 
-          {isExecutive && !creating && (
+          {isExecutive && (
             <button
               type="button"
               onClick={() => setCreating(true)}
               className="flex aspect-square flex-col items-center justify-center gap-1 rounded border border-dashed border-line-strong text-fg-faint transition-all duration-150 hover:border-primary hover:text-primary-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
             >
               <Plus size={28} aria-hidden />
-              <span className="text-xs">Tạo phòng ban</span>
+              <span className="text-xs">{t("common.createADepartment")}</span>
             </button>
           )}
         </AnimatedList>
       )}
 
-      {isExecutive && creating && (
-        <form onSubmit={handleCreate} className="flex max-w-md flex-col gap-3 rounded border border-line p-4">
-          <Input label="Tên phòng ban" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-          <Input
-            label="Mô tả (tuỳ chọn)"
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-          />
-          <DepartmentAppearancePicker
-            showPresets
-            value={{ name: form.name, color: form.color, icon: form.icon }}
-            onChange={(look) => setForm({ ...form, name: look.name, color: look.color, icon: look.icon })}
-          />
-          {errorMessage && (
-            <p role="alert" className="text-sm text-danger">
-              {errorMessage}
-            </p>
-          )}
-          <div className="flex gap-2">
-            <Button type="submit" loading={createDepartment.isPending}>
-              Tạo
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => setCreating(false)}>
-              Huỷ
-            </Button>
-          </div>
-        </form>
-      )}
+      {isExecutive && creating && <DepartmentCreateDialog onClose={() => setCreating(false)} />}
     </section>
   );
 }

@@ -1,0 +1,15 @@
+export const timer = {
+  "timer.pomodoro.focus": "Tập trung",
+  "timer.pomodoro.longBreak": "Nghỉ dài",
+  "timer.pomodoro.shortBreak": "Nghỉ ngắn",
+  "timer.pomodoroControl.closeTimerWindow": "Đóng cửa sổ đồng hồ",
+  "timer.pomodoroControl.closeWindowTheTimerKeepsRunning": "Đóng cửa sổ (đồng hồ vẫn chạy)",
+  "timer.pomodoroControl.focusRoundsDone_one": "Đã xong {count} vòng tập trung",
+  "timer.pomodoroControl.focusRoundsDone_other": "Đã xong {count} vòng tập trung",
+  "timer.pomodoroControl.focusTimerVLeft": "Đồng hồ tập trung, còn {v}",
+  "timer.pomodoroControl.mode": "Chế độ",
+  "timer.pomodoroControl.pause": "Tạm dừng",
+  "timer.pomodoroControl.resetThisMode": "Đặt lại chế độ này",
+  "timer.pomodoroControl.vV2Left": "{v}, còn {v2}",
+  "timer.pomodoroProvider.vFinishedNextV2": "{v} xong. Tiếp theo: {v2}.",
+};

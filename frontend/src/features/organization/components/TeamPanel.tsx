@@ -12,6 +12,7 @@ import type { AuthorityLevel } from "@/features/auth/types";
 import { useCreateTeam, useDeleteTeam, useTeams } from "../hooks/useOrganization";
 import { TeamMemberList } from "./TeamMemberList";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface TeamPanelProps {
   departmentId: number;
   departmentName: string;
@@ -22,6 +23,7 @@ interface TeamPanelProps {
 }
 
 export function TeamPanel({ departmentId, departmentName, canManage }: TeamPanelProps) {
+  const { t } = useI18n();
   const { data: teams, isLoading } = useTeams(departmentId);
   const createTeam = useCreateTeam(departmentId);
   const deleteTeam = useDeleteTeam(departmentId);
@@ -36,29 +38,29 @@ export function TeamPanel({ departmentId, departmentName, canManage }: TeamPanel
     try {
       await createTeam.mutateAsync(name);
       setName("");
-      showToast("success", "Đã tạo nhóm");
+      showToast("success", t("organization.teamPanel.teamCreated"));
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không tạo được nhóm");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("organization.teamPanel.couldnTCreateTheTeam"));
     }
   }
 
   function handleDelete(teamId: number) {
     deleteTeam.mutate(teamId, {
-      onSuccess: () => showToast("success", "Đã xoá nhóm"),
-      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : "Không xoá được nhóm"),
+      onSuccess: () => showToast("success", t("organization.teamPanel.teamDeleted")),
+      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("organization.teamPanel.couldnTDeleteTheTeam")),
     });
   }
 
   return (
     <div className="flex flex-col gap-3 rounded glass-card p-5">
-      <h3 className="text-base font-semibold text-fg">Nhóm trong phòng &quot;{departmentName}&quot;</h3>
+      <h3 className="text-base font-semibold text-fg">{t("organization.teamPanel.teamsInDepartmentName", { departmentName })}</h3>
 
       {isLoading ? (
         <Skeleton rows={2} />
       ) : (teams ?? []).length === 0 ? (
         <EmptyState
-          title="Chưa có nhóm nào trong phòng ban này"
-          description={canManage ? "Tạo nhóm đầu tiên bên dưới." : undefined}
+          title={t("organization.teamPanel.noTeamsInThisDepartmentYet")}
+          description={canManage ? t("organization.teamPanel.createTheFirstTeamBelow") : undefined}
         />
       ) : (
         <ul className="flex flex-col gap-2">
@@ -77,7 +79,7 @@ export function TeamPanel({ departmentId, departmentName, canManage }: TeamPanel
                   </button>
                   {canManage && (
                     <Button variant="danger" onClick={() => handleDelete(team.id)} loading={deleteTeam.isPending}>
-                      Xoá
+                      {t("common.delete")}
                     </Button>
                   )}
                 </div>
@@ -95,10 +97,10 @@ export function TeamPanel({ departmentId, departmentName, canManage }: TeamPanel
       {canManage && (
         <form onSubmit={handleCreate} className="flex items-end gap-2">
           <div className="flex-1">
-            <Input label="Tên nhóm mới" value={name} onChange={(e) => setName(e.target.value)} required />
+            <Input label={t("organization.teamPanel.newTeamName")} value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
           <Button type="submit" loading={createTeam.isPending}>
-            Tạo nhóm
+            {t("organization.teamPanel.createTeam")}
           </Button>
         </form>
       )}

@@ -19,15 +19,17 @@ import {
   useRevokeInvitation,
 } from "../hooks/useOnboarding";
 import { onboardingErrorMessage } from "../errors";
-import { LEVEL_LABELS, type Invitation } from "../types";
+import { LEVEL_LABEL_KEYS, type Invitation } from "../types";
 
-function daysLeft(invitation: Invitation): string {
-  if (invitation.expired) return "Đã hết hạn";
+import { useI18n, type I18n } from "@/lib/i18n/useI18n";
+function daysLeft(invitation: Invitation, t: I18n["t"]): string {
+  if (invitation.expired) return t("onboarding.inviteStaffButton.expired");
   const days = Math.max(1, Math.ceil((new Date(invitation.expiresAt).getTime() - Date.now()) / 86_400_000));
-  return `Còn ${days} ngày`;
+  return t("onboarding.inviteStaffButton.daysLeft", { count: days });
 }
 
 function InviteDialog({ currentUser, onClose }: { currentUser: UserProfile; onClose: () => void }) {
+  const { t } = useI18n();
   const allowedLevels = allowedLevelsFor(currentUser.authorityLevel);
   const isExecutive = currentUser.authorityLevel === "EXECUTIVE";
   const isTeamLead = currentUser.authorityLevel === "TEAM_LEAD";
@@ -66,38 +68,38 @@ function InviteDialog({ currentUser, onClose }: { currentUser: UserProfile; onCl
         teamId: needsScope && canPickTeam ? teamId : undefined,
         title: title.trim() || undefined,
       });
-      showToast("success", `Đã gửi lời mời tới ${email.trim()}`);
+      showToast("success", t("onboarding.inviteStaffButton.invitationSentToV", { v: email.trim() }));
       setEmail("");
       setTitle("");
     } catch (err) {
-      setErrorMessage(onboardingErrorMessage(err, "Không gửi được lời mời"));
+      setErrorMessage(onboardingErrorMessage(err, t("onboarding.inviteStaffButton.couldnTSendTheInvitation"), t));
     }
   }
 
   return (
-    <Modal title="Mời nhân sự qua email" onClose={onClose} widthClassName="max-w-xl">
+    <Modal title={t("common.inviteStaffByEmail")} onClose={onClose} widthClassName="max-w-xl">
       <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <Input label="Email người được mời" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <Input label={t("onboarding.inviteStaffButton.inviteeSEmail")} type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
         <Select
-          label="Vai trò"
+          label={t("common.role")}
           value={authorityLevel}
           onChange={(e) => setAuthorityLevel(e.target.value as AuthorityLevel)}
-          options={allowedLevels.map((level) => ({ value: level, label: LEVEL_LABELS[level] }))}
+          options={allowedLevels.map((level) => ({ value: level, label: t(LEVEL_LABEL_KEYS[level]) }))}
         />
-        <Input label="Chức danh (tuỳ chọn)" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={100} />
+        <Input label={t("onboarding.inviteStaffButton.jobTitleOptional")} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={100} />
 
         {isExecutive && needsScope && (
           <Select
-            label="Phòng ban"
+            label={t("common.departments")}
             value={departmentId ? String(departmentId) : ""}
             onChange={(e) => {
               setDepartmentId(e.target.value ? Number(e.target.value) : undefined);
               setTeamId(undefined);
             }}
             options={[
-              { value: "", label: "-- Chọn phòng ban --" },
+              { value: "", label: t("common.chooseADepartment") },
               ...(departments ?? []).map((d) => ({ value: String(d.id), label: d.name })),
             ]}
             required
@@ -106,11 +108,11 @@ function InviteDialog({ currentUser, onClose }: { currentUser: UserProfile; onCl
 
         {!isTeamLead && needsScope && canPickTeam && departmentId != null && (
           <Select
-            label={needsTeam ? "Nhóm (bắt buộc cho trưởng nhóm)" : "Nhóm (tuỳ chọn)"}
+            label={needsTeam ? t("onboarding.inviteStaffButton.teamRequiredForATeamLead") : t("onboarding.inviteStaffButton.teamOptional")}
             value={teamId ? String(teamId) : ""}
             onChange={(e) => setTeamId(e.target.value ? Number(e.target.value) : undefined)}
             options={[
-              { value: "", label: needsTeam ? "-- Chọn nhóm --" : "-- Không thuộc nhóm nào --" },
+              { value: "", label: needsTeam ? t("onboarding.inviteStaffButton.chooseATeam") : t("common.noTeam") },
               ...(teams ?? []).map((t) => ({ value: String(t.id), label: t.name })),
             ]}
             required={needsTeam}
@@ -124,16 +126,16 @@ function InviteDialog({ currentUser, onClose }: { currentUser: UserProfile; onCl
         )}
         <div className="sm:col-span-2">
           <Button type="submit" loading={createInvitation.isPending}>
-            Gửi lời mời
+            {t("common.sendInvitation")}
           </Button>
-          <p className="mt-1.5 text-xs text-fg-muted">Người nhận mở liên kết trong email (hiệu lực 7 ngày) để tự đặt tên đăng nhập và mật khẩu.</p>
+          <p className="mt-1.5 text-xs text-fg-muted">{t("onboarding.inviteStaffButton.theRecipientOpensTheLinkIn")}</p>
         </div>
       </form>
 
       <section className="flex flex-col gap-2 border-t border-line/60 pt-3">
-        <h4 className="text-sm font-semibold text-fg">Lời mời đang chờ ({(invitations ?? []).length})</h4>
+        <h4 className="text-sm font-semibold text-fg">{t("onboarding.inviteStaffButton.pendingInvitationsCount", { count: (invitations ?? []).length })}</h4>
         {(invitations ?? []).length === 0 ? (
-          <p className="text-sm text-fg-faint">Chưa có lời mời nào đang chờ.</p>
+          <p className="text-sm text-fg-faint">{t("onboarding.inviteStaffButton.noPendingInvitations")}</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
             {(invitations ?? []).map((invitation) => (
@@ -141,35 +143,35 @@ function InviteDialog({ currentUser, onClose }: { currentUser: UserProfile; onCl
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-fg">{invitation.email}</p>
                   <p className="text-xs text-fg-muted">
-                    {LEVEL_LABELS[invitation.authorityLevel]}
+                    {t(LEVEL_LABEL_KEYS[invitation.authorityLevel])}
                     {invitation.departmentName ? ` · ${invitation.departmentName}` : ""}
                     {invitation.teamName ? ` · ${invitation.teamName}` : ""}
                   </p>
                 </div>
-                <Badge tone={invitation.expired ? "danger" : "info"}>{daysLeft(invitation)}</Badge>
+                <Badge tone={invitation.expired ? "danger" : "info"}>{daysLeft(invitation, t)}</Badge>
                 <Button
                   variant="secondary"
                   loading={resendInvitation.isPending && resendInvitation.variables === invitation.id}
                   onClick={() =>
                     resendInvitation.mutate(invitation.id, {
-                      onSuccess: () => showToast("success", "Đã gửi lại lời mời"),
-                      onError: onError("Không gửi lại được"),
+                      onSuccess: () => showToast("success", t("onboarding.inviteStaffButton.invitationResent")),
+                      onError: onError(t("onboarding.inviteStaffButton.couldnTResendIt")),
                     })
                   }
                 >
-                  Gửi lại
+                  {t("onboarding.inviteStaffButton.resend")}
                 </Button>
                 <Button
                   variant="danger"
                   loading={revokeInvitation.isPending && revokeInvitation.variables === invitation.id}
                   onClick={() =>
                     revokeInvitation.mutate(invitation.id, {
-                      onSuccess: () => showToast("success", "Đã thu hồi lời mời"),
-                      onError: onError("Không thu hồi được"),
+                      onSuccess: () => showToast("success", t("onboarding.inviteStaffButton.invitationRevoked")),
+                      onError: onError(t("common.couldnTRecallIt")),
                     })
                   }
                 >
-                  Thu hồi
+                  {t("common.recall")}
                 </Button>
               </li>
             ))}
@@ -182,6 +184,7 @@ function InviteDialog({ currentUser, onClose }: { currentUser: UserProfile; onCl
 
 /** "Mời qua email" button + dialog for the Nhân sự screen; managers only (the backend enforces it too). */
 export function InviteStaffButton({ currentUser }: { currentUser: UserProfile }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   if (allowedLevelsFor(currentUser.authorityLevel).length === 0) return null;
 
@@ -194,7 +197,7 @@ export function InviteStaffButton({ currentUser }: { currentUser: UserProfile })
         className="flex items-center gap-1.5 rounded border border-line px-2.5 py-1 text-xs font-medium text-fg-soft transition-colors duration-150 hover:border-primary hover:text-primary-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       >
         <EnvelopeSimple size={14} aria-hidden />
-        Mời qua email
+        {t("onboarding.inviteStaffButton.inviteByEmail")}
       </button>
       {open && <InviteDialog currentUser={currentUser} onClose={() => setOpen(false)} />}
     </>

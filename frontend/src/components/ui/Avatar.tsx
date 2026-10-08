@@ -2,6 +2,8 @@
 
 import { useAuthedBlobUrl } from "@/lib/hooks/useAuthedBlobUrl";
 import type { PresenceStatus } from "@/features/auth/types";
+import type { TranslationKey } from "@/lib/i18n/dictionary";
+import { useI18n } from "@/lib/i18n/useI18n";
 
 const SIZE_CLASSES = {
   sm: "h-8 w-8 text-xs",
@@ -21,10 +23,10 @@ const STATUS_CLASSES: Record<PresenceStatus, string> = {
   DO_NOT_DISTURB: "bg-danger",
 };
 
-export const STATUS_LABELS: Record<PresenceStatus, string> = {
-  ONLINE: "Trực tuyến",
-  LIMITED: "Hạn chế",
-  DO_NOT_DISTURB: "Không làm phiền",
+export const PRESENCE_STATUS_KEYS: Record<PresenceStatus, TranslationKey> = {
+  ONLINE: "ui.avatar.online",
+  LIMITED: "ui.avatar.limited",
+  DO_NOT_DISTURB: "ui.avatar.doNotDisturb",
 };
 
 interface AvatarProps {
@@ -48,6 +50,7 @@ function initials(fullName: string): string {
  * directory, Nhân sự table.
  */
 export function Avatar({ avatarUrl, fullName, presenceStatus, size = "md" }: AvatarProps) {
+  const { t } = useI18n();
   const objectUrl = useAuthedBlobUrl(avatarUrl);
 
   return (
@@ -69,7 +72,7 @@ export function Avatar({ avatarUrl, fullName, presenceStatus, size = "md" }: Ava
       )}
       {presenceStatus && (
         <span
-          title={STATUS_LABELS[presenceStatus]}
+          title={t(PRESENCE_STATUS_KEYS[presenceStatus])}
           className={`absolute bottom-0 right-0 rounded-full border-2 border-surface ${DOT_SIZE_CLASSES[size]} ${STATUS_CLASSES[presenceStatus]}`}
         />
       )}

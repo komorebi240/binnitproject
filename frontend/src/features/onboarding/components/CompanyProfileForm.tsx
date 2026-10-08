@@ -8,8 +8,10 @@ import { CompanyEditDialog } from "./CompanyEditDialog";
 import { CompanyImageButton } from "./CompanyImageButton";
 import { CompanyLogo } from "./CompanyLogo";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 /** EXECUTIVE-only - the backend independently enforces this too (CompanyController). The company page has the same actions. */
 export function CompanyProfileForm({ currentUser }: { currentUser: UserProfile }) {
+  const { t } = useI18n();
   const { data: company } = useCompany();
   const [editing, setEditing] = useState(false);
 
@@ -19,7 +21,7 @@ export function CompanyProfileForm({ currentUser }: { currentUser: UserProfile }
 
   return (
     <section className="flex flex-col gap-3" data-tour="company-profile">
-      <h2 className="text-lg font-semibold text-fg">Thông tin công ty</h2>
+      <h2 className="text-lg font-semibold text-fg">{t("onboarding.companyEditDialog.companyDetails")}</h2>
 
       <div className="flex items-center gap-3">
         <CompanyLogo name={company?.name ?? currentUser.companyName} logoUrl={company?.logoUrl ?? null} size="lg" />
@@ -29,11 +31,11 @@ export function CompanyProfileForm({ currentUser }: { currentUser: UserProfile }
             <CompanyImageButton kind="banner" hasImage={company?.bannerUrl != null} />
             {company && (
               <Button variant="secondary" onClick={() => setEditing(true)}>
-                Sửa thông tin
+                {t("onboarding.companyOverview.editDetails")}
               </Button>
             )}
           </div>
-          <span className="text-xs text-fg-faint">PNG, JPEG, WebP · tối đa 2MB</span>
+          <span className="text-xs text-fg-faint">{t("onboarding.companyProfileForm.pngJpegWebp2mbAtMost")}</span>
         </div>
       </div>
 

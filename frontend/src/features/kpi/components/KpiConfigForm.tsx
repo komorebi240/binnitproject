@@ -9,12 +9,14 @@ import type { UserProfile } from "@/features/auth/types";
 import { useKpiConfig, useReplaceIncentiveTiers, useUpdateKpiConfig } from "../hooks/useKpi";
 import type { IncentiveTierInput } from "../types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface KpiConfigFormProps {
   currentUser: UserProfile;
 }
 
 /** EXECUTIVE-only - the backend independently enforces this too (KpiController). */
 export function KpiConfigForm({ currentUser }: KpiConfigFormProps) {
+  const { t } = useI18n();
   const { data: config } = useKpiConfig();
   const updateConfig = useUpdateKpiConfig();
   const replaceTiers = useReplaceIncentiveTiers();
@@ -40,9 +42,9 @@ export function KpiConfigForm({ currentUser }: KpiConfigFormProps) {
     setErrorMessage(null);
     try {
       await updateConfig.mutateAsync(completionPercent / 100);
-      showToast("success", "Đã lưu công thức KPI");
+      showToast("success", t("kpi.kpiConfigForm.kpiFormulaSaved"));
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không lưu được công thức");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("kpi.kpiConfigForm.couldnTSaveTheFormula"));
     }
   }
 
@@ -51,9 +53,9 @@ export function KpiConfigForm({ currentUser }: KpiConfigFormProps) {
     setErrorMessage(null);
     try {
       await replaceTiers.mutateAsync(tiers.filter((t) => t.label.trim().length > 0));
-      showToast("success", "Đã lưu bảng insentive");
+      showToast("success", t("kpi.kpiConfigForm.incentiveTableSaved"));
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không lưu được bảng insentive");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("kpi.kpiConfigForm.couldnTSaveTheIncentiveTable"));
     }
   }
 
@@ -71,11 +73,11 @@ export function KpiConfigForm({ currentUser }: KpiConfigFormProps) {
 
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold text-fg">Công thức KPI &amp; Insentive</h2>
+      <h2 className="text-lg font-semibold text-fg">{t("kpi.kpiConfigForm.kpiIncentiveFormula")}</h2>
 
       <form onSubmit={handleSaveWeight} className="flex max-w-sm flex-col gap-3">
         <Input
-          label="Trọng số tỷ lệ hoàn thành (%) - phần còn lại tính cho đúng hạn"
+          label={t("kpi.kpiConfigForm.completionRateWeightTheRestCounts")}
           type="number"
           min={0}
           max={100}
@@ -83,19 +85,19 @@ export function KpiConfigForm({ currentUser }: KpiConfigFormProps) {
           onChange={(e) => setCompletionPercent(Number(e.target.value))}
         />
         <p className="text-xs text-fg-muted">
-          KPI = {completionPercent}% × tỷ lệ hoàn thành + {100 - completionPercent}% × tỷ lệ đúng hạn
+          {t("kpi.kpiConfigForm.formulaSentence", { completion: completionPercent, onTime: 100 - completionPercent })}
         </p>
         <Button type="submit" loading={updateConfig.isPending}>
-          Lưu công thức
+          {t("kpi.kpiConfigForm.saveFormula")}
         </Button>
       </form>
 
       <form onSubmit={handleSaveTiers} className="flex flex-col gap-3">
-        <p className="text-sm font-medium text-fg-soft">Bảng insentive theo mức KPI</p>
+        <p className="text-sm font-medium text-fg-soft">{t("kpi.kpiConfigForm.incentiveTableByKpiLevel")}</p>
         {tiers.map((tier, index) => (
           <div key={index} className="flex items-center gap-2">
             <Input
-              label="Điểm tối thiểu"
+              label={t("kpi.kpiConfigForm.minimumScore")}
               type="number"
               min={0}
               max={100}
@@ -104,21 +106,21 @@ export function KpiConfigForm({ currentUser }: KpiConfigFormProps) {
               onChange={(e) => updateTier(index, { minScore: Number(e.target.value) })}
             />
             <Input
-              label="Mô tả"
+              label={t("common.description")}
               value={tier.label}
               onChange={(e) => updateTier(index, { label: e.target.value })}
             />
             <Button type="button" variant="danger" onClick={() => removeTier(index)}>
-              Xoá
+              {t("common.delete")}
             </Button>
           </div>
         ))}
         <div className="flex gap-2">
           <Button type="button" variant="secondary" onClick={addTier}>
-            Thêm mức
+            {t("kpi.kpiConfigForm.addALevel")}
           </Button>
           <Button type="submit" loading={replaceTiers.isPending}>
-            Lưu bảng insentive
+            {t("kpi.kpiConfigForm.saveIncentiveTable")}
           </Button>
         </div>
       </form>

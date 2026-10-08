@@ -10,10 +10,12 @@ import { ApiRequestError } from "@/lib/api/client";
 import { useUpdateCompany } from "../hooks/useOnboarding";
 import type { Company } from "../types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 const DESCRIPTION_MAX = 1000;
 
 /** Name, business email and the short introduction shown on the company page (executives only; the backend enforces it too). */
 export function CompanyEditDialog({ company, onClose }: { company: Company; onClose: () => void }) {
+  const { t } = useI18n();
   const updateCompany = useUpdateCompany();
   const { showToast } = useToast();
   const [name, setName] = useState(company.name);
@@ -30,20 +32,20 @@ export function CompanyEditDialog({ company, onClose }: { company: Company; onCl
         contactEmail: contactEmail.trim() || undefined,
         description: description.trim() || undefined,
       });
-      showToast("success", "Đã lưu thông tin công ty");
+      showToast("success", t("onboarding.companyEditDialog.companyDetailsSaved"));
       onClose();
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không lưu được thông tin công ty");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("onboarding.companyEditDialog.couldnTSaveTheCompanyDetails"));
     }
   }
 
   return (
-    <Modal title="Thông tin công ty" onClose={onClose}>
+    <Modal title={t("onboarding.companyEditDialog.companyDetails")} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <Input label="Tên công ty" value={name} onChange={(e) => setName(e.target.value)} maxLength={200} required />
-        <Input label="Email doanh nghiệp" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+        <Input label={t("onboarding.companyEditDialog.companyName")} value={name} onChange={(e) => setName(e.target.value)} maxLength={200} required />
+        <Input label={t("onboarding.companyEditDialog.companyEmail")} type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
         <Textarea
-          label="Giới thiệu ngắn"
+          label={t("onboarding.companyEditDialog.shortDescription")}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={DESCRIPTION_MAX}
@@ -56,10 +58,10 @@ export function CompanyEditDialog({ company, onClose }: { company: Company; onCl
         )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Huỷ
+            {t("common.cancel")}
           </Button>
           <Button type="submit" loading={updateCompany.isPending}>
-            Lưu
+            {t("common.save")}
           </Button>
         </div>
       </form>

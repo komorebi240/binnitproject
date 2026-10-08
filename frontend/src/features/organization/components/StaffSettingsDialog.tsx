@@ -12,13 +12,15 @@ import { ChangeEmailPanel, ResetPasswordPanel } from "./StaffAccountPanels";
 import { TransferPositionForm } from "./TransferPositionForm";
 import type { UserSummary } from "../types";
 
+import type { TranslationKey } from "@/lib/i18n/dictionary";
+import { useI18n } from "@/lib/i18n/useI18n";
 type Section = "position" | "kpi" | "calendar" | "account";
 
-const SECTIONS: { id: Section; label: string }[] = [
-  { id: "position", label: "Phòng ban & chức vụ" },
-  { id: "kpi", label: "KPI" },
-  { id: "calendar", label: "Lịch" },
-  { id: "account", label: "Tài khoản" },
+const SECTIONS: { id: Section; labelKey: TranslationKey }[] = [
+  { id: "position", labelKey: "organization.staffSettingsDialog.departmentPosition" },
+  { id: "kpi", labelKey: "organization.staffSettingsDialog.kpi" },
+  { id: "calendar", labelKey: "organization.staffSettingsDialog.calendar" },
+  { id: "account", labelKey: "common.account" },
 ];
 
 interface StaffSettingsDialogProps {
@@ -41,19 +43,20 @@ export function StaffSettingsDialog({
   toggleActivePending,
   onClose,
 }: StaffSettingsDialogProps) {
+  const { t } = useI18n();
   const [section, setSection] = useState<Section>("position");
   const tabIds = useTabsIds();
 
   return (
-    <Modal title={`Quản lý nhân sự: ${user.fullName}`} onClose={onClose} widthClassName="max-w-3xl">
+    <Modal title={t("organization.staffSettingsDialog.manageStaffFullname", { fullName: user.fullName })} onClose={onClose} widthClassName="max-w-3xl">
       <div className="flex min-h-[22rem] flex-col gap-4 md:flex-row">
         <Tabs
-          label="Mục quản lý"
+          label={t("organization.staffSettingsDialog.managementSections")}
           variant="side"
           ids={tabIds}
           value={section}
           onChange={setSection}
-          items={SECTIONS.map(({ id, label }) => ({ id, label }))}
+          items={SECTIONS.map(({ id, labelKey }) => ({ id, label: t(labelKey) }))}
         />
 
         <div role="tabpanel" id={tabIds.panelId(section)} aria-labelledby={tabIds.tabId(section)} className="min-w-0 flex-1">
@@ -65,22 +68,22 @@ export function StaffSettingsDialog({
           {section === "account" && (
             <div className="flex flex-col gap-6">
               <section className="flex flex-col gap-2">
-                <h4 className="text-sm font-semibold text-fg">Trạng thái tài khoản</h4>
+                <h4 className="text-sm font-semibold text-fg">{t("organization.staffSettingsDialog.accountStatus")}</h4>
                 <div className="flex flex-wrap items-center gap-3">
                   <Badge tone={user.active ? "success" : "danger"}>
-                    {user.active ? "Đang hoạt động" : "Đã khoá"}
+                    {user.active ? t("organization.staffSettingsDialog.active") : t("organization.staffSettingsDialog.locked")}
                   </Badge>
                   <Button
                     variant="secondary"
                     onClick={onToggleActive}
                     loading={toggleActivePending}
                   >
-                    {user.active ? "Khoá tài khoản" : "Mở khoá tài khoản"}
+                    {user.active ? t("organization.staffSettingsDialog.lockAccount") : t("organization.staffSettingsDialog.unlockAccount")}
                   </Button>
                 </div>
               </section>
               <section className="flex flex-col gap-2">
-                <h4 className="text-sm font-semibold text-fg">Mật khẩu</h4>
+                <h4 className="text-sm font-semibold text-fg">{t("common.password")}</h4>
                 <ResetPasswordPanel user={user} />
               </section>
               <section className="flex flex-col gap-2">

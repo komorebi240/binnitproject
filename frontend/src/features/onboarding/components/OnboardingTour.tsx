@@ -8,6 +8,7 @@ import { gsap, prefersReducedMotion, useGSAP } from "@/lib/motion";
 import { computeTourLayout, SPOTLIGHT_PADDING, type Rect } from "../tourLayout";
 import { tourStepsFor, type TourStep } from "../tourSteps";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 interface TourContextValue {
   /** Runs the tour again (e.g. from Cài đặt); never changes the saved "completed" flag. */
   startTour: () => void;
@@ -41,6 +42,7 @@ function TourOverlay({
   steps: TourStep[];
   onFinish: () => void;
 }) {
+  const { t } = useI18n();
   const [index, setIndex] = useState(0);
   // The measured target, tagged with the step it was measured for so a render right after a step change never uses the last step's box.
   const [measured, setMeasured] = useState<{ index: number; rect: Rect | null } | null>(null);
@@ -168,23 +170,23 @@ function TourOverlay({
       >
         <div className="flex items-center justify-between text-xs text-fg-muted">
           <span>
-            Bước {index + 1}/{steps.length}
+            {t("onboarding.onboardingTour.stepOf", { current: index + 1, total: steps.length })}
           </span>
           {!isLast && (
             <button type="button" onClick={onFinish} className="hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
-              Bỏ qua
+              {t("onboarding.onboardingTour.skip")}
             </button>
           )}
         </div>
         <h3 id="tour-title" data-tour-text className="text-base font-semibold text-fg">
-          {step.title}
+          {t(step.titleKey)}
         </h3>
         <p data-tour-text className="text-sm text-fg-soft">
-          {step.body}
+          {t(step.bodyKey)}
         </p>
         <div className="flex justify-between gap-2">
           <Button variant="secondary" onClick={back} disabled={index === 0}>
-            Quay lại
+            {t("onboarding.onboardingTour.back")}
           </Button>
           <button
             ref={primaryRef}
@@ -192,7 +194,7 @@ function TourOverlay({
             onClick={next}
             className="glass-button rounded bg-gradient-to-r from-primary to-primaryEnd px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all duration-150 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            {isLast ? "Hoàn tất" : "Tiếp theo"}
+            {isLast ? t("common.done2") : t("onboarding.onboardingTour.next")}
           </button>
         </div>
       </div>

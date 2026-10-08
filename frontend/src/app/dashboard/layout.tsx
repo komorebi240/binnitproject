@@ -7,15 +7,18 @@ import { OrbitWordmark } from "@/components/brand/OrbitWordmark";
 import { CompanyBadge } from "@/features/onboarding/components/CompanyBadge";
 import { TourProvider } from "@/features/onboarding/components/OnboardingTour";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { TermsGate } from "@/features/legal/components/TermsGate";
 import { AvatarMenu } from "@/components/layout/AvatarMenu";
 import { QuickSearch } from "@/components/layout/QuickSearch";
 import { TabBar } from "@/components/layout/TabBar";
 import { TabContentRenderer } from "@/components/layout/TabContentRenderer";
 import { TabsProvider, useTabs } from "@/components/layout/TabsContext";
 import { ApiRequestError } from "@/lib/api/client";
-import { resetClientSession } from "@/lib/session";
+import { consumeSignedOutOnPurpose, resetClientSession } from "@/lib/session";
 import { useTheme } from "@/components/theme/ThemeProvider";
 import { useCurrentUser } from "@/features/auth/hooks/useAuth";
+import { useSessionActivity } from "@/features/auth/hooks/useSessionActivity";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
 import { PriorityPanel } from "@/features/tasks/components/PriorityPanel";
 import { PinnedNoteWidget } from "@/features/notes/components/PinnedNoteWidget";
@@ -24,6 +27,7 @@ import { PomodoroProvider } from "@/features/timer/components/PomodoroProvider";
 import { List, Star } from "@phosphor-icons/react";
 import type { UserProfile } from "@/features/auth/types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 /**
  * Shared shell for every /dashboard/* page: auth gate (redirect to /login on a 401), header,
  * Sidebar, and the tab workspace. `children` (whatever Next.js route matched) is deliberately
@@ -31,6 +35,7 @@ import type { UserProfile } from "@/features/auth/types";
  * URL stays at /dashboard and the tabs own what's on screen.
  */
 export default function DashboardLayout(_props: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const { data: currentUser, isLoading, error } = useCurrentUser();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -42,7 +47,8 @@ export default function DashboardLayout(_props: { children: React.ReactNode }) {
     if (isUnauthenticated) {
       // The session ended (expired/revoked): don't leave this account's data behind for the next login.
       resetClientSession(queryClient);
-      router.replace("/login");
+      // The sign-in page explains it, unless the person just chose to sign out.
+      router.replace(consumeSignedOutOnPurpose() ? "/login" : "/login?expired=1");
     }
   }, [isUnauthenticated, router]);
 
@@ -59,13 +65,16 @@ export default function DashboardLayout(_props: { children: React.ReactNode }) {
     if (isUnauthenticated) return null; // redirecting to /login
     return (
       <div className="p-8 text-center text-sm text-fg-muted">
-        Không kết nối được máy chủ.{" "}
+        {t("app.layout.canTReachTheServer")}{" "}
         <button type="button" onClick={() => window.location.reload()} className="text-primary-text underline">
-          Tải lại
+          {t("app.layout.reload")}
         </button>
       </div>
     );
   }
+
+  // The server refuses every request of someone who has not accepted the newest terms, so do not even start the app.
+  if (!currentUser.termsAccepted) return <TermsGate />;
 
   return (
     <TabsProvider>
@@ -75,8 +84,10 @@ export default function DashboardLayout(_props: { children: React.ReactNode }) {
 }
 
 function DashboardShell({ currentUser }: { currentUser: UserProfile }) {
+  const { t } = useI18n();
   const { setUserScope } = useTheme();
   const { navigateActiveTab } = useTabs();
+  useSessionActivity();
 
   // This account's theme while signed in; back to the default as soon as the dashboard unmounts (logout).
   useEffect(() => {
@@ -95,9 +106,9 @@ function DashboardShell({ currentUser }: { currentUser: UserProfile }) {
           <button
             type="button"
             onClick={() => navigateActiveTab("/dashboard")}
-            aria-label="Về trang chủ"
+            aria-label={t("app.layout.goToHome")}
             data-tour="logo"
-            title="Về trang chủ"
+            title={t("app.layout.goToHome")}
             className="shrink-0 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             <OrbitWordmark width={120} />
@@ -105,6 +116,7 @@ function DashboardShell({ currentUser }: { currentUser: UserProfile }) {
           <CompanyBadge />
         </div>
         <div className="flex items-center gap-2">
+          <LanguageSwitcher className="hidden sm:flex" />
           <HeaderIconControls currentUser={currentUser} />
           <AvatarMenu currentUser={currentUser} />
         </div>
@@ -133,6 +145,7 @@ function DashboardShell({ currentUser }: { currentUser: UserProfile }) {
  * visible focus ring (UI/UX review pass).
  */
 function HeaderIconControls({ currentUser }: { currentUser: UserProfile }) {
+  const { t } = useI18n();
   const { activeTab, navigateActiveTab, setActiveTabBoardView } = useTabs();
   const [priorityOpen, setPriorityOpen] = useState(false);
   const iconButtonClassName =
@@ -157,8 +170,8 @@ function HeaderIconControls({ currentUser }: { currentUser: UserProfile }) {
       <QuickSearch currentUserAuthorityLevel={currentUser.authorityLevel} />
       <button
         type="button"
-        title="Gợi ý ưu tiên"
-        aria-label="Gợi ý ưu tiên"
+        title={t("common.prioritySuggestions")}
+        aria-label={t("common.prioritySuggestions")}
         data-tour="priority"
         onClick={() => setPriorityOpen(true)}
         className={iconButtonClassName}
@@ -167,8 +180,8 @@ function HeaderIconControls({ currentUser }: { currentUser: UserProfile }) {
       </button>
       <button
         type="button"
-        title="Xem công việc dạng cột"
-        aria-label="Xem công việc dạng cột"
+        title={t("common.viewTasksAsColumns")}
+        aria-label={t("common.viewTasksAsColumns")}
         data-tour="board-view"
         aria-pressed={isBoardView}
         onClick={handleBoardViewClick}

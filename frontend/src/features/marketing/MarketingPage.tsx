@@ -8,6 +8,7 @@ import { Tagline } from "@/components/brand/Tagline";
 import { COPY, type MarketingCopy } from "./copy";
 import { FEATURE_ICONS } from "./icons";
 import { LandingCta } from "./LandingCta";
+import { LocaleRemember } from "./LocaleRemember";
 import { LOCALE_NAME, LOCALE_PATH, LOCALES, type Locale } from "./locales";
 import { OrbitScene } from "./OrbitScene";
 import { ProductGlimpse } from "./ProductGlimpse";
@@ -316,6 +317,7 @@ export function MarketingPage({ locale }: { locale: Locale }) {
   const copy = COPY[locale];
   return (
     <div className="mk-page" lang={locale}>
+      <LocaleRemember locale={locale} />
       <a href="#content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-fg">
         {copy.a11y.skipToContent}
       </a>

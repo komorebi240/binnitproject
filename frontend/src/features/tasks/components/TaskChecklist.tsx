@@ -12,15 +12,17 @@ import {
 } from "../hooks/useTasks";
 import { MAX_CHECKLIST_ITEMS, MAX_CHECKLIST_TEXT, type Task } from "../types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 /** "2/5" style summary for cards; null when the task has no checklist. */
 export function ChecklistProgress({ task }: { task: Pick<Task, "checklist"> }) {
+  const { t } = useI18n();
   const total = task.checklist.length;
   if (total === 0) return null;
   const done = task.checklist.filter((item) => item.done).length;
   return (
     <span
       className={`inline-flex items-center gap-1 ${done === total ? "text-success" : ""}`}
-      title="Tiến độ checklist"
+      title={t("tasks.taskChecklist.checklistProgress")}
     >
       <span aria-hidden>&#9745;</span>
       {done}/{total}
@@ -34,6 +36,7 @@ export function ChecklistProgress({ task }: { task: Pick<Task, "checklist"> }) {
  * manage the task may change it; everyone who can see the task sees the progress.
  */
 export function TaskChecklist({ task }: { task: Task }) {
+  const { t } = useI18n();
   const addItem = useAddChecklistItem();
   const setDone = useSetChecklistItemDone();
   const removeItem = useRemoveChecklistItem();
@@ -56,7 +59,7 @@ export function TaskChecklist({ task }: { task: Task }) {
     if (!text) return;
     addItem.mutate(
       { taskId: task.id, text },
-      { onSuccess: () => setDraft(""), onError: fail("Không thêm được mục") },
+      { onSuccess: () => setDraft(""), onError: fail(t("tasks.taskChecklist.couldnTAddTheItem")) },
     );
   }
 
@@ -66,9 +69,9 @@ export function TaskChecklist({ task }: { task: Task }) {
       {
         onSuccess: (updated) => {
           if (updated.status === "DONE" && task.status !== "DONE")
-            showToast("success", "Đã tick hết, việc được hoàn thành");
+            showToast("success", t("tasks.taskChecklist.allTickedTheTaskIsComplete"));
         },
-        onError: fail("Không cập nhật được mục"),
+        onError: fail(t("tasks.taskChecklist.couldnTUpdateTheItem")),
       },
     );
   }
@@ -98,7 +101,7 @@ export function TaskChecklist({ task }: { task: Task }) {
       </div>
 
       {total > 0 && task.status === "ASSIGNED" && (
-        <p className="text-xs text-fg-muted">Nhận việc xong mới tick được các mục.</p>
+        <p className="text-xs text-fg-muted">{t("tasks.taskChecklist.acceptTheTaskBeforeTickingItems")}</p>
       )}
 
       {total > 0 && (
@@ -127,11 +130,11 @@ export function TaskChecklist({ task }: { task: Task }) {
                   onClick={() =>
                     removeItem.mutate(
                       { taskId: task.id, itemId: item.id },
-                      { onError: fail("Không xoá được mục") },
+                      { onError: fail(t("tasks.taskChecklist.couldnTDeleteTheItem")) },
                     )
                   }
                   disabled={removeItem.isPending}
-                  aria-label={`Xoá mục ${item.text}`}
+                  aria-label={t("tasks.taskChecklist.deleteItemText", { text: item.text })}
                   className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-fg-faint hover:bg-surface-muted hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
                 >
                   <X size={14} aria-hidden />
@@ -148,8 +151,8 @@ export function TaskChecklist({ task }: { task: Task }) {
             value={draft}
             maxLength={MAX_CHECKLIST_TEXT}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Thêm một bước..."
-            aria-label="Mục checklist mới"
+            placeholder={t("tasks.taskChecklist.addAStep")}
+            aria-label={t("tasks.taskChecklist.newChecklistItem")}
             className="min-w-0 flex-1 rounded border border-line bg-surface px-2.5 py-1.5 text-sm text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           />
           <Button
@@ -159,7 +162,7 @@ export function TaskChecklist({ task }: { task: Task }) {
             disabled={!draft.trim()}
           >
             <Plus size={14} aria-hidden className="mr-1 inline" />
-            Thêm
+            {t("common.add")}
           </Button>
         </form>
       )}

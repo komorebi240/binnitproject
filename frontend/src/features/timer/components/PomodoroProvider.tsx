@@ -7,7 +7,7 @@ import {
   initialState,
   parseState,
   pause,
-  PHASE_LABELS,
+  PHASE_KEYS,
   remainingMs,
   resetAll,
   resetPhase,
@@ -18,6 +18,7 @@ import {
   type PomodoroState,
 } from "../pomodoro";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 const STORAGE_PREFIX = "orbit-pomodoro:";
 const TICK_MS = 250;
 
@@ -69,6 +70,7 @@ export function PomodoroProvider({
   userId: number;
   children: React.ReactNode;
 }) {
+  const { t } = useI18n();
   const { showToast } = useToast();
   const storageKey = `${STORAGE_PREFIX}${userId}`;
   const [state, setState] = useState<PomodoroState>(initialState);
@@ -108,12 +110,12 @@ export function PomodoroProvider({
         chime();
         showToast(
           "success",
-          `${PHASE_LABELS[result.finished]} xong. Tiếp theo: ${PHASE_LABELS[result.state.phase]}.`,
+          t("timer.pomodoroProvider.vFinishedNextV2", { v: t(PHASE_KEYS[result.finished]), v2: t(PHASE_KEYS[result.state.phase]) }),
         );
       }
     }, TICK_MS);
     return () => window.clearInterval(timer);
-  }, [running, showToast]);
+  }, [running, showToast, t]);
 
   const value = useMemo<PomodoroContextValue>(
     () => ({

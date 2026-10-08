@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 import { MARKETING_PATHS } from "@/features/marketing/locales";
 
 const ACCESS_TOKEN_COOKIE = "access_token";
+// Outlives the 15-minute access token: while it is there the backend can still renew the access token.
+const SESSION_COOKIE = "orbit_session";
 const PUBLIC_PATHS = ["/login", "/forgot-password", "/register", "/invite"];
 
 /**
@@ -18,7 +20,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const hasSessionCookie = request.cookies.has(ACCESS_TOKEN_COOKIE);
+  const hasSessionCookie = request.cookies.has(ACCESS_TOKEN_COOKIE) || request.cookies.has(SESSION_COOKIE);
   const isPublicPath = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
 
   // An invitation link must open for everyone: a signed-in visitor is told on the page itself to

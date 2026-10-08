@@ -10,15 +10,10 @@ import type { UserProfile } from "@/features/auth/types";
 import { useDepartments, useUsers } from "@/features/organization/hooks/useOrganization";
 import { useCreateTask, useTasksList } from "../hooks/useTasks";
 import { AttachmentDraftPicker, ChecklistDraftEditor } from "./TaskDraftFields";
-import type { AssigneeType, CreateTaskInput, TaskPriority } from "../types";
+import { TASK_PRIORITY_KEYS, type AssigneeType, type CreateTaskInput, type TaskPriority } from "../types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 const OPEN_STATUSES = new Set(["ASSIGNED", "ACCEPTED"]);
-
-const PRIORITY_LABELS: Record<TaskPriority, string> = {
-  LOW: "Thấp",
-  MEDIUM: "Trung bình",
-  HIGH: "Cao",
-};
 
 interface CreateTaskFormProps {
   currentUser: UserProfile;
@@ -28,6 +23,7 @@ interface CreateTaskFormProps {
 /** Only EXECUTIVE/DEPARTMENT_HEAD/TEAM_LEAD render this at all (see TasksPanel) - mirrors
  * UserManager's allowedLevelsFor pattern for who can assign to what. */
 export function CreateTaskForm({ currentUser, onDone }: CreateTaskFormProps) {
+  const { t } = useI18n();
   const canAssignToDepartment = currentUser.authorityLevel !== "TEAM_LEAD";
   const { data: departments } = useDepartments();
   const { data: users } = useUsers();
@@ -83,58 +79,58 @@ export function CreateTaskForm({ currentUser, onDone }: CreateTaskFormProps) {
       };
       const { failedUploads } = await createTask.mutateAsync({ input, files });
       if (failedUploads > 0) {
-        showToast("error", `Đã giao việc nhưng ${failedUploads} tệp không tải lên được, hãy đính kèm lại trong chi tiết việc`);
+        showToast("error", t("tasks.createTaskForm.taskAssignedButCountFilesCouldn", { count: failedUploads }));
       } else {
-        showToast("success", "Đã giao việc");
+        showToast("success", t("tasks.createTaskForm.taskAssigned"));
       }
       onDone();
     } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : "Không giao được việc");
+      setErrorMessage(err instanceof ApiRequestError ? err.message : t("tasks.createTaskForm.couldnTAssignTheTask"));
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <Input label="Tên việc" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+        <Input label={t("common.taskName")} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
       </div>
       <div className="sm:col-span-2">
         <Input
-          label="Mô tả (tuỳ chọn)"
+          label={t("common.descriptionOptional")}
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
         />
       </div>
 
       <Select
-        label="Giao cho"
+        label={t("common.assignTo")}
         value={form.assigneeType}
         onChange={(e) =>
           setForm({ ...form, assigneeType: e.target.value as AssigneeType, assigneeUserId: "", assigneeDepartmentId: "" })
         }
         options={[
-          { value: "USER", label: "Một nhân viên cụ thể" },
-          ...(canAssignToDepartment ? [{ value: "DEPARTMENT", label: "Cả một phòng ban" }] : []),
+          { value: "USER", label: t("tasks.createTaskForm.aSpecificEmployee") },
+          ...(canAssignToDepartment ? [{ value: "DEPARTMENT", label: t("tasks.createTaskForm.aWholeDepartment") }] : []),
         ]}
       />
 
       {form.assigneeType === "USER" ? (
         <div className="flex flex-col gap-2">
           <Select
-            label="Nhân viên"
+            label={t("common.employee")}
             value={form.assigneeUserId}
             onChange={(e) => setForm({ ...form, assigneeUserId: e.target.value })}
             options={[
-              { value: "", label: "-- Chọn nhân viên --" },
+              { value: "", label: t("tasks.createTaskForm.chooseAnEmployee") },
               ...(users ?? []).map((u) => ({ value: String(u.id), label: `${u.fullName} (${u.username})` })),
             ]}
             required
           />
           {selectedAssigneeId && (
             <div className="rounded border border-line bg-surface-muted p-2 text-xs text-fg-soft">
-              <p className="mb-1 font-medium text-fg-soft">Việc hiện tại của người này:</p>
+              <p className="mb-1 font-medium text-fg-soft">{t("tasks.createTaskForm.thisPersonSCurrentTasks")}</p>
               {selectedAssigneeOpenTasks.length === 0 ? (
-                <p>Chưa có việc nào đang mở.</p>
+                <p>{t("tasks.createTaskForm.noOpenTasks")}</p>
               ) : (
                 <ul className="list-disc pl-4">
                   {selectedAssigneeOpenTasks.map((t) => (
@@ -147,11 +143,11 @@ export function CreateTaskForm({ currentUser, onDone }: CreateTaskFormProps) {
         </div>
       ) : (
         <Select
-          label="Phòng ban"
+          label={t("common.departments")}
           value={form.assigneeDepartmentId}
           onChange={(e) => setForm({ ...form, assigneeDepartmentId: e.target.value })}
           options={[
-            { value: "", label: "-- Chọn phòng ban --" },
+            { value: "", label: t("common.chooseADepartment") },
             ...assignableDepartments.map((d) => ({ value: String(d.id), label: d.name })),
           ]}
           required
@@ -159,13 +155,13 @@ export function CreateTaskForm({ currentUser, onDone }: CreateTaskFormProps) {
       )}
 
       <Select
-        label="Độ ưu tiên"
+        label={t("common.priority")}
         value={form.priority}
         onChange={(e) => setForm({ ...form, priority: e.target.value as TaskPriority })}
-        options={(Object.keys(PRIORITY_LABELS) as TaskPriority[]).map((p) => ({ value: p, label: PRIORITY_LABELS[p] }))}
+        options={(Object.keys(TASK_PRIORITY_KEYS) as TaskPriority[]).map((p) => ({ value: p, label: t(TASK_PRIORITY_KEYS[p]) }))}
       />
       <Input
-        label="Hạn chót (tuỳ chọn)"
+        label={t("common.deadlineOptional")}
         type="date"
         value={form.dueDate}
         onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
@@ -173,7 +169,7 @@ export function CreateTaskForm({ currentUser, onDone }: CreateTaskFormProps) {
 
       <div className="sm:col-span-2">
         <Input
-          label="Link Google Drive (tuỳ chọn)"
+          label={t("tasks.createOwnTaskForm.googleDriveLinkOptional")}
           type="url"
           placeholder="https://drive.google.com/..."
           value={form.driveUrl}
@@ -190,10 +186,10 @@ export function CreateTaskForm({ currentUser, onDone }: CreateTaskFormProps) {
 
       <div className="flex gap-2 sm:col-span-2">
         <Button type="submit" loading={createTask.isPending}>
-          Giao việc
+          {t("tasks.createTaskForm.assignTask")}
         </Button>
         <Button type="button" variant="secondary" onClick={onDone}>
-          Huỷ
+          {t("common.cancel")}
         </Button>
       </div>
       {errorMessage && (

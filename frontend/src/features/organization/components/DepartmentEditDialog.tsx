@@ -10,6 +10,7 @@ import { DepartmentAppearancePicker } from "../departmentAppearance";
 import { useUpdateDepartment } from "../hooks/useOrganization";
 import type { Department } from "../types";
 
+import { useI18n } from "@/lib/i18n/useI18n";
 /** Rename a department and change its description, colour and icon (executive, or that department's head). */
 export function DepartmentEditDialog({
   department,
@@ -18,6 +19,7 @@ export function DepartmentEditDialog({
   department: Department;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const update = useUpdateDepartment();
   const { showToast } = useToast();
   const [name, setName] = useState(department.name);
@@ -42,20 +44,20 @@ export function DepartmentEditDialog({
           icon: look.icon || undefined,
         },
       });
-      showToast("success", "Đã cập nhật phòng ban");
+      showToast("success", t("organization.departmentEditDialog.departmentUpdated"));
       onClose();
     } catch (err) {
       setErrorMessage(
-        err instanceof ApiRequestError ? err.message : "Không cập nhật được phòng ban",
+        err instanceof ApiRequestError ? err.message : t("organization.departmentEditDialog.couldnTUpdateTheDepartment"),
       );
     }
   }
 
   return (
-    <Modal title="Chỉnh sửa phòng ban" onClose={onClose}>
+    <Modal title={t("organization.departmentEditDialog.editDepartment")} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <Input
-          label="Tên phòng ban"
+          label={t("organization.departmentEditDialog.departmentName")}
           value={name}
           onChange={(e) => {
             setName(e.target.value);
@@ -65,7 +67,7 @@ export function DepartmentEditDialog({
           maxLength={200}
         />
         <Input
-          label="Mô tả (tuỳ chọn)"
+          label={t("common.descriptionOptional")}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={500}
@@ -78,10 +80,10 @@ export function DepartmentEditDialog({
         )}
         <div className="flex gap-2">
           <Button type="submit" loading={update.isPending}>
-            Lưu
+            {t("common.save")}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
-            Huỷ
+            {t("common.cancel")}
           </Button>
         </div>
       </form>

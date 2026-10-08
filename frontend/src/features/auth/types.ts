@@ -23,6 +23,8 @@ export interface UserProfile {
   systemAccount: boolean;
   /** False until the first-run guided tour is finished or skipped. */
   onboardingCompleted: boolean;
+  /** False until the person has accepted the newest terms of service; the app shows the terms instead of itself. */
+  termsAccepted: boolean;
 }
 
 export interface LoginInput {

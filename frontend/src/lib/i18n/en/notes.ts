@@ -1,0 +1,25 @@
+import type { notes as vi } from "../vi/notes";
+
+export const notes: Record<keyof typeof vi, string> = {
+  "notes.noteModal.content": "Content",
+  "notes.noteModal.couldnTSaveTheNote": "Couldn't save the note",
+  "notes.noteModal.newNote": "New note",
+  "notes.noteModal.note": "Note",
+  "notes.noteModal.noteCreated": "Note created",
+  "notes.noteModal.noteSaved": "Note saved",
+  "notes.notesPanel.couldnTDeleteIt": "Couldn't delete it",
+  "notes.notesPanel.createANewNote": "Create a new note",
+  "notes.notesPanel.createYourFirstNoteWithThe": "Create your first note with the + button above.",
+  "notes.notesPanel.deleteNote": "Delete note",
+  "notes.notesPanel.deleteNoteTitle": "Delete note {title}",
+  "notes.notesPanel.noContentYet": "No content yet",
+  "notes.notesPanel.noNotesMatchQuery": "No notes match \"{query}\"",
+  "notes.notesPanel.noNotesYet": "No notes yet",
+  "notes.notesPanel.noteDeleted": "Note deleted",
+  "notes.notesPanel.pinFloatsOnEveryPage": "Pin (floats on every page)",
+  "notes.notesPanel.searchNotes": "Search notes",
+  "notes.notesPanel.searchNotes2": "Search notes...",
+  "notes.notesPanel.unpin": "Unpin",
+  "notes.pinnedNoteWidget.contentOfNoteTitle": "Content of note {title}",
+  "notes.pinnedNoteWidget.writeANote": "Write a note...",
+};

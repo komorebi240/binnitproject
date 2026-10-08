@@ -12,10 +12,12 @@ import { useDepartments } from "@/features/organization/hooks/useOrganization";
 import { useInviteDepartment, useRemoveDepartment } from "../hooks/useProjects";
 import type { ProjectDepartment, ProjectDetail, ProjectInviteStatus } from "../types";
 
-const STATUS_LABEL: Record<ProjectInviteStatus, string> = {
-  INVITED: "Chờ phản hồi",
-  ACCEPTED: "Đã tham gia",
-  DECLINED: "Đã từ chối",
+import type { TranslationKey } from "@/lib/i18n/dictionary";
+import { useI18n } from "@/lib/i18n/useI18n";
+const STATUS_KEYS: Record<ProjectInviteStatus, TranslationKey> = {
+  INVITED: "common.awaitingResponse",
+  ACCEPTED: "projects.projectOverviewTab.joined",
+  DECLINED: "common.declined",
 };
 
 const STATUS_TONE: Record<ProjectInviteStatus, "info" | "success" | "danger"> = {
@@ -25,6 +27,7 @@ const STATUS_TONE: Record<ProjectInviteStatus, "info" | "success" | "danger"> = 
 };
 
 function InviteDepartmentDialog({ project, onClose }: { project: ProjectDetail; onClose: () => void }) {
+  const { t } = useI18n();
   const { data: departments } = useDepartments();
   const invite = useInviteDepartment(project.id);
   const { showToast } = useToast();
@@ -41,31 +44,31 @@ function InviteDepartmentDialog({ project, onClose }: { project: ProjectDetail; 
       { departmentId: Number(departmentId), note: note.trim() || undefined },
       {
         onSuccess: () => {
-          showToast("success", "Đã gửi lời mời");
+          showToast("success", t("projects.projectOverviewTab.invitationSent"));
           onClose();
         },
-        onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : "Không mời được phòng ban"),
+        onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("projects.projectOverviewTab.couldnTInviteTheDepartment")),
       },
     );
   }
 
   return (
-    <Modal title="Mời phòng ban hỗ trợ" onClose={onClose}>
+    <Modal title={t("common.inviteASupportingDepartment")} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <Select
-          label="Phòng ban"
+          label={t("common.departments")}
           value={departmentId}
           onChange={(e) => setDepartmentId(e.target.value)}
-          options={[{ value: "", label: "-- Chọn phòng ban --" }, ...options.map((d) => ({ value: String(d.id), label: d.name }))]}
+          options={[{ value: "", label: t("common.chooseADepartment") }, ...options.map((d) => ({ value: String(d.id), label: d.name }))]}
           required
         />
-        <Input label="Lời nhắn (tuỳ chọn)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
+        <Input label={t("projects.projectOverviewTab.messageOptional")} value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Huỷ
+            {t("common.cancel")}
           </Button>
           <Button type="submit" loading={invite.isPending}>
-            Gửi lời mời
+            {t("common.sendInvitation")}
           </Button>
         </div>
       </form>
@@ -74,13 +77,14 @@ function InviteDepartmentDialog({ project, onClose }: { project: ProjectDetail; 
 }
 
 function DepartmentRow({ department, canRemove, projectId }: { department: ProjectDepartment; canRemove: boolean; projectId: number }) {
+  const { t } = useI18n();
   const remove = useRemoveDepartment(projectId);
   const { showToast } = useToast();
 
   function handleRemove() {
     remove.mutate(department.departmentId, {
-      onSuccess: () => showToast("success", "Đã gỡ phòng ban khỏi dự án"),
-      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : "Không gỡ được phòng ban"),
+      onSuccess: () => showToast("success", t("projects.projectOverviewTab.departmentRemovedFromTheProject")),
+      onError: (err) => showToast("error", err instanceof ApiRequestError ? err.message : t("projects.projectOverviewTab.couldnTRemoveTheDepartment")),
     });
   }
 
@@ -89,17 +93,17 @@ function DepartmentRow({ department, canRemove, projectId }: { department: Proje
       <div className="min-w-0">
         <p className="font-medium text-fg">{department.departmentName}</p>
         <p className="text-xs text-fg-muted">
-          {department.role === "OWNER" ? "Chủ trì" : "Hỗ trợ"} · {department.memberCount} thành viên
+          {department.role === "OWNER" ? t("projects.projectOverviewTab.lead") : t("projects.projectOverviewTab.support")} · {t("projects.memberCount", { count: department.memberCount })}
           {department.note ? ` · "${department.note}"` : ""}
         </p>
       </div>
       <div className="flex items-center gap-2">
         <Badge tone={department.role === "OWNER" ? "success" : STATUS_TONE[department.status]}>
-          {department.role === "OWNER" ? "Chủ trì" : STATUS_LABEL[department.status]}
+          {department.role === "OWNER" ? t("projects.projectOverviewTab.lead") : t(STATUS_KEYS[department.status])}
         </Badge>
         {canRemove && department.role === "SUPPORT" && (
           <Button variant="danger" onClick={handleRemove} loading={remove.isPending}>
-            Gỡ
+            {t("common.remove")}
           </Button>
         )}
       </div>
@@ -109,15 +113,16 @@ function DepartmentRow({ department, canRemove, projectId }: { department: Proje
 
 /** The departments taking part (or invited) and how each answered. */
 export function ProjectOverviewTab({ project }: { project: ProjectDetail }) {
+  const { t } = useI18n();
   const [inviting, setInviting] = useState(false);
 
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-semibold text-fg">Phòng ban tham gia</h2>
+        <h2 className="text-base font-semibold text-fg">{t("projects.projectOverviewTab.participatingDepartments")}</h2>
         {project.canManage && (
           <Button variant="secondary" onClick={() => setInviting(true)}>
-            Mời phòng ban
+            {t("projects.projectOverviewTab.inviteADepartment")}
           </Button>
         )}
       </div>

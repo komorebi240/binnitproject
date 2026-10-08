@@ -9,9 +9,12 @@ import { ApiRequestError } from "@/lib/api/client";
 import { useDeleteUser } from "../hooks/useOrganization";
 import type { UserSummary } from "../types";
 
-const ERROR_MESSAGES: Record<string, string> = {
-  INVALID_PASSWORD: "Mật khẩu của bạn không đúng.",
-  TOO_MANY_REQUESTS: "Bạn đã thử quá nhiều lần. Vui lòng thử lại sau ít phút.",
+import { RichText } from "@/components/i18n/RichText";
+import type { TranslationKey } from "@/lib/i18n/dictionary";
+import { useI18n } from "@/lib/i18n/useI18n";
+const ERROR_KEYS: Record<string, TranslationKey> = {
+  INVALID_PASSWORD: "organization.deleteUserDialog.yourPasswordIsIncorrect",
+  TOO_MANY_REQUESTS: "organization.deleteUserDialog.youVeTriedTooManyTimes",
 };
 
 interface DeleteUserDialogProps {
@@ -26,6 +29,7 @@ interface DeleteUserDialogProps {
  * open on a shared screen can't delete people). The server verifies the password; this only gathers it.
  */
 export function DeleteUserDialog({ user, onClose, onDeleted }: DeleteUserDialogProps) {
+  const { t } = useI18n();
   const deleteUser = useDeleteUser();
   const [confirmation, setConfirmation] = useState("");
   const [password, setPassword] = useState("");
@@ -42,27 +46,30 @@ export function DeleteUserDialog({ user, onClose, onDeleted }: DeleteUserDialogP
       onDeleted();
     } catch (err) {
       setPassword("");
-      setErrorMessage(
-        err instanceof ApiRequestError ? (ERROR_MESSAGES[err.code] ?? err.message) : "Không xoá được nhân sự",
-      );
+      const knownKey = err instanceof ApiRequestError ? ERROR_KEYS[err.code] : undefined;
+      if (knownKey) setErrorMessage(t(knownKey));
+      else setErrorMessage(err instanceof ApiRequestError ? err.message : t("organization.deleteUserDialog.couldnTDeleteThePerson"));
     }
   }
 
   return (
-    <Modal title="Xoá nhân sự" onClose={onClose} widthClassName="max-w-md">
+    <Modal title={t("common.deleteAPerson")} onClose={onClose} widthClassName="max-w-md">
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <Alert tone="danger">
-          Bạn sắp xoá <strong>{user.fullName}</strong> ({user.username}). Tài khoản sẽ không đăng nhập được nữa và hành động này không thể hoàn tác.
+          <RichText
+            text={t("organization.deleteUserDialog.deleteWarning", { username: user.username })}
+            values={{ name: <strong>{user.fullName}</strong> }}
+          />
         </Alert>
         <Input
-          label={`Nhập "${user.username}" để xác nhận`}
+          label={t("organization.deleteUserDialog.typeUsernameToConfirm", { username: user.username })}
           value={confirmation}
           onChange={(e) => setConfirmation(e.target.value)}
           autoComplete="off"
           required
         />
         <Input
-          label="Mật khẩu của bạn"
+          label={t("organization.deleteUserDialog.yourPassword")}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -76,10 +83,10 @@ export function DeleteUserDialog({ user, onClose, onDeleted }: DeleteUserDialogP
         )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Huỷ
+            {t("common.cancel")}
           </Button>
           <Button type="submit" variant="danger" loading={deleteUser.isPending} disabled={!confirmed}>
-            Xoá nhân sự
+            {t("common.deleteAPerson")}
           </Button>
         </div>
       </form>

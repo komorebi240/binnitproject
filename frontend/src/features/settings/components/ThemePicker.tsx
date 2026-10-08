@@ -2,11 +2,13 @@
 
 import { THEMES, useTheme, type Theme } from "@/components/theme/ThemeProvider";
 
-const THEME_LABELS: Record<Theme, string> = {
-  light: "Sáng",
-  dark: "Tối",
-  gray: "Xám",
-  pink: "Hồng",
+import type { TranslationKey } from "@/lib/i18n/dictionary";
+import { useI18n } from "@/lib/i18n/useI18n";
+const THEME_KEYS: Record<Theme, TranslationKey> = {
+  light: "settings.themePicker.light",
+  dark: "settings.themePicker.dark",
+  gray: "common.gray",
+  pink: "common.pink",
 };
 
 const THEME_SWATCHES: Record<Theme, string> = {
@@ -17,11 +19,12 @@ const THEME_SWATCHES: Record<Theme, string> = {
 };
 
 export function ThemePicker() {
+  const { t } = useI18n();
   const { theme, setTheme } = useTheme();
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold text-fg">Giao diện</h2>
+      <h2 className="text-lg font-semibold text-fg">{t("settings.themePicker.appearance")}</h2>
       <div className="flex flex-wrap gap-3">
         {THEMES.map((option) => {
           const isSelected = option === theme;
@@ -36,7 +39,7 @@ export function ThemePicker() {
                 ${isSelected ? "border-primary ring-2 ring-primary ring-offset-1" : "border-line-strong hover:border-line-strong"}`}
             >
               <span className={`h-4 w-4 rounded-full border ${THEME_SWATCHES[option]}`} aria-hidden />
-              {THEME_LABELS[option]}
+              {t(THEME_KEYS[option])}
             </button>
           );
         })}

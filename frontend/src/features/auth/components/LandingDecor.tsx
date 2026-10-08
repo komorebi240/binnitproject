@@ -126,7 +126,7 @@ export function OrbitHalo({
         const { Icon } = DEPARTMENT_ICONS[department.icon];
         return (
           <span
-            key={department.name}
+            key={department.nameKey}
             data-satellite
             style={heldBack ? HELD_BACK : undefined}
             className="glass-card absolute left-1/2 top-1/2 flex h-11 w-11 items-center justify-center rounded-full text-primary-text will-change-transform"
