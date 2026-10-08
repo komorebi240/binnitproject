@@ -6,10 +6,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.env.Profiles;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
+import java.util.Locale;
 
 /**
  * Sends real email via Gmail SMTP (spring-boot-starter-mail, configured through spring.mail.*
@@ -24,6 +28,10 @@ import org.springframework.stereotype.Service;
  * sent; the message - including the OTP / invite link - is written to the application log so a
  * developer can run the whole flow without a mailbox. Off by default, and the application refuses
  * to start with it enabled under the {@code prod} profile, because it prints secrets.
+ *
+ * <p>The texts live in {@code messages*.properties} (Vietnamese by default, English for an English reader). The
+ * language is the one of the request being served ({@link LocaleContextHolder}, set from Accept-Language, which the
+ * frontend fills with the language of its interface); mail is sent inside that request, never from another thread.
  */
 @Service
 public class EmailServiceImpl implements EmailService {
@@ -33,12 +41,14 @@ public class EmailServiceImpl implements EmailService {
     private final JavaMailSender mailSender;
     private final String fromAddress;
     private final boolean devLog;
+    private final MessageSource messages;
 
     public EmailServiceImpl(
             @Autowired(required = false) JavaMailSender mailSender,
             @Value("${spring.mail.username:}") String fromAddress,
             @Value("${app.mail.dev-log:false}") boolean devLog,
-            Environment environment
+            Environment environment,
+            MessageSource messages
     ) {
         if (devLog && environment.acceptsProfiles(Profiles.of("prod"))) {
             throw new IllegalStateException("app.mail.dev-log must never be enabled under the prod profile");
@@ -46,6 +56,7 @@ public class EmailServiceImpl implements EmailService {
         this.mailSender = mailSender;
         this.fromAddress = fromAddress;
         this.devLog = devLog;
+        this.messages = messages;
     }
 
     @Override
@@ -55,40 +66,33 @@ public class EmailServiceImpl implements EmailService {
 
     @Override
     public void sendPasswordResetOtp(String toEmail, String otp) {
-        send(toEmail, "Mã OTP khôi phục mật khẩu",
-                "Mã OTP của bạn là: " + otp + "\n\n"
-                        + "Mã có hiệu lực trong 10 phút. Nếu bạn không yêu cầu đặt lại mật khẩu, "
-                        + "hãy bỏ qua email này.");
+        sendLocalized(toEmail, "mail.passwordReset", otp);
     }
 
     @Override
     public void sendRegistrationOtp(String toEmail, String otp) {
-        send(toEmail, "Mã xác minh đăng ký Orbit",
-                "Mã xác minh của bạn là: " + otp + "\n\n"
-                        + "Mã có hiệu lực trong 10 phút. Nếu bạn không đăng ký Orbit, hãy bỏ qua email này.");
+        sendLocalized(toEmail, "mail.registration", otp);
     }
 
     @Override
     public void sendEmailChangeOtp(String toEmail, String otp) {
-        send(toEmail, "Mã xác nhận email mới trên Orbit",
-                "Mã xác nhận của bạn là: " + otp + "\n\n"
-                        + "Mã có hiệu lực trong 15 phút. Hãy đưa mã này cho người quản lý đang đổi email tài khoản Orbit của bạn. "
-                        + "Nếu bạn không biết về việc này, hãy bỏ qua email.");
+        sendLocalized(toEmail, "mail.emailChange", otp);
     }
 
     @Override
     public void sendEmailChangedNotice(String oldEmail, String newEmail) {
-        send(oldEmail, "Email tài khoản Orbit đã được đổi",
-                "Email đăng ký của tài khoản Orbit của bạn vừa được đổi sang " + newEmail + ".\n\n"
-                        + "Nếu bạn không biết về thay đổi này, hãy liên hệ quản trị viên ngay.");
+        sendLocalized(oldEmail, "mail.emailChanged", newEmail);
     }
 
     @Override
     public void sendInvitation(String toEmail, String companyName, String inviterName, String inviteLink) {
-        send(toEmail, "Lời mời tham gia " + companyName + " trên Orbit",
-                inviterName + " đã mời bạn tham gia " + companyName + " trên Orbit.\n\n"
-                        + "Mở liên kết sau để tạo tài khoản (hiệu lực 7 ngày):\n" + inviteLink + "\n\n"
-                        + "Nếu bạn không biết lời mời này, hãy bỏ qua email.");
+        sendLocalized(toEmail, "mail.invitation", companyName, inviterName, inviteLink);
+    }
+
+    /** Looks up {@code <key>.subject} and {@code <key>.body} in the language of the current request. */
+    private void sendLocalized(String toEmail, String key, Object... args) {
+        Locale locale = LocaleContextHolder.getLocale();
+        send(toEmail, messages.getMessage(key + ".subject", args, locale), messages.getMessage(key + ".body", args, locale));
     }
 
     private void send(String toEmail, String subject, String text) {

@@ -10,8 +10,7 @@ import com.company.project.modules.onboarding.dto.request.CreateInvitationReques
 import com.company.project.modules.onboarding.dto.response.InvitationPreviewResponse;
 import com.company.project.modules.onboarding.dto.response.InvitationResponse;
 import com.company.project.modules.onboarding.service.InvitationService;
-import com.company.project.security.AuthCookies;
-import com.company.project.security.JwtService;
+import com.company.project.security.SessionCookies;
 import com.company.project.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -44,19 +43,19 @@ public class InvitationController {
     private final InvitationService invitationService;
     private final AuthService authService;
     private final CustomUserDetailsService userDetailsService;
-    private final JwtService jwtService;
+    private final SessionCookies sessionCookies;
     private final RateLimitGuard rateLimitGuard;
 
     public InvitationController(
             InvitationService invitationService,
             AuthService authService,
             CustomUserDetailsService userDetailsService,
-            JwtService jwtService,
+            SessionCookies sessionCookies,
             RateLimitGuard rateLimitGuard) {
         this.invitationService = invitationService;
         this.authService = authService;
         this.userDetailsService = userDetailsService;
-        this.jwtService = jwtService;
+        this.sessionCookies = sessionCookies;
         this.rateLimitGuard = rateLimitGuard;
     }
 
@@ -106,7 +105,7 @@ public class InvitationController {
         rateLimitGuard.enforce("invite-token:ip:" + RateLimitGuard.clientIp(httpRequest), 30, Duration.ofMinutes(15));
         String username = invitationService.accept(token, request);
         UserPrincipal principal = (UserPrincipal) userDetailsService.loadUserByUsername(username);
-        AuthCookies.issue(response, jwtService, principal);
+        sessionCookies.signIn(response, principal);
         return ApiResponse.success(authService.getProfile(principal));
     }
 }

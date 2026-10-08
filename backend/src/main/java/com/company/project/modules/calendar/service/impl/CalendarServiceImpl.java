@@ -89,6 +89,7 @@ public class CalendarServiceImpl implements CalendarService {
                 NotificationType.CALENDAR_EVENT_INVITE,
                 "Lịch mới cần bạn xác nhận",
                 caller.getUsername() + " đã thêm \"" + request.title() + "\" vào lịch của bạn",
+                Map.of("actor", caller.getUsername(), "title", request.title()),
                 "CALENDAR_EVENT",
                 saved.getId());
 

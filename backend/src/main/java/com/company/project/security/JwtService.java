@@ -17,10 +17,8 @@ import java.util.Date;
  * Issues access tokens carrying enough claims (company/authority/department/team) to build a
  * full {@link UserPrincipal} without a database round trip on every request. Trade-off: if a
  * user's position changes, their existing token keeps the old claims until it expires
- * (accessTokenTtlMinutes) - acceptable for Phase 1, revisit if that staleness window matters.
- *
- * Refresh-token persistence/rotation are deliberately not implemented - a REVIEW/CRITICAL
- * decision (CLAUDE.md section 8) for a later phase.
+ * (accessTokenTtlMinutes), at which point the server-side session (SessionService) issues a fresh one read from the
+ * database - so the staleness window stays short however long the sign-in itself lasts.
  */
 @Service
 @EnableConfigurationProperties(JwtProperties.class)

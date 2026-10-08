@@ -3,6 +3,7 @@ package com.company.project.config;
 import com.company.project.security.JwtAuthenticationFilter;
 import com.company.project.security.RestAccessDeniedHandler;
 import com.company.project.security.RestAuthenticationEntryPoint;
+import com.company.project.security.TermsAcceptanceFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -37,6 +38,7 @@ import org.springframework.web.cors.CorsUtils;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final TermsAcceptanceFilter termsAcceptanceFilter;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
     private final CorsConfigurationSource corsConfigurationSource;
@@ -44,12 +46,14 @@ public class SecurityConfig {
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
+            TermsAcceptanceFilter termsAcceptanceFilter,
             RestAuthenticationEntryPoint authenticationEntryPoint,
             RestAccessDeniedHandler accessDeniedHandler,
             CorsConfigurationSource corsConfigurationSource,
             UserDetailsService userDetailsService
     ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.termsAcceptanceFilter = termsAcceptanceFilter;
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
         this.corsConfigurationSource = corsConfigurationSource;
@@ -76,6 +80,8 @@ public class SecurityConfig {
                         // each endpoint for why the response never reveals account existence.
                         .requestMatchers("/api/v1/auth/forgot-password", "/api/v1/auth/reset-password").permitAll()
                         .requestMatchers("/api/v1/auth/register/**", "/api/v1/auth/invitations/**").permitAll()
+                        // The terms are shown before an account exists; accepting (POST) still needs a session.
+                        .requestMatchers("/api/v1/terms/current").permitAll()
                         // Google's redirect back to us - resolves the user from the `state`
                         // row it looks up itself, not from the caller's own auth (see
                         // DriveConnectionController's javadoc).
@@ -85,7 +91,9 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // After the identity is known: a user who has not accepted the newest terms may do nothing else.
+                .addFilterAfter(termsAcceptanceFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

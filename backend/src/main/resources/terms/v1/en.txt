@@ -1,0 +1,50 @@
+# Orbit Terms of Service
+
+## 1. Acceptance of the terms
+By creating an account or continuing to use Orbit, you confirm that you have read, understood and agree to these terms. If you use Orbit on behalf of a company or organisation, you confirm that you have the authority to bind it to these terms. If you do not agree, please do not use Orbit.
+
+## 2. The service and accounts
+Orbit is software for businesses to manage work, projects, calendars, internal messages, documents and customer data. Each company has its own data space, separate from every other company.
+- You are responsible for keeping your sign-in details secret and for everything done under your account.
+- A company's administrators may invite, assign roles to, suspend or delete accounts within that company.
+- You must give accurate information when registering and keep it up to date.
+
+## 3. A company's data and the roles of each party
+Data that a company and its users put into Orbit, including customer lists, belongs to that company.
+- The company is the data controller: it decides the purposes and means of processing the personal data of its customers, partners and staff, and is responsible for the legal basis for doing so.
+- Orbit acts as a data processor: it stores and processes data only to provide the service to the company, on the company's instructions given through the product's features.
+- The company confirms that it has, or will have, a lawful basis - including the consent of the data subject where the law requires it - before putting personal data into Orbit, and that it will use the data only for the purposes told to the data subject.
+- The company handles requests from data subjects, such as access, correction, deletion or withdrawal of consent; Orbit provides tools for the company to do so.
+
+## 4. Customer data (CRM): importing, editing and exporting
+- Only people with permission in the company may view, import, edit or export customer data, according to the permissions the company sets in Orbit.
+- Only the company's senior administrators may export data to a file. Exports are limited in size and frequency, and are logged.
+- You must not put into Orbit personal data that was collected unlawfully, traded without authorisation, or that the company has no right to process.
+- The company is responsible for keeping files exported from Orbit safe and not disclosing them to anyone without authority.
+
+## 5. Prohibited conduct
+You must not use Orbit to:
+- Send advertising or marketing messages, emails or calls, or otherwise contact people for marketing, without the recipient's valid consent or contrary to the law.
+- Commit fraud, impersonate anyone, spread false content, or infringe the rights or lawful interests of others.
+- Collect, store, trade or transfer personal data unlawfully, or use data for a purpose other than the one told to the data subject.
+- Access another company's data without permission, scan, attack or disrupt the service, or bypass its security measures and limits.
+- Store or distribute content that breaks the law.
+
+## 6. Security and encryption
+Orbit applies reasonable technical and organisational measures to protect data, including encrypted connections, role-based permissions, separation of data between companies, and encryption at rest of the sensitive fields of customer data using a separate key for each company. No system is perfectly secure; Orbit does not promise that a security incident will never happen, but will handle and report incidents involving personal data as the law requires.
+
+## 7. Logs and abuse prevention
+To protect users and data subjects, Orbit logs important actions such as bulk import, export and deletion (without the personal data itself) and may apply rate limits, alerts or temporary suspension when it detects unusual activity.
+Orbit does not proactively read the content of a company's customer data and restricts technical access to it. Orbit accesses it only when the company asks for support, when needed to deal with a security incident or a serious violation, or when a competent authority requires it by a valid written request under the law.
+
+## 8. Suspension and termination
+Orbit may suspend or terminate an account, or a company's whole space, when these terms or the law are broken, or when a competent authority requires it. Where possible, Orbit will give notice first. You may stop using Orbit at any time; after termination, the company's data will be deleted or anonymised within a reasonable time, except what the law requires to be kept. A company should export the data it needs before termination.
+
+## 9. Limitation of liability
+Orbit is provided on a reasonable-efforts basis and is not promised to be uninterrupted or error-free. To the extent the law allows, Orbit is not liable for indirect damage, lost profit, or consequences of content and data entered by users, of users breaking these terms, or of users disclosing their sign-in details. A company should back up its important data.
+
+## 10. Changes to the terms
+When the terms change, Orbit will publish a new version. At your next sign-in you will be asked to read and accept the new version before you continue to use Orbit. If you do not agree, you can sign out and stop using it. Orbit records which version you accepted and when.
+
+## 11. Governing law and contact
+These terms are governed by the law of Vietnam. Questions, data-subject requests and reports of violations can be sent to your company's administrator or to the operator of Orbit through the support channel the operator publishes.

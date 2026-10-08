@@ -137,7 +137,7 @@ public class MessageServiceImpl implements MessageService {
 
         MessageEntity saved = messageRepository.save(new MessageEntity(caller.getUserId(), recipientUserId, body));
         unarchiveBothSides(caller.getUserId(), recipientUserId);
-        notifyRecipient(recipientUserId, body, caller);
+        notifyRecipient(recipientUserId, body, false, caller);
 
         return toResponse(saved, null);
     }
@@ -158,7 +158,8 @@ public class MessageServiceImpl implements MessageService {
             MessageAttachmentEntity attachment = attachmentRepository.save(new MessageAttachmentEntity(
                     message.getId(), stored.storedName(), stored.displayName(), stored.contentType(), stored.sizeBytes(), stored.image()));
             unarchiveBothSides(caller.getUserId(), recipientUserId);
-            notifyRecipient(recipientUserId, caption.isEmpty() ? ATTACHMENT_NOTIFICATION_BODY : caption, caller);
+            boolean attachmentOnly = caption.isEmpty();
+            notifyRecipient(recipientUserId, attachmentOnly ? ATTACHMENT_NOTIFICATION_BODY : caption, attachmentOnly, caller);
             return toResponse(message, attachment);
         } catch (RuntimeException e) {
             // Don't leave an unreferenced file on disk when the DB write failed.
@@ -236,7 +237,7 @@ public class MessageServiceImpl implements MessageService {
 
         for (UserEntity recipient : recipients) {
             messageRepository.save(new MessageEntity(caller.getUserId(), recipient.getId(), body));
-            notifyRecipient(recipient.getId(), body, caller);
+            notifyRecipient(recipient.getId(), body, false, caller);
         }
         archiveRepository.deleteAllByOtherUser(caller.getUserId());
 
@@ -256,12 +257,17 @@ public class MessageServiceImpl implements MessageService {
         archiveRepository.deleteByPair(senderId, recipientId);
     }
 
-    private void notifyRecipient(Long recipientUserId, String preview, UserPrincipal caller) {
+    /** {@code attachmentOnly}: the preview is our placeholder, not the sender's words, so a client words it itself. */
+    private void notifyRecipient(Long recipientUserId, String preview, boolean attachmentOnly, UserPrincipal caller) {
+        Map<String, String> params = attachmentOnly
+                ? Map.of("actor", caller.getUsername(), "attachmentOnly", "true")
+                : Map.of("actor", caller.getUsername());
         notificationService.notify(
                 recipientUserId,
                 NotificationType.MESSAGE_RECEIVED,
                 "Tin nhắn mới từ " + caller.getUsername(),
                 preview,
+                params,
                 "MESSAGE_THREAD",
                 caller.getUserId());
     }

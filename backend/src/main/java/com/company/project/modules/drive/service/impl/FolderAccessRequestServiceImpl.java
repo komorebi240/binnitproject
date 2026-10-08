@@ -115,6 +115,7 @@ public class FolderAccessRequestServiceImpl implements FolderAccessRequestServic
                     NotificationType.FOLDER_ACCESS_REQUESTED,
                     "Yêu cầu truy cập folder mới",
                     requester.getUsername() + " xin quyền vào \"" + folder.getGoogleFolderName() + "\"",
+                    Map.of("actor", requester.getUsername(), "folder", folder.getGoogleFolderName()),
                     "FOLDER_ACCESS_REQUEST",
                     requestId);
         }

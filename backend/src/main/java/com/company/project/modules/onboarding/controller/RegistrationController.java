@@ -10,8 +10,7 @@ import com.company.project.modules.onboarding.dto.request.RequestRegistrationOtp
 import com.company.project.modules.onboarding.dto.request.VerifyRegistrationOtpRequest;
 import com.company.project.modules.onboarding.dto.response.VerificationTokenResponse;
 import com.company.project.modules.onboarding.service.RegistrationService;
-import com.company.project.security.AuthCookies;
-import com.company.project.security.JwtService;
+import com.company.project.security.SessionCookies;
 import com.company.project.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,19 +36,19 @@ public class RegistrationController {
     private final RegistrationService registrationService;
     private final AuthService authService;
     private final CustomUserDetailsService userDetailsService;
-    private final JwtService jwtService;
+    private final SessionCookies sessionCookies;
     private final RateLimitGuard rateLimitGuard;
 
     public RegistrationController(
             RegistrationService registrationService,
             AuthService authService,
             CustomUserDetailsService userDetailsService,
-            JwtService jwtService,
+            SessionCookies sessionCookies,
             RateLimitGuard rateLimitGuard) {
         this.registrationService = registrationService;
         this.authService = authService;
         this.userDetailsService = userDetailsService;
-        this.jwtService = jwtService;
+        this.sessionCookies = sessionCookies;
         this.rateLimitGuard = rateLimitGuard;
     }
 
@@ -79,7 +78,7 @@ public class RegistrationController {
         rateLimitGuard.enforce("register:ip:" + RateLimitGuard.clientIp(httpRequest), 10, Duration.ofHours(1));
         String username = registrationService.register(request);
         UserPrincipal principal = (UserPrincipal) userDetailsService.loadUserByUsername(username);
-        AuthCookies.issue(response, jwtService, principal);
+        sessionCookies.signIn(response, principal);
         return ApiResponse.success(authService.getProfile(principal));
     }
 }

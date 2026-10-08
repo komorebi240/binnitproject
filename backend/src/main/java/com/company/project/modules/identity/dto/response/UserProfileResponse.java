@@ -22,6 +22,7 @@ public record UserProfileResponse(
         String avatarUrl,
         PresenceStatus presenceStatus,
         boolean systemAccount,
-        boolean onboardingCompleted
+        boolean onboardingCompleted,
+        boolean termsAccepted
 ) {
 }

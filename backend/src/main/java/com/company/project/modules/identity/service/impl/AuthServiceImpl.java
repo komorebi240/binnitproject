@@ -20,12 +20,16 @@ import com.company.project.modules.identity.repository.UserRepository;
 import com.company.project.modules.identity.service.AuthService;
 import com.company.project.modules.identity.service.AvatarStorageService;
 import com.company.project.modules.identity.service.EmailService;
+import com.company.project.modules.identity.service.LoginProtectionService;
+import com.company.project.modules.identity.service.SessionService;
+import com.company.project.modules.legal.service.TermsService;
 import com.company.project.security.UserPrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,8 +61,11 @@ public class AuthServiceImpl implements AuthService {
     private final PositionRepository positionRepository;
     private final PasswordResetOtpRepository passwordResetOtpRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SessionService sessionService;
+    private final LoginProtectionService loginProtectionService;
     private final EmailService emailService;
     private final AvatarStorageService avatarStorageService;
+    private final TermsService termsService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthServiceImpl(
@@ -70,8 +77,11 @@ public class AuthServiceImpl implements AuthService {
             PositionRepository positionRepository,
             PasswordResetOtpRepository passwordResetOtpRepository,
             PasswordEncoder passwordEncoder,
+            SessionService sessionService,
+            LoginProtectionService loginProtectionService,
             EmailService emailService,
-            AvatarStorageService avatarStorageService
+            AvatarStorageService avatarStorageService,
+            TermsService termsService
     ) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
@@ -81,15 +91,26 @@ public class AuthServiceImpl implements AuthService {
         this.positionRepository = positionRepository;
         this.passwordResetOtpRepository = passwordResetOtpRepository;
         this.passwordEncoder = passwordEncoder;
+        this.sessionService = sessionService;
+        this.loginProtectionService = loginProtectionService;
         this.emailService = emailService;
         this.avatarStorageService = avatarStorageService;
+        this.termsService = termsService;
     }
 
     @Override
-    public UserPrincipal authenticate(String username, String password) {
-        var authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password));
-        return (UserPrincipal) authentication.getPrincipal();
+    public UserPrincipal authenticate(String username, String password, String clientAddress) {
+        loginProtectionService.checkAllowed(username, clientAddress);
+        try {
+            var authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, password));
+            loginProtectionService.clearFailures(username);
+            return (UserPrincipal) authentication.getPrincipal();
+        } catch (AuthenticationException failure) {
+            // Wrong password, unknown user and switched-off account all count alike - and all answer alike (401).
+            loginProtectionService.recordFailure(username, clientAddress);
+            throw failure;
+        }
     }
 
     @Override
@@ -125,7 +146,8 @@ public class AuthServiceImpl implements AuthService {
                 avatarUrl(user),
                 user.getPresenceStatus(),
                 user.isSystemAccount(),
-                user.isOnboardingCompleted());
+                user.isOnboardingCompleted(),
+                termsService.hasAcceptedCurrent(user.getId()));
     }
 
     private String avatarUrl(UserEntity user) {
@@ -134,7 +156,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void changePassword(UserPrincipal caller, String currentPassword, String newPassword) {
+    public void changePassword(UserPrincipal caller, String currentPassword, String newPassword, String currentSessionToken) {
         UserEntity user = userRepository.findActiveById(caller.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User", caller.getUserId()));
 
@@ -144,6 +166,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         user.setPasswordHash(passwordEncoder.encode(newPassword));
+        // Whoever else holds a session (a lost laptop, a stolen cookie) is signed out; this browser carries on.
+        sessionService.endOthers(user.getId(), currentSessionToken);
     }
 
     @Override
@@ -217,6 +241,9 @@ public class AuthServiceImpl implements AuthService {
 
         validOtp.markUsed();
         user.setPasswordHash(passwordEncoder.encode(newPassword));
+        sessionService.endAll(user.getId());
+        // Proving ownership of the account by mail lifts a lock someone else's guessing may have caused.
+        loginProtectionService.clearFailures(user.getUsername());
     }
 
     @Override

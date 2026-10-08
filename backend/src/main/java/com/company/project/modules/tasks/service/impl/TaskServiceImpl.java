@@ -432,7 +432,8 @@ public class TaskServiceImpl implements TaskService {
             if (!recipientId.equals(caller.getUserId())) {
                 notificationService.notify(
                         recipientId, NotificationType.TASK_ASSIGNED, "Bạn có việc mới",
-                        caller.getUsername() + " đã giao \"" + task.getTitle() + "\"", "TASK", task.getId());
+                        caller.getUsername() + " đã giao \"" + task.getTitle() + "\"",
+                        Map.of("actor", caller.getUsername(), "title", task.getTitle()), "TASK", task.getId());
             }
         }
     }
@@ -445,7 +446,8 @@ public class TaskServiceImpl implements TaskService {
         }
         notificationService.notify(
                 assignerId, type, "Cập nhật công việc",
-                caller.getUsername() + " " + verb + " \"" + task.getTitle() + "\"", "TASK", task.getId());
+                caller.getUsername() + " " + verb + " \"" + task.getTitle() + "\"",
+                Map.of("actor", caller.getUsername(), "title", task.getTitle()), "TASK", task.getId());
     }
 
     private TaskAttachmentEntity requireAttachmentOf(TaskEntity task, Long attachmentId) {

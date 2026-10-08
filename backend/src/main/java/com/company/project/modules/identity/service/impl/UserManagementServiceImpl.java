@@ -22,6 +22,7 @@ import com.company.project.modules.identity.service.UserManagementService;
 import com.company.project.security.UserPrincipal;
 import com.company.project.modules.identity.service.AuthService;
 import com.company.project.modules.identity.service.EmailService;
+import com.company.project.modules.identity.service.SessionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -58,6 +59,7 @@ public class UserManagementServiceImpl implements UserManagementService {
     private final AuthService authService;
     private final EmailService emailService;
     private final EmailChangeRequestRepository emailChangeRepository;
+    private final SessionService sessionService;
 
     public UserManagementServiceImpl(
             UserRepository userRepository,
@@ -68,7 +70,8 @@ public class UserManagementServiceImpl implements UserManagementService {
             AvatarStorageService avatarStorageService,
             AuthService authService,
             EmailService emailService,
-            EmailChangeRequestRepository emailChangeRepository
+            EmailChangeRequestRepository emailChangeRepository,
+            SessionService sessionService
     ) {
         this.userRepository = userRepository;
         this.positionRepository = positionRepository;
@@ -79,6 +82,7 @@ public class UserManagementServiceImpl implements UserManagementService {
         this.authService = authService;
         this.emailService = emailService;
         this.emailChangeRepository = emailChangeRepository;
+        this.sessionService = sessionService;
     }
 
     @Override
@@ -167,6 +171,7 @@ public class UserManagementServiceImpl implements UserManagementService {
 
         target.deactivateAndDelete();
         targetPosition.markDeleted();
+        sessionService.endAll(userId);
     }
 
     @Override
@@ -222,6 +227,10 @@ public class UserManagementServiceImpl implements UserManagementService {
         assertCallerCanManage(caller, targetPosition);
 
         target.setActive(active);
+        if (!active) {
+            // A switched-off account must not keep working until its access token expires.
+            sessionService.endAll(userId);
+        }
         return toSummary(target, targetPosition);
     }
 

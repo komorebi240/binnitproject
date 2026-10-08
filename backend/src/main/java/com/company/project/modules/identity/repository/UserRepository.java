@@ -1,7 +1,9 @@
 package com.company.project.modules.identity.repository;
 
 import com.company.project.modules.identity.domain.UserEntity;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -11,6 +13,14 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     Optional<UserEntity> findByUsername(String username);
+
+    /**
+     * Same as {@link #findByUsername} for a not-deleted user, holding a row lock until the transaction ends, so concurrent
+     * failed sign-ins of one account are counted one after the other instead of overwriting each other.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from UserEntity u where u.username = :username and u.deleted = false")
+    Optional<UserEntity> findActiveByUsernameForUpdate(@Param("username") String username);
 
     boolean existsByUsername(String username);
 

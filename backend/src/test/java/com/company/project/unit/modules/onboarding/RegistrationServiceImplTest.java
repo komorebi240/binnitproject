@@ -10,16 +10,21 @@ import com.company.project.modules.identity.repository.CompanyRepository;
 import com.company.project.modules.identity.repository.PositionRepository;
 import com.company.project.modules.identity.repository.UserRepository;
 import com.company.project.modules.identity.service.EmailService;
+import com.company.project.modules.legal.service.TermsService;
 import com.company.project.modules.onboarding.domain.RegistrationVerificationEntity;
 import com.company.project.modules.onboarding.dto.request.RegisterCompanyRequest;
 import com.company.project.modules.onboarding.repository.RegistrationVerificationRepository;
 import com.company.project.modules.onboarding.service.impl.RegistrationServiceImpl;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
@@ -40,6 +45,7 @@ import static org.mockito.Mockito.when;
 class RegistrationServiceImplTest {
 
     private static final String EMAIL = "admin@acme.test";
+    private static final int TERMS_VERSION = 1;
 
     @Mock
     private RegistrationVerificationRepository verificationRepository;
@@ -53,13 +59,30 @@ class RegistrationServiceImplTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private EmailService emailService;
+    @Mock
+    private TermsService termsService;
 
     private RegistrationServiceImpl service;
 
+    /** Configured the way Spring Boot configures it from application.yml (UTF-8, no fallback to the server language). */
+    private static MessageSource messages() {
+        ResourceBundleMessageSource source = new ResourceBundleMessageSource();
+        source.setBasename("messages");
+        source.setDefaultEncoding("UTF-8");
+        source.setFallbackToSystemLocale(false);
+        return source;
+    }
+
+    @AfterEach
+    void resetLocale() {
+        LocaleContextHolder.resetLocaleContext();
+    }
+
     @BeforeEach
     void setUp() {
+        LocaleContextHolder.setLocale(java.util.Locale.forLanguageTag("vi"));
         service = new RegistrationServiceImpl(
-                verificationRepository, companyRepository, userRepository, positionRepository, passwordEncoder, emailService);
+                verificationRepository, companyRepository, userRepository, positionRepository, passwordEncoder, emailService, messages(), termsService);
     }
 
     private RegistrationVerificationEntity openVerification(String otp, Instant expiresAt) {
@@ -170,7 +193,7 @@ class RegistrationServiceImplTest {
     // ------------------------------------------------------------------ register
 
     private RegisterCompanyRequest registerRequest(String token, String contactEmail) {
-        return new RegisterCompanyRequest(token, "  Acme Co ", contactEmail, "acme.admin", " Ann Admin ", "S3cretPass!");
+        return new RegisterCompanyRequest(token, "  Acme Co ", contactEmail, "acme.admin", " Ann Admin ", "S3cretPass!", TERMS_VERSION);
     }
 
     private RegistrationVerificationEntity verifiedVerification(String token, Instant expiresAt) {
@@ -246,7 +269,46 @@ class RegistrationServiceImplTest {
         ArgumentCaptor<PositionEntity> position = ArgumentCaptor.forClass(PositionEntity.class);
         verify(positionRepository).save(position.capture());
         assertThat(position.getValue().getAuthorityLevel()).isEqualTo(AuthorityLevel.EXECUTIVE);
+        assertThat(position.getValue().getTitle()).isEqualTo("Quản trị viên");
+        verify(termsService).recordAcceptance(70L, TERMS_VERSION);
         assertThat(v.isConsumed()).isTrue();
+    }
+
+    @Test
+    void register_withoutTheCurrentTermsNothingIsCreated() {
+        org.mockito.Mockito.doThrow(new BusinessException("TERMS_VERSION_MISMATCH", "The terms have changed", org.springframework.http.HttpStatus.CONFLICT))
+                .when(termsService).requireCurrentVersion(TERMS_VERSION);
+
+        assertThatThrownBy(() -> service.register(registerRequest("good-token", null)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("terms");
+
+        verify(companyRepository, never()).save(any());
+        verify(userRepository, never()).save(any());
+        verify(termsService, never()).recordAcceptance(any(), org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
+    void register_titlesTheFirstAdministratorInTheLanguageOfTheRequest() {
+        LocaleContextHolder.setLocale(java.util.Locale.ENGLISH);
+        verifiedVerification("good-token", Instant.now().plusSeconds(600));
+        when(passwordEncoder.encode(any())).thenReturn("hashed");
+        when(companyRepository.save(any())).thenAnswer(inv -> {
+            CompanyEntity c = inv.getArgument(0);
+            setId(c, 7L);
+            return c;
+        });
+        when(userRepository.save(any())).thenAnswer(inv -> {
+            UserEntity u = inv.getArgument(0);
+            setId(u, 70L);
+            return u;
+        });
+
+        service.register(registerRequest("good-token", null));
+
+        ArgumentCaptor<PositionEntity> position = ArgumentCaptor.forClass(PositionEntity.class);
+        verify(positionRepository).save(position.capture());
+        assertThat(position.getValue().getTitle()).isEqualTo("Administrator");
     }
 
     @Test

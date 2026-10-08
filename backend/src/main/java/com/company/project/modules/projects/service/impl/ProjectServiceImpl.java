@@ -258,11 +258,12 @@ public class ProjectServiceImpl implements ProjectService {
         invitation.decide(accept, caller.getUserId());
 
         if (!project.getCreatedByUserId().equals(caller.getUserId())) {
-            String departmentName = departmentNames(Set.of(departmentId)).get(departmentId);
+            String departmentName = departmentNames(Set.of(departmentId)).getOrDefault(departmentId, "-");
             notificationService.notify(
                     project.getCreatedByUserId(), NotificationType.PROJECT_RESPONDED,
                     "Phản hồi lời mời dự án",
                     departmentName + (accept ? " đã nhận" : " đã từ chối") + " tham gia \"" + project.getName() + "\"",
+                    Map.of("department", departmentName, "project", project.getName(), "accepted", String.valueOf(accept)),
                     "PROJECT", project.getId());
         }
         return toDetail(project, caller);
@@ -318,7 +319,8 @@ public class ProjectServiceImpl implements ProjectService {
         if (!user.getId().equals(caller.getUserId())) {
             notificationService.notify(
                     user.getId(), NotificationType.PROJECT_MEMBER_ADDED, "Bạn được thêm vào dự án",
-                    caller.getUsername() + " đã thêm bạn vào \"" + project.getName() + "\"", "PROJECT", projectId);
+                    caller.getUsername() + " đã thêm bạn vào \"" + project.getName() + "\"",
+                    Map.of("actor", caller.getUsername(), "project", project.getName()), "PROJECT", projectId);
         }
         shareLinkedFoldersWith(projectId, List.of(user.getId()));
         return toDetail(project, caller);
@@ -441,6 +443,7 @@ public class ProjectServiceImpl implements ProjectService {
                 .forEach(userId -> notificationService.notify(
                         userId, NotificationType.PROJECT_INVITED, "Lời mời tham gia dự án",
                         caller.getUsername() + " mời phòng của bạn tham gia \"" + project.getName() + "\"",
+                        Map.of("actor", caller.getUsername(), "project", project.getName()),
                         "PROJECT", project.getId()));
     }
 

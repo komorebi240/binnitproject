@@ -10,11 +10,14 @@ import com.company.project.modules.identity.repository.CompanyRepository;
 import com.company.project.modules.identity.repository.PositionRepository;
 import com.company.project.modules.identity.repository.UserRepository;
 import com.company.project.modules.identity.service.EmailService;
+import com.company.project.modules.legal.service.TermsService;
 import com.company.project.modules.onboarding.domain.RegistrationVerificationEntity;
 import com.company.project.modules.onboarding.dto.request.RegisterCompanyRequest;
 import com.company.project.modules.onboarding.repository.RegistrationVerificationRepository;
 import com.company.project.modules.onboarding.service.RegistrationService;
 import org.springframework.http.HttpStatus;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +35,6 @@ public class RegistrationServiceImpl implements RegistrationService {
     private static final int OTP_TTL_MINUTES = 10;
     private static final int MAX_OTP_ATTEMPTS = 5;
     private static final int TOKEN_TTL_MINUTES = 30;
-    private static final String ADMIN_TITLE = "Quản trị viên";
 
     private final RegistrationVerificationRepository verificationRepository;
     private final CompanyRepository companyRepository;
@@ -40,6 +42,8 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final PositionRepository positionRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final MessageSource messages;
+    private final TermsService termsService;
 
     public RegistrationServiceImpl(
             RegistrationVerificationRepository verificationRepository,
@@ -47,13 +51,17 @@ public class RegistrationServiceImpl implements RegistrationService {
             UserRepository userRepository,
             PositionRepository positionRepository,
             PasswordEncoder passwordEncoder,
-            EmailService emailService) {
+            EmailService emailService,
+            MessageSource messages,
+            TermsService termsService) {
         this.verificationRepository = verificationRepository;
         this.companyRepository = companyRepository;
         this.userRepository = userRepository;
         this.positionRepository = positionRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        this.messages = messages;
+        this.termsService = termsService;
     }
 
     @Override
@@ -109,6 +117,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     @Override
     @Transactional
     public String register(RegisterCompanyRequest request) {
+        termsService.requireCurrentVersion(request.acceptedTermsVersion());
         RegistrationVerificationEntity verification = verificationRepository
                 .findByTokenHash(SecureTokens.sha256Hex(request.verificationToken()))
                 .filter(v -> v.isVerified() && !v.isConsumed() && v.getExpiresAt().isAfter(Instant.now()))
@@ -134,7 +143,10 @@ public class RegistrationServiceImpl implements RegistrationService {
                 passwordEncoder.encode(request.password()),
                 request.fullName().trim(),
                 adminEmail));
-        positionRepository.save(new PositionEntity(admin.getId(), AuthorityLevel.EXECUTIVE, null, null, ADMIN_TITLE));
+        // The first administrator's job title, in the language of the sign-up page; it is an ordinary editable title afterwards.
+        String adminTitle = messages.getMessage("registration.adminTitle", null, LocaleContextHolder.getLocale());
+        positionRepository.save(new PositionEntity(admin.getId(), AuthorityLevel.EXECUTIVE, null, null, adminTitle));
+        termsService.recordAcceptance(admin.getId(), request.acceptedTermsVersion());
 
         verification.markConsumed();
         return admin.getUsername();

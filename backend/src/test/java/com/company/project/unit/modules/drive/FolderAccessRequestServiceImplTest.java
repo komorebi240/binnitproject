@@ -31,6 +31,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -120,8 +122,10 @@ class FolderAccessRequestServiceImplTest {
 
         service.createRequest(new CreateFolderAccessRequest(1L, null), requester);
 
-        verify(notificationService).notify(eq(2L), any(), anyString(), anyString(), anyString(), eq(7L));
-        verify(notificationService, never()).notify(eq(3L), any(), anyString(), anyString(), anyString(), any());
+        verify(notificationService).notify(
+                eq(2L), any(), anyString(), anyString(),
+                argThat(params -> params.containsKey("actor") && params.containsKey("folder")), anyString(), eq(7L));
+        verify(notificationService, never()).notify(eq(3L), any(), anyString(), anyString(), anyMap(), anyString(), any());
     }
 
     @Test

@@ -20,6 +20,7 @@ import com.company.project.modules.identity.domain.EmailChangeRequestEntity;
 import com.company.project.modules.identity.repository.EmailChangeRequestRepository;
 import com.company.project.modules.identity.service.AuthService;
 import com.company.project.modules.identity.service.EmailService;
+import com.company.project.modules.identity.service.SessionService;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -69,6 +70,8 @@ class UserManagementServiceImplTest {
     private EmailService emailService;
     @Mock
     private EmailChangeRequestRepository emailChangeRepository;
+    @Mock
+    private SessionService sessionService;
 
     private UserManagementServiceImpl service;
 
@@ -76,7 +79,7 @@ class UserManagementServiceImplTest {
     void setUp() {
         service = new UserManagementServiceImpl(
                 userRepository, positionRepository, departmentRepository, teamRepository, passwordEncoder,
-                avatarStorageService, authService, emailService, emailChangeRepository);
+                avatarStorageService, authService, emailService, emailChangeRepository, sessionService);
     }
 
     private UserPrincipal principal(AuthorityLevel level, Long departmentId, Long teamId) {
@@ -168,6 +171,7 @@ class UserManagementServiceImplTest {
 
         assertThat(target.isDeleted()).isTrue();
         assertThat(position.isDeleted()).isTrue();
+        verify(sessionService).endAll(42L);
     }
 
     @Test
@@ -195,6 +199,37 @@ class UserManagementServiceImplTest {
 
         assertThatThrownBy(() -> service.deleteUser(targetId, "right-password", deptHead))
                 .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void setActive_deactivatingEndsEverySessionOfTheAccount() {
+        UserPrincipal executive = principal(AuthorityLevel.EXECUTIVE, null, null);
+        UserEntity target = new UserEntity(COMPANY_A, "member", "hash", "Member", null);
+        setId(target, 42L);
+        when(userRepository.findActiveById(42L)).thenReturn(Optional.of(target));
+        when(positionRepository.findActiveByUserId(42L))
+                .thenReturn(Optional.of(new PositionEntity(42L, AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null, null)));
+
+        service.setActive(42L, false, executive);
+
+        assertThat(target.isActive()).isFalse();
+        verify(sessionService).endAll(42L);
+    }
+
+    @Test
+    void setActive_reactivatingLeavesSessionsAlone() {
+        UserPrincipal executive = principal(AuthorityLevel.EXECUTIVE, null, null);
+        UserEntity target = new UserEntity(COMPANY_A, "member", "hash", "Member", null);
+        setId(target, 42L);
+        target.setActive(false);
+        when(userRepository.findActiveById(42L)).thenReturn(Optional.of(target));
+        when(positionRepository.findActiveByUserId(42L))
+                .thenReturn(Optional.of(new PositionEntity(42L, AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null, null)));
+
+        service.setActive(42L, true, executive);
+
+        assertThat(target.isActive()).isTrue();
+        verify(sessionService, never()).endAll(42L);
     }
 
     @Test

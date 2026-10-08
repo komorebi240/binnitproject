@@ -40,6 +40,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -295,7 +297,8 @@ class TaskServiceImplTest {
         service.createTask(request, executive);
 
         verify(notificationService).notify(
-                eq(EMPLOYEE_IN_ENGINEERING), eq(NotificationType.TASK_ASSIGNED), anyString(), anyString(), eq("TASK"), eq(91L));
+                eq(EMPLOYEE_IN_ENGINEERING), eq(NotificationType.TASK_ASSIGNED), anyString(), anyString(),
+                argThat(params -> params.containsKey("actor") && params.containsKey("title")), eq("TASK"), eq(91L));
     }
 
     @Test
@@ -310,7 +313,7 @@ class TaskServiceImplTest {
 
         service.createTask(request, employee);
 
-        verify(notificationService, never()).notify(anyLong(), any(), anyString(), anyString(), anyString(), any());
+        verify(notificationService, never()).notify(anyLong(), any(), anyString(), anyString(), anyMap(), anyString(), any());
     }
 
     @Test
@@ -324,7 +327,8 @@ class TaskServiceImplTest {
         service.acceptTask(7L, assignee);
 
         verify(notificationService).notify(
-                eq(2L), eq(NotificationType.TASK_ACCEPTED), anyString(), anyString(), eq("TASK"), eq(7L));
+                eq(2L), eq(NotificationType.TASK_ACCEPTED), anyString(), anyString(),
+                argThat(params -> params.containsKey("actor") && params.containsKey("title")), eq("TASK"), eq(7L));
     }
 
     @Test

@@ -9,12 +9,19 @@ import org.springframework.web.multipart.MultipartFile;
 public interface AuthService {
 
     /** Throws org.springframework.security.core.AuthenticationException on any failure. */
-    UserPrincipal authenticate(String username, String password);
+    /**
+     * Checks the password, refusing with 429 (before looking at the password) when this username or this client address
+     * has failed too often recently; a failure is counted, a success clears the username's count.
+     */
+    UserPrincipal authenticate(String username, String password, String clientAddress);
 
     UserProfileResponse getProfile(UserPrincipal principal);
 
-    /** Throws BusinessException(401-equivalent business code) if currentPassword is wrong. */
-    void changePassword(UserPrincipal caller, String currentPassword, String newPassword);
+    /**
+     * Throws BusinessException(401-equivalent business code) if currentPassword is wrong. The caller's other sessions end;
+     * the one with {@code currentSessionToken} (the browser they are using) stays.
+     */
+    void changePassword(UserPrincipal caller, String currentPassword, String newPassword, String currentSessionToken);
 
     UserProfileResponse updateProfile(UserPrincipal caller, UpdateProfileRequest request);
 

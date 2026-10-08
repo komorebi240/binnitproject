@@ -1,8 +1,8 @@
 package com.company.project.security;
 
+import com.company.project.modules.identity.service.SessionService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.lang.NonNull;
@@ -14,10 +14,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Reads the session cookie (matches the frontend's httpOnly-cookie convention - see
+ * Reads the access-token cookie (matches the frontend's httpOnly-cookie convention - see
  * frontend/src/lib/api/client.ts and its README), validates the JWT, and populates the
- * SecurityContext with a full UserPrincipal built from the token's claims. The backend never
- * trusts an identity claimed directly by the client outside this token (CLAUDE.md section 8).
+ * SecurityContext with a full UserPrincipal built from the token's claims. When the token is missing or has expired but
+ * the session cookie matches a live session, the person is read fresh from the database and a new access token is issued -
+ * that is how a sign-in lasts until two hours without action rather than 15 minutes. The backend never trusts an
+ * identity claimed directly by the client outside these two tokens (CLAUDE.md section 8).
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -25,9 +27,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public static final String ACCESS_TOKEN_COOKIE = "access_token";
 
     private final JwtService jwtService;
+    private final SessionService sessionService;
+    private final SessionCookies sessionCookies;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter(JwtService jwtService, SessionService sessionService, SessionCookies sessionCookies) {
         this.jwtService = jwtService;
+        this.sessionService = sessionService;
+        this.sessionCookies = sessionCookies;
     }
 
     @Override
@@ -36,30 +42,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-        String token = readTokenFromCookie(request);
+        String accessToken = SessionCookies.read(request, ACCESS_TOKEN_COOKIE);
+        UserPrincipal principal = accessToken == null ? null : jwtService.parsePrincipal(accessToken);
 
-        if (token != null) {
-            UserPrincipal principal = jwtService.parsePrincipal(token);
-            if (principal != null && principal.isEnabled()) {
-                var authentication = new UsernamePasswordAuthenticationToken(
-                        principal, null, principal.getAuthorities());
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
+        if (principal == null) {
+            principal = resumeSession(request, response);
+        }
+
+        if (principal != null && principal.isEnabled()) {
+            var authentication = new UsernamePasswordAuthenticationToken(
+                    principal, null, principal.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private String readTokenFromCookie(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) {
+    private UserPrincipal resumeSession(HttpServletRequest request, HttpServletResponse response) {
+        String sessionToken = SessionCookies.sessionToken(request);
+        if (sessionToken == null) {
             return null;
         }
-        for (Cookie cookie : cookies) {
-            if (ACCESS_TOKEN_COOKIE.equals(cookie.getName())) {
-                return cookie.getValue();
-            }
+        UserPrincipal principal = sessionService.resume(sessionToken).orElse(null);
+        if (principal == null) {
+            // Ended, idle too long or account switched off: stop the browser presenting it (and /login stops forwarding to the app).
+            sessionCookies.clearSessionToken(response);
+            return null;
         }
-        return null;
+        sessionCookies.issueAccessToken(response, principal);
+        return principal;
     }
 }

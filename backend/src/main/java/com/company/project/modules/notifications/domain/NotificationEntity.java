@@ -40,6 +40,10 @@ public class NotificationEntity {
     @Column(length = 1000)
     private String body;
 
+    /** JSON object of the values {@code title}/{@code body} were built from; null for rows older than Phase 37. */
+    @Column(length = 2000)
+    private String params;
+
     @Column(name = "related_entity_type", length = 50)
     private String relatedEntityType;
 
@@ -57,12 +61,13 @@ public class NotificationEntity {
     }
 
     public NotificationEntity(
-            Long userId, NotificationType type, String title, String body,
+            Long userId, NotificationType type, String title, String body, String params,
             String relatedEntityType, Long relatedEntityId) {
         this.userId = userId;
         this.type = type;
         this.title = title;
         this.body = body;
+        this.params = params;
         this.relatedEntityType = relatedEntityType;
         this.relatedEntityId = relatedEntityId;
         this.createdAt = Instant.now();
@@ -86,6 +91,10 @@ public class NotificationEntity {
 
     public String getBody() {
         return body;
+    }
+
+    public String getParams() {
+        return params;
     }
 
     public String getRelatedEntityType() {

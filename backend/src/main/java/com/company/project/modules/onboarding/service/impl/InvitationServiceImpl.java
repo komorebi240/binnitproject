@@ -15,6 +15,7 @@ import com.company.project.modules.identity.repository.PositionRepository;
 import com.company.project.modules.identity.repository.TeamRepository;
 import com.company.project.modules.identity.repository.UserRepository;
 import com.company.project.modules.identity.service.EmailService;
+import com.company.project.modules.legal.service.TermsService;
 import com.company.project.modules.identity.service.UserManagementService;
 import com.company.project.modules.onboarding.domain.InvitationEntity;
 import com.company.project.modules.onboarding.domain.InvitationStatus;
@@ -52,6 +53,7 @@ public class InvitationServiceImpl implements InvitationService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final UserManagementService userManagementService;
+    private final TermsService termsService;
     private final String publicBaseUrl;
 
     public InvitationServiceImpl(
@@ -64,6 +66,7 @@ public class InvitationServiceImpl implements InvitationService {
             PasswordEncoder passwordEncoder,
             EmailService emailService,
             UserManagementService userManagementService,
+            TermsService termsService,
             @Value("${app.public-base-url}") String publicBaseUrl) {
         this.invitationRepository = invitationRepository;
         this.userRepository = userRepository;
@@ -74,6 +77,7 @@ public class InvitationServiceImpl implements InvitationService {
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.userManagementService = userManagementService;
+        this.termsService = termsService;
         this.publicBaseUrl = publicBaseUrl.endsWith("/") ? publicBaseUrl.substring(0, publicBaseUrl.length() - 1) : publicBaseUrl;
     }
 
@@ -87,6 +91,7 @@ public class InvitationServiceImpl implements InvitationService {
                 caller, request.authorityLevel(), request.departmentId(), request.teamId());
 
         String email = normalize(request.email());
+        requireEmailNotRegistered(email);
         // A fresh invitation replaces any earlier open one for the same address.
         invitationRepository.findAllByCompanyIdAndEmailIgnoreCaseAndStatus(caller.getCompanyId(), email, InvitationStatus.PENDING)
                 .forEach(InvitationEntity::revoke);
@@ -148,6 +153,7 @@ public class InvitationServiceImpl implements InvitationService {
     @Override
     @Transactional
     public String accept(String token, AcceptInvitationRequest request) {
+        termsService.requireCurrentVersion(request.acceptedTermsVersion());
         InvitationEntity invitation = invitationRepository.findLockedByTokenHash(SecureTokens.sha256Hex(token))
                 .filter(i -> i.isUsable(Instant.now()))
                 .orElseThrow(InvitationServiceImpl::invalidInvitation);
@@ -155,6 +161,8 @@ public class InvitationServiceImpl implements InvitationService {
         if (userRepository.existsByUsername(request.username())) {
             throw new BusinessException("USERNAME_TAKEN", "Username is already in use", HttpStatus.CONFLICT);
         }
+        // The address may have been registered since the invitation was written.
+        requireEmailNotRegistered(invitation.getEmail());
         // The department/team may have been removed since the invitation was written.
         requireScopeStillValid(invitation);
 
@@ -166,6 +174,7 @@ public class InvitationServiceImpl implements InvitationService {
                 invitation.getEmail()));
         positionRepository.save(new PositionEntity(
                 user.getId(), invitation.getAuthorityLevel(), invitation.getDepartmentId(), invitation.getTeamId(), invitation.getTitle()));
+        termsService.recordAcceptance(user.getId(), request.acceptedTermsVersion());
 
         invitation.accept(user.getId());
         return user.getUsername();
@@ -197,6 +206,13 @@ public class InvitationServiceImpl implements InvitationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Invitation", invitationId));
     }
 
+    /** One email, one account: the same rule as registering a company (an address already in use is turned away). */
+    private void requireEmailNotRegistered(String email) {
+        if (!userRepository.findAllActiveByEmail(email).isEmpty()) {
+            throw new BusinessException("EMAIL_ALREADY_IN_USE", "This email already belongs to an account", HttpStatus.CONFLICT);
+        }
+    }
+
     private void requireEmailAvailable() {
         if (!emailService.isConfigured()) {
             throw new BusinessException(
@@ -206,7 +222,7 @@ public class InvitationServiceImpl implements InvitationService {
 
     private void sendInvitationEmail(InvitationEntity invitation, String token, Long inviterUserId) {
         String companyName = companyRepository.findActiveById(invitation.getCompanyId()).map(CompanyEntity::getName).orElse("Orbit");
-        String inviterName = userRepository.findById(inviterUserId).map(UserEntity::getFullName).orElse("Quản trị viên");
+        String inviterName = userRepository.findById(inviterUserId).map(UserEntity::getFullName).orElse("Orbit");
         emailService.sendInvitation(invitation.getEmail(), companyName, inviterName, publicBaseUrl + "/invite/" + token);
     }
 

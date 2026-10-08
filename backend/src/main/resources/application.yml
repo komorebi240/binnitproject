@@ -1,9 +1,26 @@
+server:
+  # The client address used by rate limits comes from Tomcat's RemoteIpValve: it reads X-Forwarded-For only when the request
+  # arrives from a trusted proxy (internal-proxies) and walks it right to left, so an address a client typed into the header
+  # itself is ignored. Default: loopback only - the public site's Next.js server and the dev proxy run on this machine.
+  # Behind another proxy (Docker, a load balancer) set TRUSTED_PROXIES to a regex of that proxy's addresses; never to '.*'.
+  forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      internal-proxies: ${TRUSTED_PROXIES:127\.\d{1,3}\.\d{1,3}\.\d{1,3}|0:0:0:0:0:0:0:1|::1}
+
 spring:
   application:
     name: project
+  messages:
+    # Email texts: messages.properties is Vietnamese (the default), messages_en.properties English. A language
+    # we have no file for must get Vietnamese, not whatever language the server happens to run in.
+    fallback-to-system-locale: false
+  web:
+    # Used when a request carries no Accept-Language; the frontend always sends the language of its interface.
+    locale: vi
   servlet:
     multipart:
-      # Avatar uploads are the only multipart endpoint; capped well above the 2MB app-level
+      # Avatars, chat/task attachments and CRM imports are multipart; capped well above the 2MB app-level
       # check in AvatarStorageService so that check - not a generic Spring error - is what the
       # client sees for an oversized file.
       max-file-size: 5MB
@@ -51,7 +68,12 @@ app:
     # Required, no default - startup fails loudly instead of running with a guessable secret.
     secret: ${JWT_SECRET}
     access-token-ttl-minutes: 15
-    refresh-token-ttl-days: 7
+  session:
+    # A sign-in ends after this long without a real action by the person (the browser reports mouse/keyboard, not its own
+    # background polling) ...
+    idle-timeout-minutes: 120
+    # ... and at the latest after this many days, however active they are.
+    max-age-days: 7
   google:
     # Per-user "Connect Google Drive" OAuth client - see backend/README.md for the step-by-step
     # guide to create these in Google Cloud Console. No defaults: fail fast instead of running
@@ -59,6 +81,15 @@ app:
     client-id: ${GOOGLE_CLIENT_ID}
     client-secret: ${GOOGLE_CLIENT_SECRET}
     redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8080/api/v1/drive/oauth2/callback}
+  crm:
+    # Base64 of 32 random bytes (openssl rand -base64 32). Every company's own CRM keys are derived from it, so losing it
+    # makes all stored customer data unreadable and changing it does the same. No default: the app will not start without it.
+    data-key: ${CRM_DATA_KEY}
+    max-import-rows: 10000
+    max-import-bytes: 5242880
+    max-rows-per-dataset: 50000
+    max-columns: 50
+    export-max-rows: 20000
   drive:
     # Base64-encoded 256-bit AES key used to encrypt stored Drive refresh tokens at rest
     # (CLAUDE.md section 7). Generate one with: openssl rand -base64 32

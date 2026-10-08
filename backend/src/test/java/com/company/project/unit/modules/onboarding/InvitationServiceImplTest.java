@@ -14,6 +14,7 @@ import com.company.project.modules.identity.repository.PositionRepository;
 import com.company.project.modules.identity.repository.TeamRepository;
 import com.company.project.modules.identity.repository.UserRepository;
 import com.company.project.modules.identity.service.EmailService;
+import com.company.project.modules.legal.service.TermsService;
 import com.company.project.modules.identity.service.UserManagementService;
 import com.company.project.modules.onboarding.domain.InvitationEntity;
 import com.company.project.modules.onboarding.domain.InvitationStatus;
@@ -69,6 +70,8 @@ class InvitationServiceImplTest {
     private EmailService emailService;
     @Mock
     private UserManagementService userManagementService;
+    @Mock
+    private TermsService termsService;
 
     private InvitationServiceImpl service;
 
@@ -76,7 +79,7 @@ class InvitationServiceImplTest {
     void setUp() {
         service = new InvitationServiceImpl(
                 invitationRepository, userRepository, companyRepository, departmentRepository, teamRepository,
-                positionRepository, passwordEncoder, emailService, userManagementService, "http://app.test/");
+                positionRepository, passwordEncoder, emailService, userManagementService, termsService, "http://app.test/");
     }
 
     private UserPrincipal principal(AuthorityLevel level, Long userId) {
@@ -115,6 +118,22 @@ class InvitationServiceImplTest {
 
         assertThatThrownBy(() -> service.create(request(AuthorityLevel.DEPARTMENT_HEAD), teamLead))
                 .isInstanceOf(AccessDeniedException.class);
+
+        verify(invitationRepository, never()).save(any());
+        verify(emailService, never()).sendInvitation(anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void create_anAddressThatAlreadyBelongsToAnAccountIsRefusedAndNothingIsSent() {
+        when(emailService.isConfigured()).thenReturn(true);
+        UserPrincipal exec = principal(AuthorityLevel.EXECUTIVE, INVITER);
+        when(userManagementService.validateGrantScope(exec, AuthorityLevel.EMPLOYEE, DEPT, null))
+                .thenReturn(new UserManagementService.GrantScope(DEPT, null));
+        when(userRepository.findAllActiveByEmail(anyString())).thenReturn(List.of(new UserEntity(99L, "other", "h", "Other", "new.hire@acme.test")));
+
+        assertThatThrownBy(() -> service.create(request(AuthorityLevel.EMPLOYEE), exec))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("already belongs");
 
         verify(invitationRepository, never()).save(any());
         verify(emailService, never()).sendInvitation(anyString(), anyString(), anyString(), anyString());
@@ -269,7 +288,7 @@ class InvitationServiceImplTest {
             return u;
         });
 
-        String username = service.accept("ok", new AcceptInvitationRequest("new.hire", " New Hire ", "S3cretPass!"));
+        String username = service.accept("ok", new AcceptInvitationRequest("new.hire", " New Hire ", "S3cretPass!", 1));
 
         assertThat(username).isEqualTo("new.hire");
         ArgumentCaptor<UserEntity> user = ArgumentCaptor.forClass(UserEntity.class);
@@ -281,7 +300,21 @@ class InvitationServiceImplTest {
         verify(positionRepository).save(position.capture());
         assertThat(position.getValue().getAuthorityLevel()).isEqualTo(AuthorityLevel.EMPLOYEE);
         assertThat(position.getValue().getDepartmentId()).isEqualTo(DEPT);
+        verify(termsService).recordAcceptance(90L, 1);
         assertThat(inv.getStatus()).isEqualTo(InvitationStatus.ACCEPTED);
+    }
+
+    @Test
+    void accept_withoutTheCurrentTermsNothingIsCreatedAndTheInvitationStaysPending() {
+        InvitationEntity inv = invitation("ok", Instant.now().plusSeconds(60));
+        org.mockito.Mockito.doThrow(new BusinessException("TERMS_VERSION_MISMATCH", "The terms have changed", org.springframework.http.HttpStatus.CONFLICT))
+                .when(termsService).requireCurrentVersion(1);
+
+        assertThatThrownBy(() -> service.accept("ok", new AcceptInvitationRequest("new.hire", "X", "S3cretPass!", 1)))
+                .isInstanceOf(BusinessException.class);
+
+        assertThat(inv.getStatus()).isEqualTo(InvitationStatus.PENDING);
+        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -289,12 +322,12 @@ class InvitationServiceImplTest {
         InvitationEntity used = invitation("used", Instant.now().plusSeconds(60));
         used.accept(90L);
         when(invitationRepository.findLockedByTokenHash(SecureTokens.sha256Hex("used"))).thenReturn(Optional.of(used));
-        assertThatThrownBy(() -> service.accept("used", new AcceptInvitationRequest("u1", "U", "S3cretPass!")))
+        assertThatThrownBy(() -> service.accept("used", new AcceptInvitationRequest("u1", "U", "S3cretPass!", 1)))
                 .isInstanceOf(BusinessException.class);
 
         InvitationEntity expired = invitation("old", Instant.now().minusSeconds(1));
         when(invitationRepository.findLockedByTokenHash(SecureTokens.sha256Hex("old"))).thenReturn(Optional.of(expired));
-        assertThatThrownBy(() -> service.accept("old", new AcceptInvitationRequest("u2", "U", "S3cretPass!")))
+        assertThatThrownBy(() -> service.accept("old", new AcceptInvitationRequest("u2", "U", "S3cretPass!", 1)))
                 .isInstanceOf(BusinessException.class);
 
         verify(userRepository, never()).save(any());
@@ -306,10 +339,23 @@ class InvitationServiceImplTest {
         when(invitationRepository.findLockedByTokenHash(SecureTokens.sha256Hex("ok"))).thenReturn(Optional.of(inv));
         when(userRepository.existsByUsername("taken")).thenReturn(true);
 
-        assertThatThrownBy(() -> service.accept("ok", new AcceptInvitationRequest("taken", "X", "S3cretPass!")))
+        assertThatThrownBy(() -> service.accept("ok", new AcceptInvitationRequest("taken", "X", "S3cretPass!", 1)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Username");
         assertThat(inv.getStatus()).isEqualTo(InvitationStatus.PENDING);
+    }
+
+    @Test
+    void accept_anAddressRegisteredSinceInvitingIsRefusedAndTheInvitationStaysPending() {
+        InvitationEntity inv = invitation("ok", Instant.now().plusSeconds(60));
+        when(invitationRepository.findLockedByTokenHash(SecureTokens.sha256Hex("ok"))).thenReturn(Optional.of(inv));
+        when(userRepository.findAllActiveByEmail("new.hire@acme.test")).thenReturn(List.of(new UserEntity(99L, "other", "h", "Other", "new.hire@acme.test")));
+
+        assertThatThrownBy(() -> service.accept("ok", new AcceptInvitationRequest("new.hire", "X", "S3cretPass!", 1)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("already belongs");
+        assertThat(inv.getStatus()).isEqualTo(InvitationStatus.PENDING);
+        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -318,7 +364,7 @@ class InvitationServiceImplTest {
         when(invitationRepository.findLockedByTokenHash(SecureTokens.sha256Hex("ok"))).thenReturn(Optional.of(inv));
         when(departmentRepository.findActiveById(DEPT)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.accept("ok", new AcceptInvitationRequest("new.hire", "X", "S3cretPass!")))
+        assertThatThrownBy(() -> service.accept("ok", new AcceptInvitationRequest("new.hire", "X", "S3cretPass!", 1)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("no longer exists");
         verify(userRepository, never()).save(any());

@@ -11,6 +11,7 @@ import com.company.project.modules.identity.repository.PositionRepository;
 import com.company.project.modules.identity.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -26,37 +27,41 @@ import org.springframework.transaction.annotation.Transactional;
  * PasswordEncoder bean before being stored - never plaintext (CLAUDE.md section 7). These are
  * throwaway local credentials, not meant to exist in any real deployment.
  *
- * All seed accounts share the SAME real recovery email (SEED_RECOVERY_EMAIL) instead of a
- * per-user fake address - a deliberate, explicit choice so the developer running this locally
- * can actually receive and verify a real forgot-password OTP end to end. This is a dev/demo
- * convenience ONLY: a real deployment must never bind more than one real employee to the same
- * recovery email (CLAUDE.md section 7 - minimize exposure, one identity per credential).
+ * All seed accounts share the SAME recovery email ({@code app.dev-seed.recovery-email}, from DEV_SEED_RECOVERY_EMAIL in
+ * the git-ignored backend/.env.local) so the developer running this locally can receive and verify a real forgot-password
+ * OTP end to end. It is a setting, not code, so nobody's real address is committed. This is a dev/demo convenience ONLY: a
+ * real deployment must never bind more than one real employee to the same recovery email (CLAUDE.md section 7).
  */
 @Component
 @Profile("dev")
 public class DevDataSeeder implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DevDataSeeder.class);
-    private static final String SEED_RECOVERY_EMAIL = "nnn176456@gmail.com";
 
     private final CompanyRepository companyRepository;
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
     private final PositionRepository positionRepository;
     private final PasswordEncoder passwordEncoder;
+    private final String recoveryEmail;
+    private final String broadcastPassword;
 
     public DevDataSeeder(
             CompanyRepository companyRepository,
             DepartmentRepository departmentRepository,
             UserRepository userRepository,
             PositionRepository positionRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            @Value("${app.dev-seed.recovery-email:}") String recoveryEmail,
+            @Value("${app.dev-seed.broadcast-password:}") String broadcastPassword
     ) {
         this.companyRepository = companyRepository;
         this.departmentRepository = departmentRepository;
         this.userRepository = userRepository;
         this.positionRepository = positionRepository;
         this.passwordEncoder = passwordEncoder;
+        this.recoveryEmail = recoveryEmail.isBlank() ? null : recoveryEmail.strip();
+        this.broadcastPassword = broadcastPassword;
     }
 
     @Override
@@ -95,30 +100,34 @@ public class DevDataSeeder implements ApplicationRunner {
         // on any already-seeded DB (caught by actually trying to log in as it, not by reading
         // the code - see backend README's Phase 14 section).
         if (!userRepository.existsByUsername("orbit_broadcast")) {
-            seedSystemBroadcastAccount(companyAId);
-            log.info("Dev seed data created: 1 system broadcast account.");
+            if (broadcastPassword.isBlank()) {
+                log.warn("DEV_BROADCAST_PASSWORD is not set: the system broadcast account is not created.");
+            } else {
+                seedSystemBroadcastAccount(companyAId);
+                log.info("Dev seed data created: 1 system broadcast account.");
+            }
         }
     }
 
     private void seedUser(
             Long companyId, String username, String fullName, AuthorityLevel level, Long departmentId, String title) {
         UserEntity user = userRepository.save(new UserEntity(
-                companyId, username, passwordEncoder.encode(username), fullName, SEED_RECOVERY_EMAIL));
+                companyId, username, passwordEncoder.encode(username), fullName, recoveryEmail));
         positionRepository.save(new PositionEntity(user.getId(), level, departmentId, null, title));
     }
 
     /**
      * The one account allowed to message any user in any company (MessageServiceImpl's
      * requireSameCompanyUser bypass) - see the Phase 14 plan. Deliberately NOT password-equals-
-     * username like the other seed accounts, since this one has real cross-tenant power; the
-     * password is documented once in backend/README.md, not hard-coded anywhere else.
+     * username like the other seed accounts, since this one has real cross-tenant power: its password
+     * comes from DEV_BROADCAST_PASSWORD (git-ignored backend/.env.local) and is written nowhere in the repository.
      * `markAsSystemAccount()` is the only place in the whole codebase that ever sets this flag -
      * no create/update-user request path can grant it.
      */
     private void seedSystemBroadcastAccount(Long companyId) {
         UserEntity user = new UserEntity(
-                companyId, "orbit_broadcast", passwordEncoder.encode("OrbitBroadcast#2026!"),
-                "Thông báo nội bộ", SEED_RECOVERY_EMAIL);
+                companyId, "orbit_broadcast", passwordEncoder.encode(broadcastPassword),
+                "Thông báo nội bộ", recoveryEmail);
         user.markAsSystemAccount();
         user = userRepository.save(user);
         positionRepository.save(new PositionEntity(user.getId(), AuthorityLevel.EXECUTIVE, null, null, "Bot thông báo"));

@@ -1,0 +1,50 @@
+# Điều khoản sử dụng Orbit
+
+## 1. Chấp thuận điều khoản
+Khi tạo tài khoản hoặc tiếp tục sử dụng Orbit, bạn xác nhận đã đọc, hiểu và đồng ý với các điều khoản này. Nếu bạn sử dụng Orbit thay mặt một công ty hoặc tổ chức, bạn xác nhận mình có thẩm quyền ràng buộc tổ chức đó với các điều khoản này. Nếu không đồng ý, vui lòng không sử dụng Orbit.
+
+## 2. Dịch vụ và tài khoản
+Orbit là phần mềm quản lý công việc, dự án, lịch, tin nhắn nội bộ, tài liệu và dữ liệu khách hàng dành cho doanh nghiệp. Mỗi công ty có một không gian dữ liệu riêng, tách biệt với các công ty khác.
+- Bạn chịu trách nhiệm giữ bí mật thông tin đăng nhập và mọi hoạt động diễn ra dưới tài khoản của mình.
+- Người quản trị của công ty có quyền mời, phân quyền, khóa hoặc xóa tài khoản trong phạm vi công ty đó.
+- Bạn cần cung cấp thông tin chính xác khi đăng ký và cập nhật khi có thay đổi.
+
+## 3. Dữ liệu của công ty và vai trò của các bên
+Dữ liệu mà công ty và người dùng của công ty đưa vào Orbit, kể cả danh sách khách hàng, thuộc về công ty đó.
+- Công ty là bên kiểm soát dữ liệu: công ty quyết định mục đích và cách thức xử lý dữ liệu cá nhân của khách hàng, đối tác, nhân sự và chịu trách nhiệm về cơ sở pháp lý cho việc đó.
+- Orbit đóng vai trò bên xử lý dữ liệu: chỉ lưu trữ và xử lý dữ liệu để cung cấp dịch vụ cho công ty, theo hướng dẫn của công ty thông qua các chức năng của sản phẩm.
+- Công ty cam kết đã có hoặc sẽ có đủ căn cứ hợp pháp, bao gồm sự đồng ý của chủ thể dữ liệu khi pháp luật yêu cầu, trước khi đưa dữ liệu cá nhân vào Orbit, và chỉ sử dụng dữ liệu đúng mục đích đã thông báo cho chủ thể dữ liệu.
+- Công ty tự xử lý các yêu cầu của chủ thể dữ liệu như truy cập, chỉnh sửa, xóa hoặc rút lại sự đồng ý; Orbit cung cấp công cụ để công ty thực hiện các việc này.
+
+## 4. Dữ liệu khách hàng (CRM): nhập, chỉnh sửa và xuất
+- Chỉ người có quyền trong công ty mới xem, nhập, chỉnh sửa hoặc xuất dữ liệu khách hàng, theo phân quyền do công ty thiết lập trong Orbit.
+- Chỉ người quản trị cấp cao của công ty được xuất dữ liệu ra tệp. Việc xuất có giới hạn về số lượng và tần suất, và được ghi nhật ký.
+- Bạn không được nhập vào Orbit dữ liệu cá nhân thu thập trái pháp luật, mua bán trái phép hoặc không thuộc quyền xử lý của công ty.
+- Công ty có trách nhiệm bảo quản tệp đã xuất ra khỏi Orbit và không để lộ cho bên không có thẩm quyền.
+
+## 5. Hành vi bị cấm
+Bạn không được dùng Orbit để:
+- Gửi tin nhắn, thư điện tử, gọi điện hoặc liên hệ quảng cáo, tiếp thị khi chưa có sự đồng ý hợp lệ của người nhận hoặc trái quy định pháp luật.
+- Lừa đảo, giả mạo danh tính, phát tán nội dung sai sự thật hoặc xâm phạm quyền, lợi ích hợp pháp của người khác.
+- Thu thập, lưu trữ, mua bán hoặc chuyển giao dữ liệu cá nhân trái pháp luật, hoặc dùng dữ liệu vào mục đích khác với mục đích đã thông báo cho chủ thể dữ liệu.
+- Truy cập trái phép vào dữ liệu của công ty khác, dò quét, tấn công, gây gián đoạn hoặc vượt qua các biện pháp bảo mật và giới hạn của hệ thống.
+- Lưu trữ hoặc phát tán nội dung vi phạm pháp luật.
+
+## 6. Bảo mật và mã hóa
+Orbit áp dụng các biện pháp kỹ thuật và tổ chức hợp lý để bảo vệ dữ liệu, bao gồm truyền dữ liệu qua kết nối mã hóa, phân quyền theo vai trò, tách dữ liệu giữa các công ty và mã hóa các trường nhạy cảm của dữ liệu khách hàng khi lưu trữ bằng khóa riêng cho từng công ty. Không hệ thống nào an toàn tuyệt đối; Orbit không bảo đảm dịch vụ không bao giờ xảy ra sự cố bảo mật, nhưng sẽ xử lý và thông báo theo quy định pháp luật khi có sự cố liên quan đến dữ liệu cá nhân.
+
+## 7. Nhật ký và phòng chống lạm dụng
+Để bảo vệ người dùng và chủ thể dữ liệu, Orbit ghi nhật ký các thao tác quan trọng như nhập, xuất và xóa dữ liệu hàng loạt (không bao gồm nội dung dữ liệu cá nhân) và có thể áp dụng giới hạn tần suất, cảnh báo hoặc tạm khóa khi phát hiện dấu hiệu bất thường.
+Orbit không chủ động đọc nội dung dữ liệu khách hàng của công ty và hạn chế quyền truy cập kỹ thuật vào dữ liệu đó. Orbit chỉ truy cập khi công ty yêu cầu hỗ trợ, khi cần thiết để xử lý sự cố bảo mật hoặc vi phạm nghiêm trọng, hoặc khi cơ quan nhà nước có thẩm quyền yêu cầu bằng văn bản hợp lệ theo quy định pháp luật.
+
+## 8. Tạm khóa và chấm dứt
+Orbit có thể tạm khóa hoặc chấm dứt tài khoản hoặc cả không gian của một công ty khi có vi phạm các điều khoản này hoặc pháp luật, hoặc khi cơ quan có thẩm quyền yêu cầu. Khi có thể, Orbit sẽ thông báo trước. Bạn có thể ngừng sử dụng bất cứ lúc nào; sau khi chấm dứt, dữ liệu của công ty sẽ được xóa hoặc ẩn danh trong thời gian hợp lý, trừ phần pháp luật yêu cầu phải lưu giữ. Công ty nên xuất dữ liệu cần thiết trước khi chấm dứt.
+
+## 9. Giới hạn trách nhiệm
+Orbit được cung cấp trên cơ sở nỗ lực hợp lý và không cam kết hoạt động liên tục, không lỗi. Trong phạm vi pháp luật cho phép, Orbit không chịu trách nhiệm đối với thiệt hại gián tiếp, mất lợi nhuận, hoặc hậu quả phát sinh từ nội dung và dữ liệu do người dùng đưa vào, từ việc người dùng vi phạm các điều khoản này hoặc để lộ thông tin đăng nhập của mình. Công ty nên sao lưu dữ liệu quan trọng của mình.
+
+## 10. Thay đổi điều khoản
+Khi điều khoản có thay đổi, Orbit sẽ công bố phiên bản mới. Ở lần đăng nhập tiếp theo, bạn sẽ được yêu cầu đọc và đồng ý với phiên bản mới trước khi tiếp tục sử dụng Orbit. Nếu không đồng ý, bạn có thể đăng xuất và ngừng sử dụng. Orbit lưu lại việc bạn đã đồng ý phiên bản nào và vào thời điểm nào.
+
+## 11. Luật áp dụng và liên hệ
+Các điều khoản này được điều chỉnh theo pháp luật Việt Nam. Mọi thắc mắc, yêu cầu của chủ thể dữ liệu hoặc báo cáo vi phạm có thể gửi đến quản trị viên của công ty bạn hoặc đơn vị vận hành Orbit qua kênh hỗ trợ mà đơn vị này công bố.

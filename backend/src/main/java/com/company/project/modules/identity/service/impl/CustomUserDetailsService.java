@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Loads the identity + active position AuthenticationManager needs during login. Only used
- * at login time - every later request is authenticated from JWT claims instead
+ * Loads the identity + active position AuthenticationManager needs during login, and rebuilds the same principal when a
+ * session is resumed (SessionService). Every other request is authenticated from JWT claims instead
  * (JwtAuthenticationFilter), not by hitting the database again.
  */
 @Service
@@ -33,7 +33,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         UserEntity user = userRepository.findByUsername(username)
                 .filter(u -> !u.isDeleted())
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid username or password"));
+        return toPrincipal(user);
+    }
 
+    /** The principal of an existing user from their current active position; throws when they have none. */
+    @Transactional(readOnly = true)
+    public UserPrincipal toPrincipal(UserEntity user) {
         PositionEntity position = positionRepository.findActiveByUserId(user.getId())
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid username or password"));
 

@@ -44,6 +44,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -178,8 +180,9 @@ class ProjectServiceImplTest {
         assertThat(rows.getAllValues().get(0).getStatus()).isEqualTo(ProjectInviteStatus.ACCEPTED);
         assertThat(rows.getAllValues().get(1).getStatus()).isEqualTo(ProjectInviteStatus.INVITED);
         verify(notificationService).notify(
-                eq(77L), eq(NotificationType.PROJECT_INVITED), anyString(), anyString(), eq("PROJECT"), eq(PROJECT_ID));
-        verify(notificationService, never()).notify(eq(78L), any(), anyString(), anyString(), anyString(), anyLong());
+                eq(77L), eq(NotificationType.PROJECT_INVITED), anyString(), anyString(),
+                argThat(params -> params.containsKey("actor") && params.containsKey("project")), eq("PROJECT"), eq(PROJECT_ID));
+        verify(notificationService, never()).notify(eq(78L), any(), anyString(), anyString(), anyMap(), anyString(), anyLong());
         verify(memberRepository).save(any(ProjectMemberEntity.class));
     }
 
@@ -250,7 +253,9 @@ class ProjectServiceImplTest {
 
         assertThat(invitation.getStatus()).isEqualTo(ProjectInviteStatus.ACCEPTED);
         verify(notificationService).notify(
-                eq(1L), eq(NotificationType.PROJECT_RESPONDED), anyString(), anyString(), eq("PROJECT"), eq(PROJECT_ID));
+                eq(1L), eq(NotificationType.PROJECT_RESPONDED), anyString(), anyString(),
+                argThat(params -> "true".equals(params.get("accepted")) && params.containsKey("department")),
+                eq("PROJECT"), eq(PROJECT_ID));
     }
 
     @Test
@@ -322,7 +327,8 @@ class ProjectServiceImplTest {
 
         verify(memberRepository).save(any(ProjectMemberEntity.class));
         verify(notificationService).notify(
-                eq(90L), eq(NotificationType.PROJECT_MEMBER_ADDED), anyString(), anyString(), eq("PROJECT"), eq(PROJECT_ID));
+                eq(90L), eq(NotificationType.PROJECT_MEMBER_ADDED), anyString(), anyString(),
+                argThat(params -> params.containsKey("actor") && params.containsKey("project")), eq("PROJECT"), eq(PROJECT_ID));
         verify(driveCatalogService).grantReaderAccess(300L, List.of(90L));
     }
 

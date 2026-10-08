@@ -1,6 +1,7 @@
 package com.company.project.unit.modules.identity;
 
 import com.company.project.common.AuthorityLevel;
+import com.company.project.common.RateLimitGuard;
 import com.company.project.common.exception.BusinessException;
 import com.company.project.modules.identity.domain.PasswordResetOtpEntity;
 import com.company.project.modules.identity.domain.UserEntity;
@@ -12,6 +13,9 @@ import com.company.project.modules.identity.repository.TeamRepository;
 import com.company.project.modules.identity.repository.UserRepository;
 import com.company.project.modules.identity.service.AvatarStorageService;
 import com.company.project.modules.identity.service.EmailService;
+import com.company.project.modules.identity.service.LoginProtectionService;
+import com.company.project.modules.identity.service.SessionService;
+import com.company.project.modules.legal.service.TermsService;
 import com.company.project.modules.identity.service.impl.AuthServiceImpl;
 import com.company.project.security.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +24,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.lang.reflect.Field;
@@ -62,7 +68,13 @@ class AuthServiceImplTest {
     @Mock
     private EmailService emailService;
     @Mock
+    private SessionService sessionService;
+    @Mock
+    private LoginProtectionService loginProtectionService;
+    @Mock
     private AvatarStorageService avatarStorageService;
+    @Mock
+    private TermsService termsService;
 
     private AuthServiceImpl service;
 
@@ -70,8 +82,8 @@ class AuthServiceImplTest {
     void setUp() {
         service = new AuthServiceImpl(
                 authenticationManager, userRepository, companyRepository, departmentRepository,
-                teamRepository, positionRepository, passwordResetOtpRepository, passwordEncoder, emailService,
-                avatarStorageService);
+                teamRepository, positionRepository, passwordResetOtpRepository, passwordEncoder, sessionService, loginProtectionService, emailService,
+                avatarStorageService, termsService);
     }
 
     private UserPrincipal principal(Long userId) {
@@ -85,9 +97,10 @@ class AuthServiceImplTest {
         when(userRepository.findActiveById(1L)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrong", "hashed-old")).thenReturn(false);
 
-        assertThatThrownBy(() -> service.changePassword(principal(1L), "wrong", "newpassword123"))
+        assertThatThrownBy(() -> service.changePassword(principal(1L), "wrong", "newpassword123", "this-browser"))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Current password");
+        org.mockito.Mockito.verifyNoInteractions(sessionService);
     }
 
     @Test
@@ -98,9 +111,48 @@ class AuthServiceImplTest {
         when(passwordEncoder.matches("old", "hashed-old")).thenReturn(true);
         when(passwordEncoder.encode("newpassword123")).thenReturn("hashed-new");
 
-        service.changePassword(principal(1L), "old", "newpassword123");
+        service.changePassword(principal(1L), "old", "newpassword123", "this-browser");
 
         assertThat(user.getPasswordHash()).isEqualTo("hashed-new");
+        // Other devices are signed out, the browser that made the change stays signed in.
+        verify(sessionService).endOthers(1L, "this-browser");
+    }
+
+    @Test
+    void authenticate_aBlockedUsernameOrAddressIsRefusedBeforeThePasswordIsChecked() {
+        org.mockito.Mockito.doThrow(RateLimitGuard.tooManyRequests())
+                .when(loginProtectionService).checkAllowed("caller", "203.0.113.7");
+
+        assertThatThrownBy(() -> service.authenticate("caller", "any-password", "203.0.113.7"))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("Too many attempts. Please try again later.");
+        org.mockito.Mockito.verifyNoInteractions(authenticationManager);
+        verify(loginProtectionService, org.mockito.Mockito.never()).recordFailure(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void authenticate_aWrongPasswordIsCountedAndStaysAPlain401() {
+        when(authenticationManager.authenticate(org.mockito.ArgumentMatchers.any()))
+                .thenThrow(new BadCredentialsException("Bad credentials"));
+
+        assertThatThrownBy(() -> service.authenticate("caller", "wrong", "203.0.113.7"))
+                .isInstanceOf(BadCredentialsException.class);
+        verify(loginProtectionService).recordFailure("caller", "203.0.113.7");
+        verify(loginProtectionService, org.mockito.Mockito.never()).clearFailures(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void authenticate_successClearsTheUsernamesFailures() {
+        UserPrincipal caller = principal(1L);
+        when(authenticationManager.authenticate(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new UsernamePasswordAuthenticationToken(caller, null, caller.getAuthorities()));
+
+        assertThat(service.authenticate("caller", "right", "203.0.113.7")).isSameAs(caller);
+        verify(loginProtectionService).checkAllowed("caller", "203.0.113.7");
+        verify(loginProtectionService).clearFailures("caller");
+        verify(loginProtectionService, org.mockito.Mockito.never()).recordFailure(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -210,6 +262,10 @@ class AuthServiceImplTest {
 
         assertThat(user.getPasswordHash()).isEqualTo("hashed-new");
         assertThat(valid.isUsed()).isTrue();
+        // Someone who forgot the password may be locked out because someone else has it: every session ends.
+        verify(sessionService).endAll(1L);
+        // ...and a sign-in block caused by someone else's guessing is lifted.
+        verify(loginProtectionService).clearFailures("caller");
     }
 
     private static String sha256Hex(String value) {

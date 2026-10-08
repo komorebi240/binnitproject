@@ -30,6 +30,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -104,7 +105,8 @@ class MessageServiceImplTest {
         var response = service.sendMessage(2L, "hello", caller);
 
         assertThat(response.recipientId()).isEqualTo(2L);
-        verify(notificationService).notify(org.mockito.ArgumentMatchers.eq(2L), any(), any(), any(), any(), any());
+        verify(notificationService).notify(
+                org.mockito.ArgumentMatchers.eq(2L), any(), any(), any(), argThat(params -> params.containsKey("actor")), any(), any());
     }
 
     @Test
@@ -173,7 +175,7 @@ class MessageServiceImplTest {
 
         assertThat(sentTo).isEqualTo(2);
         verify(messageRepository, times(2)).save(any());
-        verify(notificationService, times(2)).notify(any(), any(), any(), any(), any(), any());
+        verify(notificationService, times(2)).notify(any(), any(), any(), any(), any(), any(), any());
     }
 
     private MessageEntity messageFrom(Long id, Long senderId, Long recipientId, String body) {

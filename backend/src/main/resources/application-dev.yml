@@ -11,6 +11,13 @@ spring:
   jpa:
     show-sql: true
 
+app:
+  dev-seed:
+    # Mailbox that receives the seed accounts' password-reset codes; blank = the seed accounts have no recovery email.
+    recovery-email: ${DEV_SEED_RECOVERY_EMAIL:}
+    # Password of the cross-tenant broadcast account (orbit_broadcast); blank = that account is not created.
+    broadcast-password: ${DEV_BROADCAST_PASSWORD:}
+
 logging:
   level:
     com.company.project: DEBUG

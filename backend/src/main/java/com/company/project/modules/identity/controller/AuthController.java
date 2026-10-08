@@ -1,7 +1,7 @@
 package com.company.project.modules.identity.controller;
 
 import com.company.project.common.ApiResponse;
-import com.company.project.common.RateLimiter;
+import com.company.project.common.RateLimitGuard;
 import com.company.project.common.exception.BusinessException;
 import com.company.project.modules.identity.dto.request.ChangePasswordRequest;
 import com.company.project.modules.identity.dto.request.ForgotPasswordRequest;
@@ -11,16 +11,13 @@ import com.company.project.modules.identity.dto.request.UpdatePresenceRequest;
 import com.company.project.modules.identity.dto.request.UpdateProfileRequest;
 import com.company.project.modules.identity.dto.response.UserProfileResponse;
 import com.company.project.modules.identity.service.AuthService;
-import com.company.project.security.AuthCookies;
-import com.company.project.security.JwtAuthenticationFilter;
-import com.company.project.security.JwtService;
+import com.company.project.modules.identity.service.SessionService;
+import com.company.project.security.SessionCookies;
 import com.company.project.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,34 +45,45 @@ import java.time.Duration;
 public class AuthController {
 
     private final AuthService authService;
-    private final JwtService jwtService;
-    private final RateLimiter rateLimiter;
+    private final SessionCookies sessionCookies;
+    private final SessionService sessionService;
+    private final RateLimitGuard rateLimitGuard;
 
-    public AuthController(AuthService authService, JwtService jwtService, RateLimiter rateLimiter) {
+    public AuthController(
+            AuthService authService, SessionCookies sessionCookies, SessionService sessionService, RateLimitGuard rateLimitGuard) {
         this.authService = authService;
-        this.jwtService = jwtService;
-        this.rateLimiter = rateLimiter;
+        this.sessionCookies = sessionCookies;
+        this.sessionService = sessionService;
+        this.rateLimitGuard = rateLimitGuard;
     }
 
+    /** Public - see SecurityConfig. Brute-force protection (failed attempts per username and per address) is in AuthService. */
     @PostMapping("/login")
     public ApiResponse<UserProfileResponse> login(
-            @Valid @RequestBody LoginRequest request, HttpServletResponse response) {
-        UserPrincipal principal = authService.authenticate(request.username(), request.password());
-        AuthCookies.issue(response, jwtService, principal);
+            @Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse response) {
+        UserPrincipal principal = authService.authenticate(
+                request.username(), request.password(), RateLimitGuard.clientIp(httpRequest));
+        sessionCookies.signIn(response, principal);
 
         return ApiResponse.success(authService.getProfile(principal));
     }
 
+    /** Public so a person whose access token has already expired can still end their session. */
     @PostMapping("/logout")
-    public ApiResponse<Void> logout(HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from(JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE, "")
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("Lax")
-                .path("/")
-                .maxAge(0)
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    public ApiResponse<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+        sessionCookies.signOut(request, response);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * The browser reports that the person did something (mouse, keyboard), at most every few minutes. Only this keeps a
+     * session from reaching the idle timeout; the tab's own background polling does not.
+     */
+    @PostMapping("/session/activity")
+    public ApiResponse<Void> recordActivity(HttpServletRequest request) {
+        if (!sessionService.recordActivity(SessionCookies.sessionToken(request))) {
+            throw new BusinessException("SESSION_ENDED", "The session has ended", HttpStatus.UNAUTHORIZED);
+        }
         return ApiResponse.success(null);
     }
 
@@ -109,8 +117,10 @@ public class AuthController {
 
     @PatchMapping("/password")
     public ApiResponse<Void> changePassword(
-            @Valid @RequestBody ChangePasswordRequest request, @AuthenticationPrincipal UserPrincipal principal) {
-        authService.changePassword(principal, request.currentPassword(), request.newPassword());
+            @Valid @RequestBody ChangePasswordRequest request,
+            @AuthenticationPrincipal UserPrincipal principal,
+            HttpServletRequest httpRequest) {
+        authService.changePassword(principal, request.currentPassword(), request.newPassword(), SessionCookies.sessionToken(httpRequest));
         return ApiResponse.success(null);
     }
 
@@ -122,8 +132,8 @@ public class AuthController {
      */
     @PostMapping("/forgot-password")
     public ApiResponse<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest httpRequest) {
-        enforceRateLimit("forgot-password:ip:" + clientIp(httpRequest), 10, Duration.ofMinutes(15));
-        enforceRateLimit("forgot-password:user:" + request.username(), 3, Duration.ofMinutes(15));
+        rateLimitGuard.enforce("forgot-password:ip:" + RateLimitGuard.clientIp(httpRequest), 10, Duration.ofMinutes(15));
+        rateLimitGuard.enforce("forgot-password:user:" + request.username(), 3, Duration.ofMinutes(15));
         authService.requestPasswordReset(request.username());
         return ApiResponse.success(null);
     }
@@ -134,26 +144,9 @@ public class AuthController {
      */
     @PostMapping("/reset-password")
     public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request, HttpServletRequest httpRequest) {
-        enforceRateLimit("reset-password:ip:" + clientIp(httpRequest), 20, Duration.ofMinutes(15));
-        enforceRateLimit("reset-password:user:" + request.username(), 5, Duration.ofMinutes(15));
+        rateLimitGuard.enforce("reset-password:ip:" + RateLimitGuard.clientIp(httpRequest), 20, Duration.ofMinutes(15));
+        rateLimitGuard.enforce("reset-password:user:" + request.username(), 5, Duration.ofMinutes(15));
         authService.confirmPasswordReset(request.username(), request.otp(), request.newPassword());
         return ApiResponse.success(null);
-    }
-
-    private void enforceRateLimit(String key, int maxAttempts, Duration window) {
-        if (!rateLimiter.tryConsume(key, maxAttempts, window)) {
-            throw new BusinessException(
-                    "TOO_MANY_REQUESTS", "Too many attempts. Please try again later.", HttpStatus.TOO_MANY_REQUESTS);
-        }
-    }
-
-    /** Standard X-Forwarded-For-aware client IP lookup - this app isn't behind a proxy in dev,
-     * but will be in a real deployment, so the header is checked first regardless. */
-    private String clientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
     }
 }
