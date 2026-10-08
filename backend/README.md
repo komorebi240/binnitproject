@@ -100,7 +100,7 @@ account and 2-Step Verification turned on):
 2. Once that's on, go to https://myaccount.google.com/apppasswords → name it anything (e.g.
    `project-smtp`) → Create. Google shows a 16-character password once - copy it.
 3. Set the two new environment variables below, then hit "Gửi mã OTP" on `/forgot-password` with
-   a seed username (all seed accounts are bound to `nnn176456@gmail.com` - see "Seed data")
+   a seed username (all seed accounts are bound to the mailbox in `DEV_SEED_RECOVERY_EMAIL` - see "Seed data")
    and confirm the email actually arrives. That inbox check needs your access, so it's the one
    thing I can't verify myself.
 
@@ -126,11 +126,11 @@ rule - see `KpiServiceImpl.assertCallerCanView`. No new schema tables beyond `kp
    their usernames - real, BCrypt-hashed credentials in a real database, just weak and
    throwaway. It only runs under the `dev` Spring profile; confirm that profile is never active
    in a real deployment before you rely on that.
-3. **Access tokens are short-lived (15 min) with no refresh token yet** - logging back in is
-   the only recovery once one expires. Refresh-token rotation is an explicit CLAUDE.md
-   section 8 (auth design) decision for a later phase, not an oversight.
+3. **Access tokens are short-lived (15 min); a server-side session (Phase 39) renews them** - a
+   sign-in lasts until 2 hours without action or 7 days, and ends at once on sign-out, password
+   change or reset, or when the account is deactivated.
 4. **`JWT_SECRET`, `DB_USERNAME`, `DB_PASSWORD`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
-   `DRIVE_TOKEN_ENCRYPTION_KEY`** are required environment variables with no default - the app
+   `DRIVE_TOKEN_ENCRYPTION_KEY`, `CRM_DATA_KEY`** are required environment variables with no default - the app
    fails to start rather than run with a guessable secret. Generate the encryption key with
    `openssl rand -base64 32`; it's yours to generate (not from Google) and must stay the same
    across restarts or previously-stored refresh tokens become undecryptable.
@@ -157,6 +157,7 @@ $env:JWT_SECRET   = "dev-only-secret-change-me-please-1234567890"
 $env:DB_USERNAME  = "app_user"
 $env:DB_PASSWORD  = "<the app_user password you set in SQL Server>"
 $env:DRIVE_TOKEN_ENCRYPTION_KEY = "<output of: openssl rand -base64 32>"
+$env:CRM_DATA_KEY = "<output of: openssl rand -base64 32 - Phase 38; a different value from the one above>"
 $env:GOOGLE_CLIENT_ID     = "<from Google Cloud Console - see Phase 3 section above>"
 $env:GOOGLE_CLIENT_SECRET = "<from Google Cloud Console>"
 $env:SMTP_USERNAME = "<Gmail address - see Phase 4 section above; omit to skip forgot-password>"
@@ -192,7 +193,8 @@ Swagger UI: `http://localhost:8080/swagger-ui.html`. Health check: `http://local
 Each company also gets a second department (A: Truyền thông, B: Vận hành) with no members yet,
 so there's something to assign people to right away. Password for each = the username.
 
-**All seed accounts share one real recovery email, `nnn176456@gmail.com`** (Phase 4 plan,
+**All seed accounts share one real recovery email, the mailbox set in `DEV_SEED_RECOVERY_EMAIL`** (git-ignored
+`backend/.env.local`; Phase 4 plan,
 explicit request) so the forgot-password OTP flow can actually be tested end to end on this
 machine - a deliberate dev-only convention, never appropriate for real employees (see
 `DevDataSeeder`'s javadoc). This local database's `users.email` column was also bulk-updated to
@@ -381,7 +383,7 @@ run before that, with `SMTP_USERNAME`/`SMTP_PASSWORD` left unset.
 with real `SMTP_USERNAME`/`SMTP_PASSWORD` set, called `POST /auth/forgot-password` for `binmit1`,
 and the log showed `EmailServiceImpl : Password reset OTP email sent` with no
 `MailAuthenticationException` (that's what a wrong App Password or unconfigured 2-Step
-Verification would throw). You confirmed the email actually arrived at `nnn176456@gmail.com` -
+Verification would throw). You confirmed the email actually arrived in the seed recovery mailbox -
 **in the Spam folder**, not the inbox. That's an expected characteristic of transactional email
 sent via `SimpleMailMessage`/personal Gmail SMTP (no SPF/DKIM domain alignment, no List-Unsubscribe
 header, generic subject) - not a bug in this code, but a real limitation to flag before this goes
@@ -662,7 +664,8 @@ Two independent backend additions from a user feedback batch:
   via `UserRepository.findAllActive()` (the one place in the app that deliberately queries across
   the tenant boundary - every other repository method here is scoped). New
   `POST /messages/broadcast` endpoint. One seed account, `orbit_broadcast`, is created by
-  `DevDataSeeder` - password is `OrbitBroadcast#2026!`, deliberately not
+  `DevDataSeeder` - password from `DEV_BROADCAST_PASSWORD` (git-ignored `backend/.env.local`; the value that was
+  written here until Phase 40 was rotated and no longer works), deliberately not
   password-equals-username like the other seed accounts since this one has real cross-tenant
   power; per the user's explicit instruction, this account is meant to be controlled only by
   them, not shared like the other `binmitN` demo logins.
@@ -877,3 +880,124 @@ Module `modules/projects`; migration `V28__create_projects.sql` (`projects`, `pr
 * **Chat**: `GET/POST /projects/{id}/messages` (last 200 lines, polling; participants only; 60 messages/minute per user).
 * **Notifications**: `PROJECT_INVITED` (heads of the invited department), `PROJECT_RESPONDED` (project creator), `PROJECT_MEMBER_ADDED`.
 * Verified against the dev SQL Server with a scripted end-to-end run (create, invite, 404 before invitation, accept once, add own people only, chat, project tasks, leave, delete) as well as unit tests (`ProjectServiceImplTest`, `ProjectAccessServiceImplTest`, new cases in `TaskServiceImplTest`). Linking a folder needs a real Google Drive connection and was not exercised end to end.
+
+## Phase 37 - notifications and emails in the reader's language
+
+The frontend is now bilingual (see frontend/README Phase 37); two things the server writes itself follow the reader's language too.
+
+* **Migration `V29__notification_params.sql`**: `notifications.params` (NVARCHAR 2000, nullable) - a JSON object of strings holding the values a notification's text was built from. `title`/`body` stay (Vietnamese) as the fallback for rows that predate the column and for any client that cannot word a type. `NotificationService.notify(...)` takes the params map; `NotificationResponse` returns `params` (null for old rows, or when the stored JSON is unreadable - logged, never an error). Params that would not fit the column are dropped with a warning and the notification is still sent.
+* **The contract** (what each type puts in `params`; the frontend words it in `notificationText.ts` - change both together):
+
+  | Type | params |
+  | --- | --- |
+  | `TASK_ASSIGNED`, `TASK_ACCEPTED`, `TASK_DECLINED`, `TASK_COMPLETED` | `actor`, `title` |
+  | `CALENDAR_EVENT_INVITE` | `actor`, `title` |
+  | `FOLDER_ACCESS_REQUESTED` | `actor`, `folder` |
+  | `MESSAGE_RECEIVED` | `actor`, and `attachmentOnly: "true"` when the message has no text (the body is then our placeholder, not the sender's words) |
+  | `PROJECT_INVITED`, `PROJECT_MEMBER_ADDED` | `actor`, `project` |
+  | `PROJECT_RESPONDED` | `department`, `project`, `accepted` (`"true"`/`"false"`) |
+
+  Params carry only what the notification's text already shows its reader.
+* **Emails** (`EmailServiceImpl`): the texts moved into `messages.properties` (Vietnamese, the default) and `messages_en.properties` (UTF-8; a message with arguments must not contain a lone apostrophe). The language of an email is the language of the request that caused it: `LocaleContextHolder`, filled by Spring from `Accept-Language`, which the frontend sets to the language of its interface. `spring.web.locale: vi` is used when a request has no header, and `spring.messages.fallback-to-system-locale: false` makes any language without a file (French...) get Vietnamese instead of the language of the server. Mail is sent inside the request, never from another thread, so the locale is always the right one. For an invitation or an email change the language is the **sender's** (the inviter's or the manager's interface), because the recipient's is unknown.
+* **First administrator's job title**: `RegistrationServiceImpl` takes it from `registration.adminTitle` in the registrant's language ("Quản trị viên" / "Administrator"); it is an ordinary editable title afterwards.
+* **Unchanged on purpose**: error messages in API error bodies stay English; names and texts people typed stay as typed; `DevDataSeeder` data (including the "Thông báo nội bộ" broadcast account) stays Vietnamese.
+* **Tests**: `NotificationServiceImplTest` (params stored as JSON, dropped when too long, returned for new rows and null for old or unreadable ones), the notification verifications in the task/calendar/drive/message/project tests now check the params, `EmailServiceImplTest` (an English, a Vietnamese and a French request; the invitation and the email-changed notice; both property files have the same keys and arguments), `RegistrationServiceImplTest` (the administrator's title in both languages). All backend unit tests pass.
+* **Verified against the dev SQL Server** (Flyway applied V29): assigning a task over the API stores `{"actor": ..., "title": ...}` and the notification list returns it next to the Vietnamese text, while older rows come back without `params`; the browser then showed that notification in English and in Vietnamese. A password-reset request with `Accept-Language: en` wrote the English mail to the dev log, `vi` and `fr` the Vietnamese one.
+* **Not verified**: delivery through real SMTP (dev-log mode only); the request with no `Accept-Language` at all (the rate limit of the reset endpoint stopped the live attempt; the unit tests cover the Vietnamese fallback but not the `spring.web.locale` setting itself); the attachment-only message flag live (unit-level wiring only).
+
+## Phase 37b - one email, one account
+
+* Inviting an address that already belongs to an active account is refused (`EMAIL_ALREADY_IN_USE`, 409), the same rule as registering a company; accepting an invitation re-checks it (the address may have been registered since) and leaves the invitation pending. The check runs after the authority check, so a caller who may not invite cannot probe addresses. Before this, an invitation created a second account with the same email (e.g. a CEO of one company and an employee of another). Accounts that already share an email are left as they are; no migration, and no database UNIQUE constraint yet (existing duplicates would block it).
+* Tests: two new cases in `InvitationServiceImplTest`; all backend unit tests pass. Not exercised live.
+
+## Phase 38 - terms of service and the CRM module
+
+### Terms of service (module `legal`, migration `V30__terms_of_service.sql`)
+
+* **What it does**: nobody uses the product before accepting the newest terms. Registration and accepting an invitation need the box ticked (`acceptedTermsVersion` in `RegisterCompanyRequest` / `AcceptInvitationRequest`; a missing or old version is `TERMS_VERSION_MISMATCH`, 409, and nothing is created); everyone who already has an account is asked at their next sign-in, and again whenever a new version is published.
+* **Enforced here, not in the browser**: `TermsAcceptanceFilter` answers every authenticated request of someone who has not accepted the newest version with 403 `TERMS_NOT_ACCEPTED`. Exempt: `/api/v1/auth/**` (so they can sign in, read who they are and sign out), `/api/v1/terms/**` and `/actuator/**`. `UserProfileResponse.termsAccepted` tells the frontend to show the terms window instead of the app.
+* **Endpoints**: `GET /api/v1/terms/current?lang=vi|en` (public; anything else is Vietnamese), `POST /api/v1/terms/accept {version}` (signed in; only the newest version is accepted; repeating is harmless).
+* **Evidence**: `terms_acceptances` keeps user, version and time and is never changed or deleted. No IP address is stored on purpose (data minimisation).
+* **Publishing a new version**: add the texts as `src/main/resources/terms/v<N>/vi.txt` and `en.txt` (first line `# Title`, then `## Section`, `- list item`, plain paragraphs) and a migration that inserts `terms_versions (N, ...)`. The newest row wins; it is read once at start, so publishing means deploying. Every user is then asked again at their next sign-in. A published version without its text fails loudly (500), not silently.
+* **The text is a draft for a lawyer to review before it goes to customers.** It states the roles (the company is the data controller, Orbit the processor), the ban on unlawful marketing and data trading, the logging and export rules and the limits of the encryption, in plain terms and without citing specific articles of law. Operator name, address and a contact channel are not in it because they are not known here; add them when the operator is decided.
+* **Tests**: `TermsServiceImplTest`, `TermsAcceptanceFilterTest`, and the registration/invitation tests (an account is not created without the current version).
+
+### CRM (module `crm`, migration `V31__create_crm.sql`)
+
+* **Model**: a *dataset* is a table of customers a company keeps for one source (Facebook, Zalo, website, Excel file, event, referral, other). Each dataset has its own columns (text, number, date, email, phone; the type is fixed at creation - add a new column instead of changing one) and rows. A dataset belongs to a department or, with no department, to executives only. New datasets start with name, email and phone columns in the language of the request.
+* **Who may do what** (`CrmAccessPolicy`, the single place for these rules; another company's dataset, or one the caller may not use, is "not found"):
+
+  | | Executive | Head of the dataset's department | Others in that department |
+  | --- | --- | --- | --- |
+  | See the dataset, read and edit customers, add customers | yes (every dataset of the company) | yes | yes |
+  | Rename, delete, add/rename/delete columns, import | yes | yes | no |
+  | Delete a customer | yes | yes | only one they added themselves |
+  | **Export to Excel** | **yes** | no | no |
+  | Read the audit log | yes | no | no |
+
+  Heads can create datasets only for their own department; executives anywhere (or executives-only).
+* **Encryption per company** (`CrmCrypto`): each customer's values are one JSON object encrypted with AES-256-GCM using a key derived (HKDF-SHA256) from the master key `CRM_DATA_KEY` and the company id; the ciphertext is also bound to its company, so rows copied between companies do not decrypt. Duplicate detection uses keyed hashes (HMAC-SHA256, per company) of the dataset's first email and first phone column, so the database never holds an email or phone in the clear. **Honest limit**: whoever holds `CRM_DATA_KEY` can derive every company's keys, so this protects against a stolen database or backup and against people without access to the server's environment, not against its operator. Keep the key out of the repository, of the database and of backups of the database; **losing or changing it makes all stored customer data unreadable**. Searching therefore reads and decrypts the dataset (at most 50,000 customers) instead of using an index.
+* **Import** (`CrmFileReader`, Apache POI 5.4): `.xlsx` (every visible sheet is a table), `.csv` (UTF-8, comma/semicolon/tab, quoted fields) and `.docx` (only tables). Two steps: `POST /crm/imports/preview` shows the tables, columns and first rows; `POST /crm/datasets/{id}/import` (multipart `file` + JSON `options`) maps file columns to existing or new columns and chooses what happens to customers already in the dataset (same email or phone): `SKIP` or `UPDATE` (blank cells change nothing). A cell that does not fit its column refuses its row (reported by row number and column name, never the value); the rest import; the import is all-or-nothing for the database. Repeats inside one file are created once. Limits (`app.crm.*`): 5 MB, 10,000 rows, 50 columns per file, 50,000 customers per dataset; 20 imports per hour per user. Files are never written to disk, formulas are never evaluated (the stored value is read), a file's real type is checked (zip signature), and zip-bomb limits are tightened. Phone numbers typed as numbers in Excel lose their leading 0 before they reach us; the template tells people to format the column as text.
+* **Export** (`GET /crm/datasets/{id}/export`): executives only (`@PreAuthorize` plus the policy), at most 20,000 customers per file, 10 per hour per user, always written to the audit log; every cell is written as text, so a value that looks like a formula is never run when the file is opened.
+* **Templates**: `GET /crm/templates/xlsx|docx` - a demonstration table with two invented customers and the rules for filling it in, in the language of the request; both read back through the importer (tested).
+* **Audit log** (`crm_audit_log`, `GET /crm/audit`): dataset created/changed/deleted, columns added/renamed/deleted, customers deleted, imports and exports, with counts and ids only - never a customer's details.
+* **Deleting is real**: deleting a customer or a dataset deletes the rows (they are personal data); deleting a column removes its values from every customer.
+* **Settings** (`app.crm.*`): `CRM_DATA_KEY` is required with no default (the app does not start without it): generate it with `openssl rand -base64 32`, put it in `backend/.env.local` (dev; `run-local.ps1` now checks for it), `backend/prod.env.local` or the deployment environment (`deploy/.env.example`, `docker-compose.yml`). **Before the first public start of this version, put a key of its own in `prod.env.local`** - `run-public.ps1` takes any missing value from `backend/.env.local`, which would make the public site use the development key.
+* **API errors the frontend translates**: `DUPLICATE_ROW`, `DATASET_FULL`, `TOO_MANY_COLUMNS`, `COLUMN_NAME_TAKEN`, `IMPORT_*`, `INVALID_MAPPING`, `EXPORT_TOO_LARGE`, `TOO_MANY_REQUESTS`; `INVALID_CELL` already carries a message in the language of the request that names the column.
+* **Tests** (`unit/modules/crm`): access policy, crypto (round trip, other company/key/tampering, RFC 5869 vector), cell rules, file reader (xlsx, docx, csv, hidden sheets, limits, wrong types), rows, datasets and columns, import (mapping, duplicates, bad cells, limits, permissions), export (content, formula safety, audit) and templates. All backend unit tests pass.
+* **Verified against the dev SQL Server (Flyway applied V30 and V31)**: terms gate (403 before accepting, 409 for an old version, 200 after); a dataset created by an executive is visible to its department, not to another company; employees can add and edit customers but get 403 on dataset creation, columns, import, export, audit and deleting a customer they did not add; invalid email, duplicate email, same phone written differently, unknown column; the stored `data` column holds ciphertext and no email or name appears in it; the downloaded Excel and Word templates imported with `SKIP`, `UPDATE`, repeated, and a fake `.xlsx` refused; export downloaded and audited; deleting a column removed its values; deleting the dataset left no rows.
+* **Not verified**: the public database `orbit` (this version is not deployed there; V30 and V31 are pending - back it up first), huge files at the limits, concurrent imports into one dataset (a duplicate email is stopped by the unique index, which would surface as a 500 rather than a 409 in that race), and the terms checkbox on the registration and invitation forms end to end (unit-tested on the server, compiled and wired in the frontend, but the OTP flow was not run).
+
+## Phase 39 - sign-in sessions on the server (2 hours idle, 7 days at most)
+
+**What changed for people**: a sign-in no longer ends after 15 minutes. It lasts while the person keeps working and ends after **2 hours without a real action**, or **7 days after signing in** whatever they do, or when they sign out. While it lasts, opening the site goes straight to the dashboard with no password (the middleware forwards `/login` when a cookie is present). Once it has ended, the sign-in page remembers the username (if ticked) and asks for the password only. The server never signs anyone in from a username alone.
+
+* **Two cookies, both httpOnly, Secure, SameSite=Lax**: `access_token` (the JWT, 15 minutes, carries the claims every request is authorised from - unchanged) and `orbit_session` (a random 256-bit token, 7 days). The `auth_sessions` table (`V32__create_auth_sessions.sql`) stores only the **SHA-256 hash** of the token, the user, `last_activity_at` and the absolute `expires_at`: a leaked table cannot be used as a cookie.
+* **Renewal** (`JwtAuthenticationFilter`): when the access token is missing or expired and the session cookie matches a live session, `SessionService.resume` reads the person **fresh from the database** (position, authority, `is_active`) and the filter issues a new access token. So a changed position or a switched-off account is seen within 15 minutes, however long the sign-in lasts. A session cookie that matches nothing is cleared in the same response, so the browser stops presenting it and `/login` stops forwarding to the dashboard.
+* **Idle clock = real actions only**: `POST /api/v1/auth/session/activity` (authenticated; 401 `SESSION_ENDED` when the session is gone or the request has no session cookie) moves `last_activity_at` to now. The browser calls it at most every 5 minutes and only after a mouse/keyboard/touch/scroll event. The tab's own polling (every 30 s) does **not** call it and does not count, so a forgotten open tab still ends at 2 hours. The server writes at most once a minute per session.
+* **Ending a session** deletes its row, which is what makes it immediate: `POST /auth/logout` (public, so it works with an expired access token), password **change** (the caller's other sessions end, this browser stays), password **reset** (all end), account **deactivated** or **deleted** (all end). Reactivating changes nothing. Housekeeping: every sign-in sweeps that person's sessions that can never be used again.
+* **Settings** (`application.yml`): `app.session.idle-timeout-minutes: 120`, `app.session.max-age-days: 7`, `app.jwt.access-token-ttl-minutes: 15`. The unused `app.jwt.refresh-token-ttl-days` was removed. `TimeConfig` adds a `Clock` bean so the rules are testable.
+* **Code**: `SessionService`/`SessionServiceImpl` (identity), `AuthSessionEntity`/`AuthSessionRepository`, `SessionCookies` (replaces the static `AuthCookies`; used by login, registration and invitation accept), `CustomUserDetailsService.toPrincipal` (shared with login), `SessionProperties`.
+* **Honest limits**: (1) a revoked or idle-dead session can still pass until its current access token expires - at most **15 minutes** (the JWT is not looked up per request on purpose). In practice "2 hours idle" is 2 hours plus up to 15 minutes. (2) Someone holding both cookies (a stolen browser profile) is signed in like the owner until signed out, idle for 2 hours, or 7 days. Changing the password or an executive deactivating the account ends it. (3) Several browsers can be signed in at once; there is no screen listing them yet. (4) Everyone signed in at the moment of deploying this version is signed out once (their cookies have no session).
+* **Deploy**: Flyway adds `auth_sessions` on start (V32). Back the database up first.
+* **Tests**: `SessionServiceImplTest` (16: token stored hashed, resume, exact 120-minute and 7-day boundaries, switched-off/removed/no-position accounts, activity slides the window and is written at most once a minute, ending), `JwtAuthenticationFilterTest` (6: valid JWT, renewal from the session, forged JWT, dead session clears the cookie, anonymous), `SessionCookiesTest` (3), and extended `AuthServiceImplTest` / `UserManagementServiceImplTest` (password change keeps this browser only, reset ends all, deactivate/delete end all, reactivate does not). All backend unit tests pass.
+* **Verified live against the dev backend and SQL Server** (V32 applied by Flyway): both cookies and their attributes; the session cookie alone is enough (fresh access token issued) and the access token alone is enough while it lasts; a forged session token gives 401 and clears the cookie; 100 minutes idle still works, 125 minutes gives 401; the activity call moves the idle clock to now and is refused on a dead session or without a session cookie; past the 7-day limit gives 401 even right after activity; sign-out clears both cookies and a copied session cookie is dead afterwards; deactivating an account deletes its sessions and it cannot sign in, and reactivating restores it; the next sign-in sweeps dead sessions.
+* **Not verified**: changing the password and resetting it through the HTTP API (unit-tested only - the dev seed passwords equal the usernames, so a change could not be undone through the API's own rules), two hours of real elapsed time (the idle and absolute limits were tested by moving timestamps in the dev database), several browsers at once, and the public server (V32 is not applied there yet).
+
+## Phase 40 - security handoff fixes (white-box pentest: sign-in brute force, forged client address, seed secrets)
+
+A white-box review found four issues; all four were confirmed against the code before fixing. Tenant isolation (CRM access policy, own-event/notes/messages/tasks scoping, identity only from the signed token) was reported sound and is untouched.
+
+### #1 (high) - `/login` had no brute-force protection -> fixed (persistent)
+
+* `LoginProtectionService` (identity), called by `AuthServiceImpl.authenticate(username, password, clientAddress)`: **before** the password is checked, the attempt is refused with **429 `TOO_MANY_REQUESTS`** ("Too many attempts. Please try again later.", the same text as every other limit, never how many attempts are left) when
+  * the username has **5 failed attempts in 15 minutes** - counted in memory for every name, whether or not it is an account, so the 429 never tells an attacker a username is real; matched case-insensitively ("Admin" = "admin"), or
+  * the client address has **30 failed attempts in 15 minutes** across all usernames (password spraying), or
+  * the account's failures stored in the database say so (below) - this is what survives a restart.
+* Only **failures** count (wrong password, unknown user, switched-off account alike - all still a plain 401 as before). A successful sign-in clears the username's count; a **password reset** clears it too (proving ownership by mail lifts a lock caused by someone else's guessing). The address count is never cleared by a success, so one valid account cannot be used to reset an attacker's allowance.
+* **Persistence** (`V33__create_login_failures.sql`, `LoginFailureEntity`): failures of existing accounts are counted in `login_failures` (one row per account while it has recent failures, fixed 15-minute window, deleted on success). A separate table, not columns on `users`, so strangers' failed attempts do not rewrite the account's audit columns. Concurrent failures of one account are serialised by a row lock on the user (`findActiveByUsernameForUpdate`), so none is lost.
+* **Not a lock-out**: the block lasts at most the 15-minute window. A progressive lock-out was considered and rejected: a lock that grows only for real accounts would reveal which usernames exist, and anyone who knows a username (a CEO's, for example) could keep that person out indefinitely. The per-address limit still applies to the attacker.
+* `RateLimiter` gained `isExhausted` (look without counting), `record` and `clear`, and reads a `Clock` so the windows are testable; `RateLimitGuard.tooManyRequests()` is the one 429 every limit throws.
+
+### #2 (medium) - per-address limits could be bypassed with a forged `X-Forwarded-For` -> fixed
+
+* The two copies of `clientIp` (AuthController, RateLimitGuard) read the **first** `X-Forwarded-For` entry, which the client controls. There is now one, `RateLimitGuard.clientIp`, and it returns `request.getRemoteAddr()`.
+* That address is resolved by Tomcat's `RemoteIpValve` (`server.forward-headers-strategy: native`): `X-Forwarded-For` is read **only when the request comes from a trusted proxy** (`server.tomcat.remoteip.internal-proxies`) and is walked **right to left**, so an address a client prepended is ignored. Trusted by default: loopback only (`TRUSTED_PROXIES` overrides it; the Docker deployment sets the compose network's range in `deploy/docker-compose.yml`). Never set it to `.*`.
+* Public site topology: Cloudflare -> cloudflared -> Next.js (this PC) -> backend. Cloudflare appends the real client address to `X-Forwarded-For`, so the right-to-left walk lands on it - traffic from the internet cannot choose its address. Next.js, however, passes on whatever `X-Forwarded-For` it receives, so a caller on the same LAN who reached Next directly (port 3000) could still choose its address. **`run-public.ps1` now starts the public frontend with `-H localhost`** (loopback only - it listens on `[::1]:3000`; cloudflared dials `localhost:3000`), so the tunnel is its one caller. It must be the name `localhost`, not `127.0.0.1`: Next.js 14.2 turns `127.0.0.1` into `localhost` in a redirect target (`parseURL`) but not in the request's own URL (`initUrl`), so the two origins differ, the redirect is not made relative, and `/dashboard` without a session sent visitors to `https://localhost:3000/login`. That happened for a few minutes on 2026-10-08 with `-H 127.0.0.1`, was reverted at once, and the cause was then reproduced and fixed on a throwaway server before going public again. `middleware.ts` needed no change.
+
+### #3 (low-medium) - in-memory limits reset on restart / are per instance
+
+* For sign-in, solved by the database count (#1). The other public limits (forgot/reset password, registration OTP, invitation tokens) stay in memory: acceptable on the single-instance public site, to be moved to a shared store before running several instances (see `RateLimiter`'s javadoc).
+
+### #4 (low) - a real email address and the broadcast account's password were committed
+
+* `DevDataSeeder` reads them from settings (`app.dev-seed.recovery-email` / `app.dev-seed.broadcast-password`, i.e. `DEV_SEED_RECOVERY_EMAIL` / `DEV_BROADCAST_PASSWORD` in the git-ignored `backend/.env.local`; empty placeholders in `.env.example`). Without a password the broadcast account is simply not created (logged as a warning); without an email the seed accounts have no recovery address. Both were removed from `backend/README.md`.
+* The broadcast account's password on the dev database was **rotated** (the old value no longer signs in). It was only ever in the dev database - the public database `orbit` has no `orbit_broadcast` account. The old value and the address remain in **git history** (rewriting pushed history is destructive and was not done); with the password rotated, the historical value is useless.
+
+### Tests and verification
+
+* **Unit** (all backend unit tests pass, 379): `LoginProtectionServiceImplTest` (9: limit then 429, unknown username gets the same answer and stores nothing, capitalisation, window expiry, per-username and per-address isolation, success clears the username but not the address, failures survive a restart, a failure after the window starts a new count), `AuthServiceImplTest` (blocked before the password is checked, failure counted and still 401, success clears, password reset clears), `RateLimiterTest` (5), `RateLimitGuardTest` (forged header ignored, one uniform 429).
+* **Live, dev backend + SQL Server** (V33 applied by Flyway): 5 wrong passwords -> five 401, then **429 even with the right password**; another username unaffected; an unknown username gets five 401 then the identical 429; the failures are in `login_failures`; **after a backend restart the account is still blocked**; from the PC's LAN address (not a trusted proxy) 30 sprayed failures each with a different forged `X-Forwarded-For` -> the 31st is 429, while another address is unaffected; the leaked broadcast password worked before rotation and not after, the new one works. Dev counters were cleared afterwards.
+* **Found while testing**: through the Next.js server reached directly from the LAN, 31 failures with different forged headers were all 401 - Next passes the header on. Closed for the public site by the `localhost` binding above. The **dev** frontend (`run-local.ps1`) still listens on all interfaces, as before; it holds weak seed accounts, so keep the PC's LAN trusted or bind it to `localhost` too.
+* **Deployed to the public site** (2026-10-08, after the backup `BACKUP_PUBLIC_orbit_20261008_2157`, schema V31): Flyway applied V32 and V33; an unknown username got five 401 then 429 through Cloudflare; anonymous `/auth/me` and the activity call answer 401; documentation endpoints still redirect to `/login`. After the `localhost` binding (restart without rebuilding): port 3000 listens on `[::1]` only and the LAN address is refused; through Cloudflare `/dashboard` (with or without a query) without a session -> `307 /login`, `/login` with a session cookie -> `307 /dashboard`, `/`, `/en` and `/login` -> 200; the same cases were checked first on a throwaway `next start -H localhost` with Cloudflare's Host / X-Forwarded-Proto headers.
+* **Not verified**: the per-address limit through Cloudflare with two different real addresses, the Docker deployment's `TRUSTED_PROXIES` value on a real Docker host, and many backend instances.

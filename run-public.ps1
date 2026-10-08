@@ -160,9 +160,13 @@ if (-not $jar) { throw "No backend jar found; run without -SkipBuild" }
 Start-Process -FilePath "powershell.exe" -ArgumentList @(
     "-NoExit", "-Command",
     "`$Host.UI.RawUI.WindowTitle = 'Orbit backend (public, prod profile)'; Set-Location '$BackendDir'; java -jar '$($jar.FullName)'")
+# Loopback only: the tunnel (cloudflared, on this PC, dialling localhost:3000) is the frontend's one caller. Reachable from
+# the LAN, it would pass a caller's own X-Forwarded-For on to the backend's rate limits. Bound by the NAME "localhost", not
+# 127.0.0.1: Next.js 14 rewrites 127.0.0.1 to "localhost" in redirect targets but not in the request's own URL, so with
+# 127.0.0.1 its redirects stop being relative and send visitors to https://localhost:3000/... (seen on 2026-10-08).
 Start-Process -FilePath "powershell.exe" -ArgumentList @(
     "-NoExit", "-Command",
-    "`$Host.UI.RawUI.WindowTitle = 'Orbit frontend (public)'; Set-Location '$FrontendDir'; npm run start")
+    "`$Host.UI.RawUI.WindowTitle = 'Orbit frontend (public)'; Set-Location '$FrontendDir'; npm run start -- -H localhost")
 
 # The tunnel last: nothing from outside reaches the servers before they are starting.
 Start-Tunnel

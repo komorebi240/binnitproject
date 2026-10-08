@@ -75,7 +75,8 @@ docker compose logs -f backend         # wait for "Started ProjectApplication"
 ```
 
 Generate the secrets on the VM, fresh (never reuse the development ones):
-`openssl rand -base64 48` for `JWT_SECRET`, `openssl rand -base64 32` for `DRIVE_TOKEN_ENCRYPTION_KEY`.
+`openssl rand -base64 48` for `JWT_SECRET`, `openssl rand -base64 32` for `DRIVE_TOKEN_ENCRYPTION_KEY` and again (a different value) for `CRM_DATA_KEY`,
+which encrypts the customer data of the CRM: keep a copy somewhere safe, because losing it makes that data unreadable.
 
 Open `https://<SITE_HOST>/register` and create your company. Caddy fetches the HTTPS certificate on the first request (needs ports 80/443 reachable and the A record pointing at the VM).
 
@@ -90,7 +91,7 @@ Open `https://<SITE_HOST>/register` and create your company. Caddy fetches the H
 ## 6. Checklist before telling anyone the address
 
 - [ ] `.env` exists only on the server; `deploy/.env` is git-ignored.
-- [ ] `JWT_SECRET` and `DRIVE_TOKEN_ENCRYPTION_KEY` are new values.
+- [ ] `JWT_SECRET`, `DRIVE_TOKEN_ENCRYPTION_KEY` and `CRM_DATA_KEY` are new values, and `CRM_DATA_KEY` is backed up.
 - [ ] `https://<SITE_HOST>/swagger-ui.html` and `/actuator/health` do **not** open from outside.
 - [ ] Registration sends a real OTP email; login, logout and a file upload work.
 - [ ] Only ports 22 (ideally restricted), 80 and 443 are open on the VM.

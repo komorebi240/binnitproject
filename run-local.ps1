@@ -36,7 +36,7 @@ $SqlServerPort = 1433
 $PortProbeTimeoutMs = 1000
 $RequiredBackendSettings = @(
     "JWT_SECRET", "DB_USERNAME", "DB_PASSWORD",
-    "DRIVE_TOKEN_ENCRYPTION_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"
+    "DRIVE_TOKEN_ENCRYPTION_KEY", "CRM_DATA_KEY", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET"
 )
 # Where backend\README.md says Maven was unpacked when it is not on PATH.
 $FallbackMaven = Join-Path $env:USERPROFILE "tools\apache-maven-3.9.16\bin\mvn.cmd"

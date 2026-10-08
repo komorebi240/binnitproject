@@ -12,6 +12,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       DRIVE_TOKEN_ENCRYPTION_KEY: ${DRIVE_TOKEN_ENCRYPTION_KEY}
+      CRM_DATA_KEY: ${CRM_DATA_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: https://${SITE_HOST}/api/v1/drive/oauth2/callback
@@ -20,6 +21,9 @@ services:
       PUBLIC_BASE_URL: https://${SITE_HOST}
       FRONTEND_URL: https://${SITE_HOST}
       CORS_ALLOWED_ORIGINS: https://${SITE_HOST}
+      # Rate limits read the client address from X-Forwarded-For only when it comes from Caddy, which reaches the
+      # backend over this compose network (Docker's 172.16.0.0/12 range). Without this, every visitor would share Caddy's address.
+      TRUSTED_PROXIES: '172\.(1[6-9]|2[0-9]|3[01])\.\d{1,3}\.\d{1,3}|127\.\d{1,3}\.\d{1,3}\.\d{1,3}|0:0:0:0:0:0:0:1|::1'
       # API documentation is for developers: off in production (Caddy does not route it either).
       SPRINGDOC_API_DOCS_ENABLED: "false"
       SPRINGDOC_SWAGGER_UI_ENABLED: "false"
