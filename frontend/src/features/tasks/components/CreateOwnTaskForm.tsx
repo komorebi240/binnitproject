@@ -16,6 +16,8 @@ import { useI18n } from "@/lib/i18n/useI18n";
 interface CreateOwnTaskFormProps {
   currentUser: UserProfile;
   onDone: () => void;
+  /** Pre-filled values (Smart select suggests a title, the captured text and a deadline it found). */
+  initial?: { title?: string; description?: string; dueDate?: string };
 }
 
 /**
@@ -23,11 +25,17 @@ interface CreateOwnTaskFormProps {
  * to SOMEONE ELSE by authority tier, see TaskServiceImpl.createTask). No assignee picker since
  * it's always the caller.
  */
-export function CreateOwnTaskForm({ currentUser, onDone }: CreateOwnTaskFormProps) {
+export function CreateOwnTaskForm({ currentUser, onDone, initial }: CreateOwnTaskFormProps) {
   const { t } = useI18n();
   const createTask = useCreateTask();
   const { showToast } = useToast();
-  const [form, setForm] = useState({ title: "", description: "", priority: "MEDIUM" as TaskPriority, dueDate: "", driveUrl: "" });
+  const [form, setForm] = useState({
+    title: initial?.title ?? "",
+    description: initial?.description ?? "",
+    priority: "MEDIUM" as TaskPriority,
+    dueDate: initial?.dueDate ?? "",
+    driveUrl: "",
+  });
   const [checklist, setChecklist] = useState<string[]>([]);
   const [files, setFiles] = useState<File[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

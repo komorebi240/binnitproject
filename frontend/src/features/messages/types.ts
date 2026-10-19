@@ -17,7 +17,9 @@ export interface MessageAttachment {
   fileName: string;
   contentType: string;
   sizeBytes: number;
+  /** Images and videos are shown in the conversation; anything else is a download card. */
   image: boolean;
+  video: boolean;
 }
 
 export interface Message {
@@ -29,10 +31,27 @@ export interface Message {
   read: boolean;
   createdAt: string;
   recalled: boolean;
+  /** A copy someone forwarded, labelled as such. */
+  forwarded: boolean;
   attachment: MessageAttachment | null;
 }
 
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
-/** Mirrors the backend allowlist (ChatAttachmentStorageService) - the server re-validates the real bytes. */
+/** Mirrors app.uploads.chat-max-video-mb on the server. */
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+export const MAX_FORWARD_RECIPIENTS = 10;
+const VIDEO_EXTENSIONS = ["mp4", "m4v", "mov", "webm"];
+/** Mirrors the backend allowlist (AttachmentStorage) - the server re-validates the real bytes. */
 export const ATTACHMENT_ACCEPT =
-  "image/png,image/jpeg,image/gif,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.csv";
+  "image/png,image/jpeg,image/gif,image/webp,video/mp4,video/quicktime,video/webm,.mp4,.m4v,.mov,.webm,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.txt,.csv";
+
+/** Decided by the extension, like the server does before it checks the file's signature. */
+export function isVideoFile(fileName: string): boolean {
+  const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
+  return fileName.includes(".") && VIDEO_EXTENSIONS.includes(extension);
+}
+
+/** The largest file the server accepts for this name: videos have their own, larger limit. */
+export function maxBytesFor(fileName: string): number {
+  return isVideoFile(fileName) ? MAX_VIDEO_BYTES : MAX_ATTACHMENT_BYTES;
+}

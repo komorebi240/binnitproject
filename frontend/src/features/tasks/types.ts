@@ -63,6 +63,8 @@ export interface Task {
   projectId: number | null;
   /** UI hint from the server: may the caller add/remove files and change the Drive link. */
   canManage: boolean;
+  /** The user cleared this finished task from their own lists ("Clear all"); statistics still count it. */
+  hidden: boolean;
 }
 
 export interface CreateTaskInput {

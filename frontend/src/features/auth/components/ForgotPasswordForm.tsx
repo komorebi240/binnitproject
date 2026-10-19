@@ -114,6 +114,7 @@ export function ForgotPasswordForm() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
+              maxLength={200}
               required
             />
             <Button type="submit" loading={forgotPassword.isPending}>

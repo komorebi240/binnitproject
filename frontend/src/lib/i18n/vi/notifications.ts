@@ -20,4 +20,7 @@ export const notifications = {
   "notifications.text.taskCompleted.body": "{actor} đã hoàn thành việc \"{title}\"",
   "notifications.text.taskDeclined.body": "{actor} đã từ chối việc \"{title}\"",
   "notifications.text.taskUpdate.title": "Cập nhật công việc",
+  "notifications.text.whiteboardShared.editor": "{actor} đã chia sẻ bảng trắng \"{board}\" với bạn, bạn được sửa",
+  "notifications.text.whiteboardShared.title": "Bạn được chia sẻ một bảng trắng",
+  "notifications.text.whiteboardShared.viewer": "{actor} đã chia sẻ bảng trắng \"{board}\" với bạn, bạn chỉ xem",
 };

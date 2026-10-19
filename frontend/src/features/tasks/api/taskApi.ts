@@ -41,6 +41,16 @@ export async function deleteTask(id: number): Promise<void> {
   await apiClient.delete(`/tasks/${id}`);
 }
 
+/** "Clear all": hides these finished tasks from the user's own lists; returns the ids actually hidden. */
+export async function hideTasks(taskIds: number[]): Promise<number[]> {
+  const { data } = await apiClient.post<ApiResponse<{ taskIds: number[] }>>("/tasks/hidden", { taskIds });
+  return (data.data as { taskIds: number[] }).taskIds;
+}
+
+export async function unhideTasks(taskIds: number[]): Promise<void> {
+  await apiClient.post("/tasks/hidden/undo", { taskIds });
+}
+
 export async function addTaskAttachment(taskId: number, file: File): Promise<Task> {
   const form = new FormData();
   form.append("file", file);

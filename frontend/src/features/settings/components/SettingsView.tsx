@@ -14,11 +14,12 @@ import { RichText } from "@/components/i18n/RichText";
 import { useI18n } from "@/lib/i18n/useI18n";
 interface SettingsViewProps {
   onOpenDrive: () => void;
+  onOpenLicenses: () => void;
 }
 
 /** Extracted from the old app/dashboard/settings/page.tsx so TabContentRenderer can render it
  * per-tab; the Drive link is a callback now (tab navigation) rather than a real <Link>. */
-export function SettingsView({ onOpenDrive }: SettingsViewProps) {
+export function SettingsView({ onOpenDrive, onOpenLicenses }: SettingsViewProps) {
   const { t } = useI18n();
   const { data: currentUser } = useCurrentUser();
   const { startTour } = useTour();
@@ -63,6 +64,13 @@ export function SettingsView({ onOpenDrive }: SettingsViewProps) {
             }}
           />
         </p>
+      </div>
+      <div className="pt-8">
+        <h2 className="mb-2 text-lg font-semibold text-fg">{t("legal.licenses.title")}</h2>
+        <p className="mb-3 text-sm text-fg-muted">{t("settings.settingsView.licensesIntro")}</p>
+        <Button variant="secondary" onClick={onOpenLicenses}>
+          {t("settings.settingsView.viewLicenses")}
+        </Button>
       </div>
     </div>
   );

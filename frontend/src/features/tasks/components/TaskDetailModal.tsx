@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { DownloadSimple, File as FileIcon, GoogleDriveLogo, Paperclip, X } from "@phosphor-icons/react";
+import { DownloadSimple, Eye, File as FileIcon, GoogleDriveLogo, Paperclip, X } from "@phosphor-icons/react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -12,6 +12,8 @@ import { useTabs } from "@/components/layout/TabsContext";
 import { ApiRequestError } from "@/lib/api/client";
 import { useAuthedBlobUrl } from "@/lib/hooks/useAuthedBlobUrl";
 import { useCurrentUser } from "@/features/auth/hooks/useAuth";
+import { previewKind } from "@/features/fileViewer/fileSources";
+import { useOpenFile } from "@/features/fileViewer/hooks/useOpenFile";
 import { downloadTaskAttachment } from "../api/taskApi";
 import { TaskChecklist } from "./TaskChecklist";
 import { useAddTaskAttachment, useRemoveTaskAttachment, useTasksList, useUpdateTaskDriveUrl } from "../hooks/useTasks";
@@ -111,6 +113,8 @@ function AttachmentRow({
   const { t } = useI18n();
   const { showToast } = useToast();
   const [downloading, setDownloading] = useState(false);
+  const openFile = useOpenFile();
+  const viewable = !attachment.image && previewKind(attachment.fileName, attachment.contentType) !== null;
 
   async function handleDownload() {
     setDownloading(true);
@@ -147,6 +151,17 @@ function AttachmentRow({
         <span className="block text-xs text-fg-muted">{formatSize(attachment.sizeBytes)}</span>
       </button>
       <DownloadSimple size={16} aria-hidden className="shrink-0 text-fg-faint" />
+      {viewable && (
+        <button
+          type="button"
+          onClick={() => openFile({ kind: "task", taskId, attachmentId: attachment.id }, attachment.fileName)}
+          aria-label={t("tasks.taskDetailModal.openFileFilename", { fileName: attachment.fileName })}
+          title={t("tasks.taskDetailModal.openInTab")}
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-fg-faint hover:bg-surface-muted hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          <Eye size={14} aria-hidden />
+        </button>
+      )}
       {canRemove && (
         <button
           type="button"

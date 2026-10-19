@@ -88,6 +88,22 @@ export function useDeleteTask() {
   return useTaskAction(api.deleteTask);
 }
 
+export function useHideTasks() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (taskIds: number[]) => api.hideTasks(taskIds),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: TASKS_KEY }),
+  });
+}
+
+export function useUnhideTasks() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (taskIds: number[]) => api.unhideTasks(taskIds),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: TASKS_KEY }),
+  });
+}
+
 export function useAddTaskAttachment() {
   const queryClient = useQueryClient();
   return useMutation({

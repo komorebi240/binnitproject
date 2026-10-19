@@ -8,6 +8,7 @@ export const ui: Record<keyof typeof vi, string> = {
   "ui.floatingWindow.expand": "Expand",
   "ui.floatingWindow.moveWindowTitleArrowKeysHold": "Move window \"{title}\" (arrow keys; hold Shift to resize)",
   "ui.imageLightbox.closeImage": "Close image",
+  "ui.imageLightbox.downloadImage": "Download image",
   "ui.input.hidePassword": "Hide password",
   "ui.input.showPassword": "Show password",
   "ui.jumpToLatest.newMessages": "New messages",

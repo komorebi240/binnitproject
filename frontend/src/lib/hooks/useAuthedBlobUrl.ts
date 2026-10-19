@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api/client";
 
 /**
- * Authenticated images (avatars, chat attachments) are served from backend endpoints (e.g. GET /users/{id}/avatar) - a plain
+ * Authenticated images (avatars, company logos) are served from backend endpoints (e.g. GET /users/{id}/avatar) - a plain
  * `<img src="http://backend/...">` can't carry the httpOnly auth cookie across origins for a
  * subresource request (SameSite=Lax only rides along on a top-level navigation, not an <img> or
  * fetch), so this fetches the bytes through the same axios client every other API call uses

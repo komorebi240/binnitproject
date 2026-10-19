@@ -8,7 +8,8 @@ export type NotificationType =
   | "TASK_COMPLETED"
   | "PROJECT_INVITED"
   | "PROJECT_RESPONDED"
-  | "PROJECT_MEMBER_ADDED";
+  | "PROJECT_MEMBER_ADDED"
+  | "WHITEBOARD_SHARED";
 
 /** The values a notification text was built from (who, which task...); null for notifications older than the field. */
 export type NotificationParams = Record<string, string>;

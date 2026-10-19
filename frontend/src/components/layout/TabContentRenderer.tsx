@@ -14,10 +14,16 @@ import { DepartmentDetailView } from "@/features/organization/components/Departm
 import { DepartmentManager } from "@/features/organization/components/DepartmentManager";
 import { UserManager } from "@/features/organization/components/UserManager";
 import { SettingsView } from "@/features/settings/components/SettingsView";
+import { OpenSourceLicenses } from "@/features/legal/components/OpenSourceLicenses";
+import { FileViewerView } from "@/features/fileViewer/components/FileViewerView";
+import { parseFileViewerPath } from "@/features/fileViewer/fileSources";
+import { WhiteboardView } from "@/features/whiteboards/components/WhiteboardView";
+import { WhiteboardsPanel } from "@/features/whiteboards/components/WhiteboardsPanel";
 import { HomeTabContent } from "@/features/tasks/components/HomeTabContent";
 import { TasksPanel } from "@/features/tasks/components/TasksPanel";
 import { useCurrentUser } from "@/features/auth/hooks/useAuth";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { PaneContext } from "./PaneContext";
 import {
   DEFAULT_SPLIT_RATIO,
   MAX_SPLIT_RATIO,
@@ -69,7 +75,26 @@ function TabPage({ tab }: { tab: Tab }) {
     );
   }
 
+  const fileSource = parseFileViewerPath(pathname);
+  if (fileSource) {
+    return <FileViewerView key={tab.path} source={fileSource} fileName={params.get("name") ?? ""} />;
+  }
+
+  const whiteboardMatch = pathname.match(/^\/dashboard\/whiteboards\/(\d+)$/);
+  if (whiteboardMatch) {
+    return (
+      <WhiteboardView
+        boardId={Number(whiteboardMatch[1])}
+        currentUser={currentUser}
+        onBack={() => navigateActiveTab("/dashboard/whiteboards")}
+        onGone={() => navigateActiveTab("/dashboard/whiteboards")}
+      />
+    );
+  }
+
   switch (pathname) {
+    case "/dashboard/whiteboards":
+      return <WhiteboardsPanel />;
     case "/dashboard/crm":
       return <CrmPanel currentUser={currentUser} />;
     case "/dashboard/projects":
@@ -108,7 +133,14 @@ function TabPage({ tab }: { tab: Tab }) {
         />
       );
     case "/dashboard/settings":
-      return <SettingsView onOpenDrive={() => navigateActiveTab("/dashboard/drive")} />;
+      return (
+        <SettingsView
+          onOpenDrive={() => navigateActiveTab("/dashboard/drive")}
+          onOpenLicenses={() => navigateActiveTab("/dashboard/licenses")}
+        />
+      );
+    case "/dashboard/licenses":
+      return <OpenSourceLicenses />;
     default:
       return <HomeTabContent boardView={tab.boardView} />;
   }
@@ -119,10 +151,9 @@ const NARROW_PANE_PX = 600;
 const RATIO_KEY_STEP = 0.02;
 
 /** True while the pane is narrower than NARROW_PANE_PX; a pane that is hidden counts as not narrow. */
-function usePaneNarrow(ref: React.RefObject<HTMLElement>, enabled: boolean): boolean {
+function usePaneNarrow(element: HTMLElement | null, enabled: boolean): boolean {
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
-    const element = ref.current;
     if (!element || !enabled) {
       setNarrow(false);
       return;
@@ -135,7 +166,7 @@ function usePaneNarrow(ref: React.RefObject<HTMLElement>, enabled: boolean): boo
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [ref, enabled]);
+  }, [element, enabled]);
   return narrow;
 }
 
@@ -157,13 +188,17 @@ interface TabPaneProps {
  */
 function TabPane({ tab, visible, split, focused, side, onFocusPane }: TabPaneProps) {
   const { t } = useI18n();
-  const ref = useRef<HTMLElement>(null);
-  const narrow = usePaneNarrow(ref, visible);
+  const [element, setElement] = useState<HTMLElement | null>(null);
+  const narrow = usePaneNarrow(element, visible);
+  // What the pane's windows (Modal, ImageLightbox) need to stay inside it when the screen is split.
+  const pane = useMemo(() => ({ element, split, focused, visible }), [element, split, focused, visible]);
 
   if (!visible) {
     return (
-      <section ref={ref} className="hidden">
-        <TabPage tab={tab} />
+      <section ref={setElement} className="hidden">
+        <PaneContext.Provider value={pane}>
+          <TabPage tab={tab} />
+        </PaneContext.Provider>
       </section>
     );
   }
@@ -176,13 +211,15 @@ function TabPane({ tab, visible, split, focused, side, onFocusPane }: TabPanePro
 
   return (
     <section
-      ref={ref}
+      ref={setElement}
       style={{ order: side === "right" ? 3 : 1 }}
       onPointerDownCapture={split && !focused ? onFocusPane : undefined}
       aria-label={split ? (focused ? t("layout.tabContentRenderer.activePane") : t("layout.tabContentRenderer.otherPane")) : undefined}
       className={`min-w-0 flex-1 overflow-y-auto py-6 ${layout} ${narrow ? "pane-narrow" : ""}`}
     >
-      <TabPage tab={tab} />
+      <PaneContext.Provider value={pane}>
+        <TabPage tab={tab} />
+      </PaneContext.Provider>
     </section>
   );
 }

@@ -16,7 +16,7 @@ describe("tourStepsFor", () => {
   it("everyone is shown the features added after the first tour", () => {
     for (const level of LEVELS) {
       const ids = tourStepsFor(level).map((step) => step.id);
-      expect(ids).toEqual(expect.arrayContaining(["notes", "timer", "notifications", "split-screen", "company-page", "projects", "crm"]));
+      expect(ids).toEqual(expect.arrayContaining(["notes", "timer", "notifications", "split-screen", "company-page", "projects", "crm", "whiteboards", "smart-select"]));
     }
   });
 

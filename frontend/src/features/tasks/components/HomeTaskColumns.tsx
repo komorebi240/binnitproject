@@ -49,7 +49,8 @@ export function HomeTaskColumns({ currentUser }: { currentUser: UserProfile }) {
   const mine = (tasks ?? []).filter((t) => t.assigneeUserId === currentUser.userId);
 
   function itemsFor(status: TaskStatus): Task[] {
-    const items = mine.filter((t) => t.status === status);
+    // A completed task the user cleared from their lists ("Clear all") is not listed here either.
+    const items = mine.filter((t) => t.status === status && !t.hidden);
     if (status !== "DONE") return items;
     return items
       .sort((a, b) => (b.completedAt ?? "").localeCompare(a.completedAt ?? ""))

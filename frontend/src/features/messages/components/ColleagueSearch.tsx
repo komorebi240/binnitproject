@@ -6,8 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Highlight } from "@/components/ui/Highlight";
 import { matchesAllWords } from "@/lib/textMatch";
 import type { UserProfile } from "@/features/auth/types";
-import type { PresenceStatus } from "@/features/auth/types";
-import { useDepartmentMembers, useUsers } from "@/features/organization/hooks/useOrganization";
+import { useColleagues } from "../hooks/useColleagues";
 
 import { useI18n } from "@/lib/i18n/useI18n";
 const MAX_RESULTS = 6;
@@ -15,15 +14,6 @@ const MAX_RESULTS = 6;
 interface ColleagueSearchProps {
   currentUser: UserProfile;
   onPick: (userId: number, fullName: string) => void;
-}
-
-interface Person {
-  userId: number;
-  fullName: string;
-  title: string | null;
-  email: string | null;
-  avatarUrl: string | null;
-  presenceStatus: PresenceStatus;
 }
 
 /**
@@ -34,19 +24,11 @@ export function ColleagueSearch({ currentUser, onPick }: ColleagueSearchProps) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
-  const companyWide = currentUser.departmentId == null && currentUser.authorityLevel === "EXECUTIVE";
-  const { data: members } = useDepartmentMembers(currentUser.departmentId);
-  const { data: users } = useUsers(companyWide);
+  const { colleagues: people, companyWide, available } = useColleagues(currentUser);
 
-  if (currentUser.departmentId == null && !companyWide) return null;
+  if (!available) return null;
 
-  const people: Person[] = companyWide
-    ? (users ?? []).filter((u) => u.active).map((u) => ({ userId: u.id, fullName: u.fullName, title: u.title, email: null, avatarUrl: u.avatarUrl, presenceStatus: u.presenceStatus }))
-    : (members ?? []);
-  const colleagues = people
-    .filter((m) => m.userId !== currentUser.userId)
-    .filter((m) => matchesAllWords(`${m.fullName} ${m.email ?? ""}`, query))
-    .slice(0, MAX_RESULTS);
+  const colleagues = people.filter((m) => matchesAllWords(`${m.fullName} ${m.email ?? ""}`, query)).slice(0, MAX_RESULTS);
   const showList = focused || query.trim() !== "";
 
   function pick(userId: number, fullName: string) {

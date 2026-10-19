@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { MARKETING_PATHS } from "@/features/marketing/locales";
 
-const ACCESS_TOKEN_COOKIE = "access_token";
+// Must match the backend (JwtAuthenticationFilter / SessionCookies); the __Host- prefix keeps other subdomains from setting them.
+const ACCESS_TOKEN_COOKIE = "__Host-access_token";
 // Outlives the 15-minute access token: while it is there the backend can still renew the access token.
-const SESSION_COOKIE = "orbit_session";
+const SESSION_COOKIE = "__Host-orbit_session";
 const PUBLIC_PATHS = ["/login", "/forgot-password", "/register", "/invite"];
 
 /**

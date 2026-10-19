@@ -182,7 +182,8 @@ export function TabsProvider({ children }: { children: React.ReactNode }) {
     const tab = newTab();
     setState((prev) => {
       if (!prev) return prev;
-      if (prev.splitTabId) return addInSplit(prev, tab, prev.activeOnLeft ? "left" : "right") as TabsState;
+      // The split helpers return only the tab fields; keep the rest (split ratio) from the current state.
+      if (prev.splitTabId) return { ...prev, ...addInSplit(prev, tab, prev.activeOnLeft ? "left" : "right") };
       return { ...prev, tabs: [...prev.tabs, tab], activeTabId: tab.id };
     });
   }

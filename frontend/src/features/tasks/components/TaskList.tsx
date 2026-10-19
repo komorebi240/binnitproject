@@ -22,6 +22,8 @@ import {
 } from "../hooks/useTasks";
 import { TASK_PRIORITY_KEYS, TASK_STATUS_KEYS, type Task, type TaskPriority, type TaskStatus } from "../types";
 import { TaskDetailModal } from "./TaskDetailModal";
+import { useClearFinishedTasks } from "../hooks/useClearFinishedTasks";
+import { ClearAllButton, ClearedNotice } from "./ClearFinishedControls";
 
 import { useI18n } from "@/lib/i18n/useI18n";
 const STATUS_TONE: Record<TaskStatus, "neutral" | "info" | "success" | "warning" | "danger"> = {
@@ -103,8 +105,10 @@ export function TaskList({ currentUser }: TaskListProps) {
   }
 
   const activeTasks = useMemo(() => (tasks ?? []).filter((task) => task.status !== "DONE" && task.status !== "CANCELLED"), [tasks]);
-  const doneTasks = useMemo(() => (tasks ?? []).filter((task) => task.status === "DONE"), [tasks]);
-  const cancelledTasks = useMemo(() => (tasks ?? []).filter((task) => task.status === "CANCELLED"), [tasks]);
+  // Tasks the user cleared ("Clear all") leave these lists only; other people and the statistics still see them.
+  const doneTasks = useMemo(() => (tasks ?? []).filter((task) => task.status === "DONE" && !task.hidden), [tasks]);
+  const cancelledTasks = useMemo(() => (tasks ?? []).filter((task) => task.status === "CANCELLED" && !task.hidden), [tasks]);
+  const clearing = useClearFinishedTasks();
 
   const columns = [
     { header: t("tasks.taskList.task"), cell: (task: Task) => task.title },
@@ -187,16 +191,27 @@ export function TaskList({ currentUser }: TaskListProps) {
         }
       />
 
+      {clearing.cleared && (
+        <ClearedNotice count={clearing.cleared.length} onUndo={clearing.undo} onDismiss={clearing.dismiss} undoing={clearing.undoing} />
+      )}
+
       {doneTasks.length > 0 && (
         <div>
-          <button
-            type="button"
-            onClick={() => setShowDone((v) => !v)}
-            className="flex items-center gap-1.5 rounded text-sm font-medium text-fg-soft hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-          >
-            {showDone ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
-            {t("tasks.taskBoardView.completedCount", { count: doneTasks.length })}
-          </button>
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setShowDone((v) => !v)}
+              className="flex items-center gap-1.5 rounded text-sm font-medium text-fg-soft hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              {showDone ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
+              {t("tasks.taskBoardView.completedCount", { count: doneTasks.length })}
+            </button>
+            <ClearAllButton
+              label={t("tasks.clearFinished.clearCompleted")}
+              onClick={() => clearing.clear(doneTasks.map((task) => task.id))}
+              disabled={clearing.clearing}
+            />
+          </div>
           {showDone && (
             <div className="animate-fade-in mt-2">
               <Table<Task> columns={columns} rows={doneTasks} getRowKey={(task) => task.id} onRowClick={(task) => setDetailTaskId(task.id)} emptyState={null} />
@@ -207,14 +222,21 @@ export function TaskList({ currentUser }: TaskListProps) {
 
       {cancelledTasks.length > 0 && (
         <div>
-          <button
-            type="button"
-            onClick={() => setShowCancelled((v) => !v)}
-            className="flex items-center gap-1.5 rounded text-sm font-medium text-fg-soft hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-          >
-            {showCancelled ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
-            {t("tasks.taskBoardView.cancelledCount", { count: cancelledTasks.length })}
-          </button>
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setShowCancelled((v) => !v)}
+              className="flex items-center gap-1.5 rounded text-sm font-medium text-fg-soft hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+            >
+              {showCancelled ? <CaretDown size={14} aria-hidden /> : <CaretRight size={14} aria-hidden />}
+              {t("tasks.taskBoardView.cancelledCount", { count: cancelledTasks.length })}
+            </button>
+            <ClearAllButton
+              label={t("tasks.clearFinished.clearCancelled")}
+              onClick={() => clearing.clear(cancelledTasks.map((task) => task.id))}
+              disabled={clearing.clearing}
+            />
+          </div>
           {showCancelled && (
             <div className="animate-fade-in mt-2">
               <Table<Task> columns={cancelledColumns} rows={cancelledTasks} getRowKey={(task) => task.id} onRowClick={(task) => setDetailTaskId(task.id)} emptyState={null} />

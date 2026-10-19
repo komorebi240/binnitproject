@@ -65,6 +65,20 @@ const CRM: TourStep = {
   bodyKey: "crm.tour.body",
 };
 
+const WHITEBOARDS: TourStep = {
+  id: "whiteboards",
+  target: nav("/dashboard/whiteboards"),
+  titleKey: "whiteboards.tour.title",
+  bodyKey: "whiteboards.tour.body",
+};
+
+const SMART_SELECT: TourStep = {
+  id: "smart-select",
+  target: "smart-select",
+  titleKey: "smartSelect.tour.title",
+  bodyKey: "smartSelect.tour.body",
+};
+
 const NOTES: TourStep = {
   id: "notes",
   target: nav("/dashboard/notes"),
@@ -148,6 +162,7 @@ const ADMIN_STEPS: TourStep[] = [
   MESSAGES,
   CALENDAR,
   NOTES,
+  WHITEBOARDS,
   {
     id: "drive",
     target: nav("/dashboard/drive"),
@@ -155,6 +170,7 @@ const ADMIN_STEPS: TourStep[] = [
     bodyKey: "onboarding.tourSteps.connectDriveAndManageFolderAccess",
   },
   SEARCH,
+  SMART_SELECT,
   NOTIFICATIONS,
   TIMER,
   BOARD_VIEW,
@@ -182,7 +198,9 @@ const MANAGER_STEPS: TourStep[] = [
   MESSAGES,
   CALENDAR,
   NOTES,
+  WHITEBOARDS,
   SEARCH,
+  SMART_SELECT,
   NOTIFICATIONS,
   TIMER,
   SPLIT_SCREEN,
@@ -204,7 +222,9 @@ const EMPLOYEE_STEPS: TourStep[] = [
   MESSAGES,
   CALENDAR,
   NOTES,
+  WHITEBOARDS,
   SEARCH,
+  SMART_SELECT,
   NOTIFICATIONS,
   TIMER,
   BOARD_VIEW,

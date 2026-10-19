@@ -29,6 +29,9 @@ function resolveTarget(notification: Notification): string | null {
     case "PROJECT_MEMBER_ADDED":
       // relatedEntityId is the project's id (see ProjectServiceImpl).
       return notification.relatedEntityId != null ? `/dashboard/projects/${notification.relatedEntityId}` : "/dashboard/projects";
+    case "WHITEBOARD_SHARED":
+      // relatedEntityId is the board's id (see WhiteboardServiceImpl.setMember).
+      return notification.relatedEntityId != null ? `/dashboard/whiteboards/${notification.relatedEntityId}` : "/dashboard/whiteboards";
     default:
       return null;
   }

@@ -77,6 +77,11 @@ const CHILDREN_BY_HREF: Record<string, SubFeature[]> = {
     { labelKey: "crm.search.export", keywords: "xuat excel", roles: ["EXECUTIVE"] },
     { labelKey: "crm.search.auditLog", keywords: "nhat ky", roles: ["EXECUTIVE"] },
   ],
+  "/dashboard/whiteboards": [
+    { labelKey: "whiteboards.search.createBoard", keywords: "ve so do whiteboard bang trang" },
+    { labelKey: "whiteboards.search.shareBoard", keywords: "chia se cung sua" },
+    { labelKey: "whiteboards.search.dragText", keywords: "keo tha chon thong minh alt s" },
+  ],
   "/dashboard/messages": [
     { labelKey: "common.directMessages", keywords: "chat" },
     { labelKey: "common.findColleaguesInYourDepartment", keywords: "nguoi" },

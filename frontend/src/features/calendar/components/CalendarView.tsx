@@ -7,18 +7,15 @@ import { Modal } from "@/components/ui/Modal";
 import { PlusButton } from "@/components/ui/PlusButton";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useToast } from "@/components/ui/Toast";
-import { ApiRequestError } from "@/lib/api/client";
 import {
   useAcceptEvent,
-  useCreateOwnEvent,
   useDeclineEvent,
   useDeleteEvent,
   useMyCalendarEvents,
 } from "../hooks/useCalendar";
-import { coversDay, EMPTY_EVENT_FORM, formatSpan, toEventInput, TYPE_KEYS, upcomingEvents } from "../eventRange";
+import { coversDay, formatSpan, TYPE_KEYS, upcomingEvents } from "../eventRange";
 import type { CalendarEvent, CalendarEventType } from "../types";
-import { CalendarEventFields } from "./CalendarEventFields";
+import { CreateOwnEventDialog } from "./CreateOwnEventDialog";
 
 import { useI18n } from "@/lib/i18n/useI18n";
 import { weekdayShortKey } from "@/lib/weekdays";
@@ -75,17 +72,13 @@ function EventRow({ event, onDelete, deleting }: { event: CalendarEvent; onDelet
 export function CalendarView() {
   const { t, intlLocale } = useI18n();
   const { data: events, isLoading } = useMyCalendarEvents();
-  const createEvent = useCreateOwnEvent();
   const acceptEvent = useAcceptEvent();
   const declineEvent = useDeclineEvent();
   const deleteEvent = useDeleteEvent();
-  const { showToast } = useToast();
 
   const [monthDate, setMonthDate] = useState(() => new Date());
-  const [form, setForm] = useState(EMPTY_EVENT_FORM);
   const [creating, setCreating] = useState(false);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const grid = useMemo(() => buildMonthGrid(monthDate), [monthDate]);
   const today = new Date();
@@ -93,19 +86,6 @@ export function CalendarView() {
   const eventsOnDay = (day: Date) => (events ?? []).filter((e) => coversDay(e, day) && e.status !== "DECLINED");
   const pendingEvents = (events ?? []).filter((e) => e.status === "PENDING");
   const coming = upcomingEvents(events ?? [], today);
-
-  async function handleCreate(event: React.FormEvent) {
-    event.preventDefault();
-    setErrorMessage(null);
-    try {
-      await createEvent.mutateAsync(toEventInput(form));
-      setForm(EMPTY_EVENT_FORM);
-      showToast("success", t("calendar.calendarView.eventAdded"));
-      setCreating(false);
-    } catch (err) {
-      setErrorMessage(err instanceof ApiRequestError ? err.message : t("calendar.calendarView.couldnTAddTheEvent"));
-    }
-  }
 
   if (isLoading) {
     return <Skeleton rows={4} />;
@@ -234,26 +214,7 @@ export function CalendarView() {
         </Modal>
       )}
 
-      {creating && (
-        <Modal title={t("calendar.calendarView.addANewEvent")} onClose={() => setCreating(false)}>
-          <form onSubmit={handleCreate} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <CalendarEventFields form={form} onChange={setForm} />
-            {errorMessage && (
-              <p role="alert" className="text-sm text-danger sm:col-span-2">
-                {errorMessage}
-              </p>
-            )}
-            <div className="flex gap-2 sm:col-span-2">
-              <Button type="submit" loading={createEvent.isPending}>
-                {t("common.addAnEvent")}
-              </Button>
-              <Button type="button" variant="secondary" onClick={() => setCreating(false)}>
-                {t("common.cancel")}
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      )}
+      {creating && <CreateOwnEventDialog onClose={() => setCreating(false)} />}
     </div>
   );
 }

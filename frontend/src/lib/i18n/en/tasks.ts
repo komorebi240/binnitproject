@@ -1,6 +1,15 @@
 import type { tasks as vi } from "../vi/tasks";
 
 export const tasks: Record<keyof typeof vi, string> = {
+  "tasks.clearFinished.clearAll": "Clear all",
+  "tasks.clearFinished.clearCancelled": "Clear all cancelled tasks from my list",
+  "tasks.clearFinished.clearCompleted": "Clear all completed tasks from my list",
+  "tasks.clearFinished.cleared_one": "{count} task cleared from your list.",
+  "tasks.clearFinished.cleared_other": "{count} tasks cleared from your list.",
+  "tasks.clearFinished.couldNotClear": "Could not clear the list",
+  "tasks.clearFinished.couldNotUndo": "Could not undo",
+  "tasks.clearFinished.hint": "Only clears your own list. The person who assigned it still sees it; KPI and statistics are unchanged.",
+  "tasks.clearFinished.undo": "Undo",
   "tasks.createOwnTaskForm.googleDriveLinkOptional": "Google Drive link (optional)",
   "tasks.createOwnTaskForm.taskAdded": "Task added",
   "tasks.createOwnTaskForm.taskAddedButCountFilesCouldn_one": "Task added, but {count} file couldn't be uploaded - attach it again in the task details",
@@ -72,6 +81,8 @@ export const tasks: Record<keyof typeof vi, string> = {
   "tasks.taskDetailModal.noAttachmentsYet": "No attachments yet",
   "tasks.taskDetailModal.noDescription": "No description",
   "tasks.taskDetailModal.noDriveLinkYet": "No Drive link yet",
+  "tasks.taskDetailModal.openFileFilename": "Open {fileName} in a tab",
+  "tasks.taskDetailModal.openInTab": "Open in a tab",
   "tasks.taskDetailModal.priorityValue": "Priority: {priority}",
   "tasks.taskDetailModal.taskDetails": "Task details",
   "tasks.taskDraftFields.atMostMaxTaskAttachmentsFiles": "At most {MAX_TASK_ATTACHMENTS} files",

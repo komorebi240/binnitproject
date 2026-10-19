@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Archive, ArrowLeft, DotsThreeVertical } from "@phosphor-icons/react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -15,6 +16,7 @@ import { useToast } from "@/components/ui/Toast";
 import type { UserProfile } from "@/features/auth/types";
 import {
   useConversations,
+  useHideMessage,
   useRecallMessage,
   useSetConversationArchived,
   useThreadWith,
@@ -22,6 +24,7 @@ import {
 import type { Conversation, Message } from "../types";
 import { MessageBubble } from "./MessageBubble";
 import { ColleagueSearch } from "./ColleagueSearch";
+import { ForwardDialog } from "./ForwardDialog";
 import { MessageComposer } from "./MessageComposer";
 
 import { useI18n, type I18n } from "@/lib/i18n/useI18n";
@@ -44,7 +47,10 @@ function previewOf(c: Conversation, t: I18n["t"]): string {
   return "";
 }
 
-/** Simple 1-1 chat - polling, no groups, no real-time transport. Supports image/file attachments, recall, and archiving a conversation. */
+/**
+ * Simple 1-1 chat - polling, no groups, no real-time transport. Images and videos show in the conversation, files download;
+ * a message can be copied, forwarded, deleted for oneself or (own messages) recalled for both; conversations can be archived.
+ */
 export function MessengerView({
   currentUser,
   initialWith = null,
@@ -59,11 +65,14 @@ export function MessengerView({
   );
   const { data: thread, isLoading: threadLoading } = useThreadWith(activeUserId);
   const recallMessage = useRecallMessage(activeUserId);
+  const hideMessage = useHideMessage(activeUserId);
   const setArchived = useSetConversationArchived();
   const { showToast } = useToast();
   const [openMenuUserId, setOpenMenuUserId] = useState<number | null>(null);
   const [pickedName, setPickedName] = useState<string | null>(null);
   const [messageToRecall, setMessageToRecall] = useState<Message | null>(null);
+  const [messageToHide, setMessageToHide] = useState<Message | null>(null);
+  const [messageToForward, setMessageToForward] = useState<Message | null>(null);
   const lastMessage = (thread ?? []).at(-1);
   const { scrollRef, onScroll, canJumpToLatest, jumpToLatest } = useStickToBottom({
     latestKey: lastMessage ? String(lastMessage.id) : null,
@@ -107,6 +116,29 @@ export function MessengerView({
       onError: (err) => {
         setMessageToRecall(null);
         showToast("error", err instanceof ApiRequestError ? err.message : t("common.couldnTRecallIt"));
+      },
+    });
+  }
+
+  async function copyMessage(message: Message) {
+    try {
+      await navigator.clipboard.writeText(message.body);
+      showToast("success", t("messages.messengerView.messageCopied"));
+    } catch {
+      showToast("error", t("messages.messengerView.couldnTCopy"));
+    }
+  }
+
+  function confirmHide() {
+    if (!messageToHide) return;
+    hideMessage.mutate(messageToHide.id, {
+      onSuccess: () => {
+        setMessageToHide(null);
+        showToast("success", t("messages.messengerView.messageDeletedForYou"));
+      },
+      onError: (err) => {
+        setMessageToHide(null);
+        showToast("error", err instanceof ApiRequestError ? err.message : t("common.couldnTDoThat"));
       },
     });
   }
@@ -286,6 +318,9 @@ export function MessengerView({
                               ? currentUser.avatarUrl
                               : (activeConversation?.otherUserAvatarUrl ?? null)
                           }
+                          onCopy={copyMessage}
+                          onForward={setMessageToForward}
+                          onHide={setMessageToHide}
                           onRecall={setMessageToRecall}
                         />
                       );
@@ -299,6 +334,22 @@ export function MessengerView({
           </>
         )}
       </div>
+
+      {messageToForward && (
+        <ForwardDialog message={messageToForward} currentUser={currentUser} onClose={() => setMessageToForward(null)} />
+      )}
+
+      {messageToHide && (
+        <ConfirmDialog
+          title={t("messages.messengerView.deleteThisMessageForYou")}
+          message={t("messages.messengerView.itDisappearsOnlyFromYourConversation")}
+          confirmLabel={t("messages.messageBubble.deleteForMe")}
+          danger
+          loading={hideMessage.isPending}
+          onConfirm={confirmHide}
+          onClose={() => setMessageToHide(null)}
+        />
+      )}
 
       {messageToRecall && (
         <Modal

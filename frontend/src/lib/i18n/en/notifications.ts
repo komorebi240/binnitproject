@@ -22,4 +22,7 @@ export const notifications: Record<keyof typeof vi, string> = {
   "notifications.text.taskCompleted.body": "{actor} completed \"{title}\"",
   "notifications.text.taskDeclined.body": "{actor} declined \"{title}\"",
   "notifications.text.taskUpdate.title": "Task update",
+  "notifications.text.whiteboardShared.editor": "{actor} shared the whiteboard \"{board}\" with you; you can edit it",
+  "notifications.text.whiteboardShared.title": "A whiteboard was shared with you",
+  "notifications.text.whiteboardShared.viewer": "{actor} shared the whiteboard \"{board}\" with you to view",
 };

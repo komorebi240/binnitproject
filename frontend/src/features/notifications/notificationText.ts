@@ -34,6 +34,11 @@ const TEMPLATES: Record<NotificationType, Template> = {
   TASK_ACCEPTED: { title: "notifications.text.taskUpdate.title", body: "notifications.text.taskAccepted.body", needs: ["actor", "title"] },
   TASK_DECLINED: { title: "notifications.text.taskUpdate.title", body: "notifications.text.taskDeclined.body", needs: ["actor", "title"] },
   TASK_COMPLETED: { title: "notifications.text.taskUpdate.title", body: "notifications.text.taskCompleted.body", needs: ["actor", "title"] },
+  WHITEBOARD_SHARED: {
+    title: "notifications.text.whiteboardShared.title",
+    body: (params) => (params.role === "EDITOR" ? "notifications.text.whiteboardShared.editor" : "notifications.text.whiteboardShared.viewer"),
+    needs: ["actor", "board", "role"],
+  },
 };
 
 /** The title and body to show for a notification, in the language of `t`; the stored text when it cannot be rebuilt. */

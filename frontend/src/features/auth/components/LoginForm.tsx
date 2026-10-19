@@ -104,6 +104,7 @@ export function LoginForm({ onRegisterClick }: { onRegisterClick?: () => void })
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         autoComplete="username"
+        maxLength={100}
         autoCapitalize="none"
         spellCheck={false}
         required
@@ -118,6 +119,7 @@ export function LoginForm({ onRegisterClick }: { onRegisterClick?: () => void })
           onKeyUp={(e) => setCapsLock(e.getModifierState("CapsLock"))}
           onBlur={() => setCapsLock(false)}
           autoComplete="current-password"
+          maxLength={128}
           required
         />
         {capsLock && (

@@ -9,6 +9,11 @@
 # production
 /build
 
+# copied from node_modules before dev/build (scripts/copy-excalidraw-assets.mjs)
+/public/excalidraw-assets/
+# generated before dev/build (scripts/generate-licenses.mjs)
+/public/third-party-licenses.txt
+
 # testing
 /coverage
 

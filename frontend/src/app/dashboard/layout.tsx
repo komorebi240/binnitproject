@@ -24,6 +24,8 @@ import { PriorityPanel } from "@/features/tasks/components/PriorityPanel";
 import { PinnedNoteWidget } from "@/features/notes/components/PinnedNoteWidget";
 import { PomodoroControl } from "@/features/timer/components/PomodoroControl";
 import { PomodoroProvider } from "@/features/timer/components/PomodoroProvider";
+import { SmartSelectButton } from "@/features/smartSelect/components/SmartSelectButton";
+import { SmartSelectProvider } from "@/features/smartSelect/components/SmartSelectProvider";
 import { List, Star } from "@phosphor-icons/react";
 import type { UserProfile } from "@/features/auth/types";
 
@@ -98,6 +100,7 @@ function DashboardShell({ currentUser }: { currentUser: UserProfile }) {
   return (
     <TourProvider currentUser={currentUser}>
     <PomodoroProvider key={currentUser.userId} userId={currentUser.userId}>
+    <SmartSelectProvider currentUser={currentUser}>
     <div className="flex h-screen flex-col overflow-hidden">
       <header className="glass-bar flex shrink-0 items-center justify-between border-b px-4 py-3 sm:px-8">
         <div className="flex items-center gap-3">
@@ -134,6 +137,7 @@ function DashboardShell({ currentUser }: { currentUser: UserProfile }) {
 
       <PinnedNoteWidget />
     </div>
+    </SmartSelectProvider>
     </PomodoroProvider>
     </TourProvider>
   );
@@ -168,6 +172,7 @@ function HeaderIconControls({ currentUser }: { currentUser: UserProfile }) {
   return (
     <>
       <QuickSearch currentUserAuthorityLevel={currentUser.authorityLevel} />
+      <SmartSelectButton className={iconButtonClassName} />
       <button
         type="button"
         title={t("common.prioritySuggestions")}

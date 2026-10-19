@@ -1,0 +1,25 @@
+import type { fileViewer as vi } from "../vi/fileViewer";
+
+export const fileViewer: Record<keyof typeof vi, string> = {
+  "fileViewer.couldNotLoad": "The file could not be loaded",
+  "fileViewer.couldNotOpen": "This file could not be opened in the app",
+  "fileViewer.download": "Download",
+  "fileViewer.downloadInstead": "Download it to open it in Word, Excel or PowerPoint.",
+  "fileViewer.loading": "Opening the document…",
+  "fileViewer.noPreview": "This kind of file cannot be viewed in the app yet",
+  "fileViewer.notFound": "File not found, or you are not allowed to view it",
+  "fileViewer.sheet.columnWidth": "Width of column {column} (drag, or use the arrow keys; double-click to fit the content)",
+  "fileViewer.sheet.empty": "This sheet is empty",
+  "fileViewer.sheet.emptyCell": "(empty cell)",
+  "fileViewer.sheet.fitColumns": "Fit columns",
+  "fileViewer.sheet.fitColumnsHint": "Set every column back to the width of its content",
+  "fileViewer.sheet.selectHint": "Click a cell to see all of its content",
+  "fileViewer.sheet.sheets": "Sheets",
+  "fileViewer.sheet.truncated": "Showing the first {rows} rows and {columns} columns only. Download the file to see all of it.",
+  "fileViewer.sheet.wrap": "Wrap text",
+  "fileViewer.tab": "File",
+  "fileViewer.zoom.fit": "Fit width",
+  "fileViewer.zoom.in": "Zoom in",
+  "fileViewer.zoom.out": "Zoom out",
+  "fileViewer.zoom.toolbar": "Document zoom",
+};

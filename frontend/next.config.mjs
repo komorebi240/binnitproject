@@ -5,7 +5,16 @@ const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN ?? "http://localhost:8080";
 const nextConfig = {
   reactStrictMode: true,
   // `import { X } from "@phosphor-icons/react"` otherwise pulls the whole 1,500-icon barrel into every dev compile.
-  experimental: { optimizePackageImports: ["@phosphor-icons/react"] },
+  experimental: {
+    optimizePackageImports: ["@phosphor-icons/react"],
+    // The /api rewrite below proxies to the backend; its default 30 s timeout would cut off a 50 MB chat video being
+    // uploaded over a slow connection.
+    proxyTimeout: 120_000,
+  },
+  // The app never uses next/image, so the image optimizer (/_next/image) is switched off: it then answers 404 before
+  // decoding anything. Security review: Next.js < 15.5.24 has an RCE in AVIF optimisation (GHSA-2xp9-vwfh-vxw4, via
+  // sharp/libheif); with the optimizer off there is nothing to reach until the planned Next.js upgrade.
+  images: { unoptimized: true },
   // A second dev server can run next to the production one by building into its own folder (run-dev-parallel.ps1).
   distDir: process.env.NEXT_DIST_DIR || ".next",
   // Only the Docker image build asks for a self-contained server (see frontend/Dockerfile);

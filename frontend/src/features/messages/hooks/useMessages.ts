@@ -29,8 +29,8 @@ export function useThreadWith(userId: number | null) {
 export function useSendMessage(userId: number | null) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ body, file }: { body: string; file: File | null }) =>
-      file ? api.sendAttachment(userId as number, file, body) : api.sendMessage(userId as number, body),
+    mutationFn: ({ body, file, onProgress }: { body: string; file: File | null; onProgress?: (percent: number) => void }) =>
+      file ? api.sendAttachment(userId as number, file, body, onProgress) : api.sendMessage(userId as number, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: threadKey(userId ?? -1) });
       queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY });
@@ -46,6 +46,28 @@ export function useRecallMessage(userId: number | null) {
       queryClient.invalidateQueries({ queryKey: threadKey(userId ?? -1) });
       queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY });
     },
+  });
+}
+
+/** "Delete for me" in the open conversation. */
+export function useHideMessage(userId: number | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (messageId: number) => api.hideMessage(messageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: threadKey(userId ?? -1) });
+      queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY });
+    },
+  });
+}
+
+/** The copies land in other conversations: every thread and the conversation list are refreshed. */
+export function useForwardMessage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ messageId, recipientUserIds }: { messageId: number; recipientUserIds: number[] }) =>
+      api.forwardMessage(messageId, recipientUserIds),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["messages"] }),
   });
 }
 
