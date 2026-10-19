@@ -19,7 +19,12 @@ import java.time.Duration;
 @Component
 public class SessionCookies {
 
-    public static final String SESSION_COOKIE = "orbit_session";
+    /**
+     * {@code __Host-} prefix (with Secure, Path=/ and no Domain, which {@link #add} always sets): the browser accepts it
+     * only from this exact host, so a page on another subdomain of the same site cannot plant its own session in the
+     * victim's browser ("cookie tossing" / signing someone into the attacker's account).
+     */
+    public static final String SESSION_COOKIE = "__Host-orbit_session";
 
     private final JwtService jwtService;
     private final SessionService sessionService;

@@ -15,6 +15,7 @@ import com.company.project.modules.identity.domain.UserEntity;
 import com.company.project.modules.identity.repository.DepartmentRepository;
 import com.company.project.modules.identity.repository.PositionRepository;
 import com.company.project.modules.identity.repository.UserRepository;
+import com.company.project.modules.tasks.domain.HiddenTaskEntity;
 import com.company.project.modules.tasks.domain.TaskAttachmentEntity;
 import com.company.project.modules.tasks.domain.TaskChecklistItemEntity;
 import com.company.project.modules.tasks.domain.TaskEntity;
@@ -22,9 +23,12 @@ import com.company.project.modules.notifications.service.NotificationService;
 import com.company.project.modules.projects.domain.ProjectEntity;
 import com.company.project.modules.projects.service.ProjectAccessService;
 import com.company.project.modules.tasks.dto.request.CreateTaskRequest;
+import com.company.project.modules.tasks.dto.request.TaskIdsRequest;
+import com.company.project.modules.tasks.dto.response.HiddenTasksResponse;
 import com.company.project.modules.tasks.dto.response.ChecklistItemResponse;
 import com.company.project.modules.tasks.dto.response.TaskAttachmentResponse;
 import com.company.project.modules.tasks.dto.response.TaskResponse;
+import com.company.project.modules.tasks.repository.HiddenTaskRepository;
 import com.company.project.modules.tasks.repository.TaskAttachmentRepository;
 import com.company.project.modules.tasks.repository.TaskChecklistItemRepository;
 import com.company.project.modules.tasks.repository.TaskRepository;
@@ -38,6 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -68,6 +73,7 @@ public class TaskServiceImpl implements TaskService {
     private final AttachmentStorage attachmentStorage;
     private final NotificationService notificationService;
     private final ProjectAccessService projectAccessService;
+    private final HiddenTaskRepository hiddenTaskRepository;
 
     public TaskServiceImpl(
             TaskRepository taskRepository,
@@ -78,7 +84,8 @@ public class TaskServiceImpl implements TaskService {
             TaskChecklistItemRepository checklistRepository,
             @Qualifier("taskAttachmentStorage") AttachmentStorage attachmentStorage,
             NotificationService notificationService,
-            ProjectAccessService projectAccessService
+            ProjectAccessService projectAccessService,
+            HiddenTaskRepository hiddenTaskRepository
     ) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
@@ -89,6 +96,7 @@ public class TaskServiceImpl implements TaskService {
         this.attachmentStorage = attachmentStorage;
         this.notificationService = notificationService;
         this.projectAccessService = projectAccessService;
+        this.hiddenTaskRepository = hiddenTaskRepository;
     }
 
     @Override
@@ -159,7 +167,12 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional(readOnly = true)
     public List<TaskResponse> listTasks(UserPrincipal caller) {
-        List<TaskEntity> tasks = switch (caller.getAuthorityLevel()) {
+        return toResponses(tasksInScope(caller), caller);
+    }
+
+    /** The tasks the caller's lists show: their own and those of the people they manage. */
+    private List<TaskEntity> tasksInScope(UserPrincipal caller) {
+        return switch (caller.getAuthorityLevel()) {
             case EXECUTIVE -> taskRepository.findAllActiveByCompanyId(caller.getCompanyId());
             case DEPARTMENT_HEAD -> {
                 List<Long> memberIds = positionRepository.findAllActiveByDepartmentId(caller.getDepartmentId())
@@ -173,8 +186,38 @@ public class TaskServiceImpl implements TaskService {
             }
             case EMPLOYEE -> taskRepository.findAllActiveForEmployee(caller.getUserId(), caller.getDepartmentId());
         };
+    }
 
-        return toResponses(tasks, caller);
+    @Override
+    @Transactional
+    public HiddenTasksResponse hideFinishedTasks(TaskIdsRequest request, UserPrincipal caller) {
+        // One "Clear all" at a time per person, so a double click cannot insert the same (user, task) row twice.
+        userRepository.findActiveByUsernameForUpdate(caller.getUsername());
+        Set<Long> requested = new HashSet<>(request.taskIds());
+        Set<Long> alreadyHidden = hiddenTaskRepository.findTaskIdsByUserId(caller.getUserId());
+        List<Long> hidden = new ArrayList<>();
+        List<HiddenTaskEntity> newRows = new ArrayList<>();
+        for (TaskEntity task : tasksInScope(caller)) {
+            if (!requested.contains(task.getId()) || !isFinished(task.getStatus())) {
+                continue;
+            }
+            hidden.add(task.getId());
+            if (!alreadyHidden.contains(task.getId())) {
+                newRows.add(new HiddenTaskEntity(task.getId(), caller.getUserId()));
+            }
+        }
+        hiddenTaskRepository.saveAll(newRows);
+        return new HiddenTasksResponse(hidden);
+    }
+
+    @Override
+    @Transactional
+    public void unhideTasks(TaskIdsRequest request, UserPrincipal caller) {
+        hiddenTaskRepository.deleteForUser(caller.getUserId(), new HashSet<>(request.taskIds()));
+    }
+
+    private static boolean isFinished(TaskStatus status) {
+        return status == TaskStatus.DONE || status == TaskStatus.CANCELLED;
     }
 
     @Override
@@ -270,6 +313,8 @@ public class TaskServiceImpl implements TaskService {
         assertCallerCanActOnCancelledTask(task, caller);
         requireStatus(task, TaskStatus.CANCELLED, "restore");
         task.restore();
+        // Active again: it is back in the lists of everyone who had cleared it.
+        hiddenTaskRepository.deleteByTaskId(taskId);
         return toResponses(List.of(task), caller).get(0);
     }
 
@@ -333,8 +378,7 @@ public class TaskServiceImpl implements TaskService {
         TaskEntity task = requireVisibleTask(taskId, caller);
         TaskAttachmentEntity attachment = requireAttachmentOf(task, attachmentId);
         AttachmentStorage.Resolved file = attachmentStorage.load(attachment.getStoredName());
-        return new AttachmentDownload(
-                file.data(), file.sizeBytes(), attachment.getOriginalName(), attachment.getContentType(), attachment.isImage());
+        return new AttachmentDownload(file.resource(), attachment.getOriginalName(), attachment.getContentType(), attachment.isImage());
     }
 
     @Override
@@ -626,6 +670,7 @@ public class TaskServiceImpl implements TaskService {
                 .collect(Collectors.toMap(UserEntity::getId, UserEntity::getFullName));
         Map<Long, String> departmentNames = departmentRepository.findAllById(departmentIds).stream()
                 .collect(Collectors.toMap(DepartmentEntity::getId, DepartmentEntity::getName));
+        Set<Long> hiddenIds = tasks.isEmpty() ? Set.of() : hiddenTaskRepository.findTaskIdsByUserId(caller.getUserId());
 
         return tasks.stream()
                 .map(task -> new TaskResponse(
@@ -649,7 +694,8 @@ public class TaskServiceImpl implements TaskService {
                         attachmentsByTask.getOrDefault(task.getId(), List.of()),
                         checklistByTask.getOrDefault(task.getId(), List.of()),
                         task.getProjectId(),
-                        canManage(task, caller)))
+                        canManage(task, caller),
+                        hiddenIds.contains(task.getId()) && isFinished(task.getStatus())))
                 .toList();
     }
 }

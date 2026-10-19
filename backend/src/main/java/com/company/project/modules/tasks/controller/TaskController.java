@@ -1,18 +1,21 @@
 package com.company.project.modules.tasks.controller;
 
 import com.company.project.common.ApiResponse;
+import com.company.project.common.RateLimitGuard;
 import com.company.project.common.RateLimiter;
 import com.company.project.common.exception.BusinessException;
 import com.company.project.common.storage.AttachmentDownloads;
 import com.company.project.modules.tasks.dto.request.AddChecklistItemRequest;
 import com.company.project.modules.tasks.dto.request.CreateTaskRequest;
 import com.company.project.modules.tasks.dto.request.SetChecklistItemDoneRequest;
+import com.company.project.modules.tasks.dto.request.TaskIdsRequest;
 import com.company.project.modules.tasks.dto.request.UpdateDriveUrlRequest;
+import com.company.project.modules.tasks.dto.response.HiddenTasksResponse;
 import com.company.project.modules.tasks.dto.response.TaskResponse;
 import com.company.project.modules.tasks.service.TaskService;
 import com.company.project.security.UserPrincipal;
 import jakarta.validation.Valid;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -43,6 +46,7 @@ import java.util.List;
 public class TaskController {
 
     private static final int MAX_UPLOADS_PER_MINUTE = 20;
+    private static final int MAX_HIDES_PER_MINUTE = 20;
 
     private final TaskService taskService;
     private final RateLimiter rateLimiter;
@@ -95,6 +99,22 @@ public class TaskController {
         return ApiResponse.success(taskService.restoreTask(id, caller));
     }
 
+    /** "Clear all" under Completed / Cancelled: hides those tasks from the caller's own lists. */
+    @PostMapping("/hidden")
+    public ApiResponse<HiddenTasksResponse> hide(
+            @Valid @RequestBody TaskIdsRequest request, @AuthenticationPrincipal UserPrincipal caller) {
+        if (!rateLimiter.tryConsume("task-hide:" + caller.getUserId(), MAX_HIDES_PER_MINUTE, Duration.ofMinutes(1))) {
+            throw RateLimitGuard.tooManyRequests();
+        }
+        return ApiResponse.success(taskService.hideFinishedTasks(request, caller));
+    }
+
+    @PostMapping("/hidden/undo")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void unhide(@Valid @RequestBody TaskIdsRequest request, @AuthenticationPrincipal UserPrincipal caller) {
+        taskService.unhideTasks(request, caller);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id, @AuthenticationPrincipal UserPrincipal caller) {
@@ -114,10 +134,10 @@ public class TaskController {
     }
 
     @GetMapping("/{id}/attachments/{attachmentId}")
-    public ResponseEntity<InputStreamResource> downloadAttachment(
+    public ResponseEntity<Resource> downloadAttachment(
             @PathVariable Long id, @PathVariable Long attachmentId, @AuthenticationPrincipal UserPrincipal caller) {
         TaskService.AttachmentDownload file = taskService.loadAttachment(id, attachmentId, caller);
-        return AttachmentDownloads.respond(file.data(), file.sizeBytes(), file.fileName(), file.contentType(), file.image());
+        return AttachmentDownloads.respond(file.data(), file.fileName(), file.contentType(), file.image());
     }
 
     @DeleteMapping("/{id}/attachments/{attachmentId}")

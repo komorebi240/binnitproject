@@ -20,7 +20,10 @@ import com.company.project.modules.tasks.domain.TaskEntity;
 import com.company.project.modules.notifications.service.NotificationService;
 import com.company.project.modules.projects.domain.ProjectEntity;
 import com.company.project.modules.projects.service.ProjectAccessService;
+import com.company.project.modules.tasks.domain.HiddenTaskEntity;
 import com.company.project.modules.tasks.dto.request.CreateTaskRequest;
+import com.company.project.modules.tasks.dto.request.TaskIdsRequest;
+import com.company.project.modules.tasks.repository.HiddenTaskRepository;
 import com.company.project.modules.tasks.repository.TaskAttachmentRepository;
 import com.company.project.modules.tasks.repository.TaskChecklistItemRepository;
 import com.company.project.modules.tasks.repository.TaskRepository;
@@ -36,6 +39,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -83,13 +87,16 @@ class TaskServiceImplTest {
     private NotificationService notificationService;
     @Mock
     private ProjectAccessService projectAccessService;
+    @Mock
+    private HiddenTaskRepository hiddenTaskRepository;
 
     private TaskServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new TaskServiceImpl(
-                taskRepository, userRepository, departmentRepository, positionRepository, attachmentRepository, checklistRepository, attachmentStorage, notificationService, projectAccessService);
+                taskRepository, userRepository, departmentRepository, positionRepository, attachmentRepository, checklistRepository, attachmentStorage, notificationService, projectAccessService,
+                hiddenTaskRepository);
     }
 
     private UserPrincipal principal(AuthorityLevel level, Long departmentId, Long teamId) {
@@ -476,7 +483,7 @@ class TaskServiceImplTest {
     }
 
     private AttachmentStorage.Stored storedPdf() {
-        return new AttachmentStorage.Stored("uuid.pdf", "spec.pdf", "application/pdf", 10L, false);
+        return new AttachmentStorage.Stored("uuid.pdf", "spec.pdf", "application/pdf", 10L, false, false);
     }
 
     private TaskAttachmentEntity attachmentOf(Long attachmentId, Long taskId, Long uploadedBy) {
@@ -611,7 +618,7 @@ class TaskServiceImplTest {
         userTask(5L, OTHER_USER, CALLER_ID, COMPANY_A);
         when(attachmentRepository.findById(7L)).thenReturn(Optional.of(attachmentOf(7L, 5L, OTHER_USER)));
         when(attachmentStorage.load("uuid.pdf"))
-                .thenReturn(new AttachmentStorage.Resolved(new java.io.ByteArrayInputStream(new byte[0]), 10L));
+                .thenReturn(new AttachmentStorage.Resolved(new org.springframework.core.io.ByteArrayResource(new byte[10]), 10L));
 
         assertThat(service.loadAttachment(5L, 7L, assignee).fileName()).isEqualTo("spec.pdf");
 
@@ -773,5 +780,93 @@ class TaskServiceImplTest {
 
         assertThatThrownBy(() -> service.addChecklistItem(5L, "New step", assigner))
                 .isInstanceOf(BusinessException.class);
+    }
+
+    // ------------------------------------------------------------------ "Clear all" (hidden for one person)
+
+    private TaskEntity listedTask(Long id, Long assigneeUserId, TaskStatus status) {
+        TaskEntity task = new TaskEntity(
+                COMPANY_A, "Task " + id, null, AssigneeType.USER, assigneeUserId, null, OTHER_USER, TaskPriority.MEDIUM, null);
+        if (status == TaskStatus.DONE) {
+            task.accept();
+            task.complete();
+        } else if (status == TaskStatus.CANCELLED) {
+            task.cancel();
+        } else if (status == TaskStatus.ACCEPTED) {
+            task.accept();
+        }
+        setId(task, id);
+        return task;
+    }
+
+    @Test
+    void hideFinishedTasks_hidesOnlyFinishedTasksTheCallersListShows() {
+        UserPrincipal employee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        when(taskRepository.findAllActiveForEmployee(employee.getUserId(), DEPT_ENGINEERING)).thenReturn(List.of(
+                listedTask(1L, employee.getUserId(), TaskStatus.DONE),
+                listedTask(2L, employee.getUserId(), TaskStatus.CANCELLED),
+                listedTask(3L, employee.getUserId(), TaskStatus.ACCEPTED)));
+        when(hiddenTaskRepository.findTaskIdsByUserId(employee.getUserId())).thenReturn(Set.of());
+
+        // 99 is someone else's task (not in the list): skipped silently, like the unfinished one.
+        var response = service.hideFinishedTasks(new TaskIdsRequest(List.of(1L, 2L, 3L, 99L)), employee);
+
+        assertThat(response.taskIds()).containsExactlyInAnyOrder(1L, 2L);
+        verify(userRepository).findActiveByUsernameForUpdate("caller");
+        verify(hiddenTaskRepository).saveAll(argThat((List<HiddenTaskEntity> rows) ->
+                rows.stream().map(HiddenTaskEntity::getTaskId).toList().equals(List.of(1L, 2L))));
+    }
+
+    @Test
+    void hideFinishedTasks_neverStoresTheSameTaskTwice() {
+        UserPrincipal employee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        when(taskRepository.findAllActiveForEmployee(employee.getUserId(), DEPT_ENGINEERING)).thenReturn(List.of(
+                listedTask(1L, employee.getUserId(), TaskStatus.DONE),
+                listedTask(2L, employee.getUserId(), TaskStatus.DONE)));
+        when(hiddenTaskRepository.findTaskIdsByUserId(employee.getUserId())).thenReturn(Set.of(1L));
+
+        var response = service.hideFinishedTasks(new TaskIdsRequest(List.of(1L, 2L)), employee);
+
+        assertThat(response.taskIds()).containsExactlyInAnyOrder(1L, 2L);
+        verify(hiddenTaskRepository).saveAll(argThat((List<HiddenTaskEntity> rows) ->
+                rows.stream().map(HiddenTaskEntity::getTaskId).toList().equals(List.of(2L))));
+    }
+
+    @Test
+    void unhideTasks_removesOnlyTheCallersOwnRows() {
+        UserPrincipal employee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+
+        service.unhideTasks(new TaskIdsRequest(List.of(1L, 2L, 2L)), employee);
+
+        verify(hiddenTaskRepository).deleteForUser(employee.getUserId(), Set.of(1L, 2L));
+    }
+
+    @Test
+    void restoreTask_bringsTheTaskBackForEveryoneWhoClearedIt() {
+        UserPrincipal assigner = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        TaskEntity task = new TaskEntity(
+                COMPANY_A, "Cancelled one", null, AssigneeType.USER, 999L, null, assigner.getUserId(), TaskPriority.MEDIUM, null);
+        task.cancel();
+        setId(task, 9L);
+        when(taskRepository.findActiveById(9L)).thenReturn(Optional.of(task));
+
+        service.restoreTask(9L, assigner);
+
+        verify(hiddenTaskRepository).deleteByTaskId(9L);
+    }
+
+    @Test
+    void listTasks_marksAsHiddenOnlyFinishedTasksTheCallerCleared() {
+        UserPrincipal employee = principal(AuthorityLevel.EMPLOYEE, DEPT_ENGINEERING, null);
+        when(taskRepository.findAllActiveForEmployee(employee.getUserId(), DEPT_ENGINEERING)).thenReturn(List.of(
+                listedTask(1L, employee.getUserId(), TaskStatus.DONE),
+                listedTask(3L, employee.getUserId(), TaskStatus.ACCEPTED),
+                listedTask(4L, employee.getUserId(), TaskStatus.DONE)));
+        // 3 has a stale row (it was restored by an old version): an active task is never hidden.
+        when(hiddenTaskRepository.findTaskIdsByUserId(employee.getUserId())).thenReturn(Set.of(1L, 3L));
+
+        var tasks = service.listTasks(employee);
+
+        assertThat(tasks).extracting(t -> t.id() + ":" + t.hidden()).containsExactly("1:true", "3:false", "4:false");
     }
 }

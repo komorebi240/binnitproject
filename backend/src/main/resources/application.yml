@@ -23,8 +23,8 @@ spring:
       # Avatars, chat/task attachments and CRM imports are multipart; capped well above the 2MB app-level
       # check in AvatarStorageService so that check - not a generic Spring error - is what the
       # client sees for an oversized file.
-      max-file-size: 5MB
-      max-request-size: 6MB
+      max-file-size: 50MB
+      max-request-size: 51MB
   jackson:
     # Keeps the API envelope compact - e.g. a success response omits "error" and "pagination"
     # entirely instead of serializing them as null (CLAUDE.md section 46.4).
@@ -104,6 +104,9 @@ app:
     avatar-dir: ${AVATAR_UPLOAD_DIR:./uploads/avatars}
     # Chat attachments (see ChatAttachmentStorageService) - same single-instance-disk caveat as avatars.
     chat-dir: ${CHAT_UPLOAD_DIR:./uploads/chat}
+    # Largest video a chat message may carry (Phase 41). Kept below Cloudflare's 100 MB request limit on the public site;
+    # spring.servlet.multipart above must stay at least this large. Other files stay at 5 MB (AttachmentStorage).
+    chat-max-video-mb: 50
     # Task attachments - same validated storage as chat, separate directory.
     task-dir: ${TASK_UPLOAD_DIR:./uploads/tasks}
 

@@ -7,7 +7,9 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.4</version>
+        <!-- 3.5.16 manages Spring Security 6.5.11, which fixes CVE-2026-22732 (3.3.4 had 6.3.3). The 3.5 line left OSS
+             support on 2026-06-30: plan the move to Spring Boot 4.1 (Jackson 3, Hibernate 7, Spring 7). -->
+        <version>3.5.16</version>
         <relativePath/>
     </parent>
 
@@ -107,7 +109,8 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.6.0</version>
+            <!-- 2.8.x is the springdoc line built for Spring Boot 3.5 -->
+            <version>2.8.17</version>
         </dependency>
 
         <!-- Boilerplate reduction -->

@@ -1,5 +1,6 @@
 package com.company.project.modules.onboarding.dto.request;
 
+import com.company.project.common.validation.MaxUtf8Bytes;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -17,6 +18,7 @@ public record AcceptInvitationRequest(
 
         @NotBlank(message = "password is required")
         @Size(min = 8, max = 72, message = "password must be 8-72 characters")
+        @MaxUtf8Bytes(value = 72, message = "password must be at most 72 bytes (BCrypt's limit; accented letters take 2-3 bytes)")
         String password,
 
         @NotNull(message = "acceptedTermsVersion is required")

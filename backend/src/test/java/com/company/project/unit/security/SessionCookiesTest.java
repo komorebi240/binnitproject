@@ -53,6 +53,22 @@ class SessionCookiesTest {
     }
 
     @Test
+    void bothCookiesMeetTheHostPrefixRules_soNoOtherSubdomainCanSetThem() {
+        when(sessionService.start(7L)).thenReturn("session-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        sessionCookies.signIn(response, MEMBER);
+
+        // A browser accepts a __Host- cookie only with Secure, Path=/ and no Domain attribute.
+        assertThat(JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE).startsWith("__Host-");
+        assertThat(SessionCookies.SESSION_COOKIE).startsWith("__Host-");
+        assertThat(response.getHeaders("Set-Cookie")).hasSize(2).allSatisfy(header -> {
+            assertThat(header).startsWith("__Host-").contains("Secure").contains("Path=/");
+            assertThat(header.toLowerCase()).doesNotContain("domain=");
+        });
+    }
+
+    @Test
     void signOut_endsTheSessionOnTheServerAndClearsBothCookies() {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setCookies(new Cookie(SessionCookies.SESSION_COOKIE, "session-token"));

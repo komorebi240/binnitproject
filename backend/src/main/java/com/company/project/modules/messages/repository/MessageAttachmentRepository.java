@@ -11,4 +11,7 @@ public interface MessageAttachmentRepository extends JpaRepository<MessageAttach
     List<MessageAttachmentEntity> findAllByMessageIdIn(Collection<Long> messageIds);
 
     List<MessageAttachmentEntity> findAllByMessageId(Long messageId);
+
+    /** Whether any attachment still uses this file (forwarded copies share it). */
+    boolean existsByStoredName(String storedName);
 }

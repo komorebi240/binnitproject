@@ -75,4 +75,73 @@ class RateLimiterTest {
         limiter.clear("b");
         assertThat(limiter.isExhausted("b", 2, WINDOW)).isFalse();
     }
+
+    // ---- memory stays bounded (security review: unbounded keys let one address fill the heap)
+
+    @Test
+    void aKeyIsDroppedOnceItsLastAttemptLeavesTheWindow() {
+        limiter.tryConsume("a", 3, WINDOW);
+        limiter.record("b");
+        assertThat(limiter.trackedKeys()).isEqualTo(2);
+
+        clock.advance(WINDOW.plusSeconds(1));
+        limiter.isExhausted("a", 3, WINDOW);
+        limiter.tryConsume("b", 3, WINDOW);
+
+        assertThat(limiter.trackedKeys()).as("a is gone, b holds only its new attempt").isEqualTo(1);
+    }
+
+    @Test
+    void keysNobodyAsksAboutAgainAreSweptAfterTheLongestWindow() {
+        for (int i = 0; i < 500; i++) {
+            limiter.tryConsume("stranger-" + i, 3, WINDOW);
+        }
+        assertThat(limiter.trackedKeys()).isEqualTo(500);
+
+        clock.advance(WINDOW.plusSeconds(1));
+        for (int i = 0; i < RateLimiter.SWEEP_EVERY; i++) {
+            limiter.isExhausted("someone-else", 3, WINDOW);
+        }
+
+        assertThat(limiter.trackedKeys()).as("the periodic sweep removed every expired key").isZero();
+    }
+
+    @Test
+    void theSweepNeverDropsAttemptsStillInsideTheLongestWindowInUse() {
+        Duration hour = Duration.ofHours(1);
+        limiter.tryConsume("hourly", 1, hour);
+        clock.advance(WINDOW.plusSeconds(1));
+        for (int i = 0; i < RateLimiter.SWEEP_EVERY; i++) {
+            limiter.isExhausted("someone-else", 3, WINDOW);
+        }
+
+        assertThat(limiter.tryConsume("hourly", 1, hour)).as("still counted 16 minutes into its hour").isFalse();
+    }
+
+    @Test
+    void aVeryLongKeyIsStoredShortButStillCountedOnItsOwn() {
+        String longA = "forgot-password:user:" + "u".repeat(1_000_000) + "A";
+        String longB = "forgot-password:user:" + "u".repeat(1_000_000) + "B";
+
+        assertThat(limiter.tryConsume(longA, 1, WINDOW)).isTrue();
+        assertThat(limiter.tryConsume(longA, 1, WINDOW)).as("the same long key is counted together").isFalse();
+        assertThat(limiter.tryConsume(longB, 1, WINDOW)).as("a different long key is counted apart").isTrue();
+        assertThat(limiter.trackedKeys()).isEqualTo(2);
+    }
+
+    @Test
+    void whenFullNewKeysAreRefusedButKnownKeysKeepTheirAllowance() {
+        RateLimiter small = new RateLimiter(clock, 3);
+        small.tryConsume("a", 5, WINDOW);
+        small.tryConsume("b", 5, WINDOW);
+        small.record("c");
+
+        assertThat(small.tryConsume("d", 5, WINDOW)).as("no room: refused, never unlimited").isFalse();
+        assertThat(small.isExhausted("e", 5, WINDOW)).as("an untracked key counts as exhausted while full").isTrue();
+        assertThat(small.tryConsume("a", 5, WINDOW)).as("a tracked key still works").isTrue();
+        assertThat(small.trackedKeys()).isEqualTo(3);
+
+        clock.advance(WINDOW.plusSeconds(1));
+        assertThat(small.tryConsume("d", 5, WINDOW)).as("room again once the old keys expired").isTrue();
+    }
 }

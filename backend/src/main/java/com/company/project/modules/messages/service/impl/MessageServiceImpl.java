@@ -45,6 +45,7 @@ import java.util.stream.Collectors;
 public class MessageServiceImpl implements MessageService {
 
     private static final int MAX_BODY_LENGTH = 2000;
+    private static final int MAX_FORWARD_RECIPIENTS = 10;
     private static final String ATTACHMENT_NOTIFICATION_BODY = "Đã gửi một tệp đính kèm";
 
     private final MessageRepository messageRepository;
@@ -156,7 +157,8 @@ public class MessageServiceImpl implements MessageService {
         try {
             MessageEntity message = messageRepository.save(new MessageEntity(caller.getUserId(), recipientUserId, caption));
             MessageAttachmentEntity attachment = attachmentRepository.save(new MessageAttachmentEntity(
-                    message.getId(), stored.storedName(), stored.displayName(), stored.contentType(), stored.sizeBytes(), stored.image()));
+                    message.getId(), stored.storedName(), stored.displayName(), stored.contentType(), stored.sizeBytes(),
+                    stored.image(), stored.video()));
             unarchiveBothSides(caller.getUserId(), recipientUserId);
             boolean attachmentOnly = caption.isEmpty();
             notifyRecipient(recipientUserId, attachmentOnly ? ATTACHMENT_NOTIFICATION_BODY : caption, attachmentOnly, caller);
@@ -182,9 +184,56 @@ public class MessageServiceImpl implements MessageService {
         List<MessageAttachmentEntity> attachments = attachmentRepository.findAllByMessageId(messageId);
         message.recall();
         attachmentRepository.deleteAll(attachments);
-        List<String> storedNames = attachments.stream().map(MessageAttachmentEntity::getStoredName).toList();
+        // A forwarded copy shares the file: it goes only when no other message uses it any more.
+        List<String> unusedFiles = attachments.stream()
+                .map(MessageAttachmentEntity::getStoredName)
+                .distinct()
+                .filter(storedName -> !attachmentRepository.existsByStoredName(storedName))
+                .toList();
         // Only once the DB change is durable: a rolled-back recall must keep its files.
-        TransactionHooks.afterCommit(() -> storedNames.forEach(attachmentStorage::delete));
+        TransactionHooks.afterCommit(() -> unusedFiles.forEach(attachmentStorage::delete));
+    }
+
+    @Override
+    @Transactional
+    public int forwardMessage(Long messageId, List<Long> recipientUserIds, UserPrincipal caller) {
+        List<Long> recipients = recipientUserIds.stream().distinct().toList();
+        if (recipients.isEmpty() || recipients.size() > MAX_FORWARD_RECIPIENTS) {
+            throw new BusinessException(
+                    "VALIDATION_ERROR", "Choose between 1 and " + MAX_FORWARD_RECIPIENTS + " people", HttpStatus.BAD_REQUEST);
+        }
+        // Locked so a recall of the original cannot slip in between the check below and the copies sharing its file.
+        MessageEntity original = messageRepository.findByIdForUpdate(messageId)
+                .filter(m -> m.isParticipant(caller.getUserId()) && !m.isHiddenFor(caller.getUserId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Message", messageId));
+        if (original.isRecalled()) {
+            throw new BusinessException(
+                    "MESSAGE_RECALLED", "A recalled message cannot be forwarded", HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        // Every recipient is checked before anything is written: all or none.
+        recipients.forEach(recipientId -> requireValidRecipient(recipientId, caller));
+
+        MessageAttachmentEntity attachment = attachmentRepository.findAllByMessageId(messageId).stream().findFirst().orElse(null);
+        boolean attachmentOnly = original.getBody().isEmpty() && attachment != null;
+        for (Long recipientId : recipients) {
+            MessageEntity copy = messageRepository.save(
+                    MessageEntity.forwardedCopy(caller.getUserId(), recipientId, original.getBody()));
+            if (attachment != null) {
+                attachmentRepository.save(attachment.copyFor(copy.getId()));
+            }
+            unarchiveBothSides(caller.getUserId(), recipientId);
+            notifyRecipient(recipientId, attachmentOnly ? ATTACHMENT_NOTIFICATION_BODY : original.getBody(), attachmentOnly, caller);
+        }
+        return recipients.size();
+    }
+
+    @Override
+    @Transactional
+    public void hideMessage(Long messageId, UserPrincipal caller) {
+        MessageEntity message = messageRepository.findById(messageId)
+                .filter(m -> m.isParticipant(caller.getUserId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Message", messageId));
+        message.hideFor(caller.getUserId());
     }
 
     @Override
@@ -208,14 +257,14 @@ public class MessageServiceImpl implements MessageService {
     public AttachmentDownload loadAttachment(Long attachmentId, UserPrincipal caller) {
         MessageAttachmentEntity attachment = attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attachment", attachmentId));
-        MessageEntity message = messageRepository.findById(attachment.getMessageId())
+        messageRepository.findById(attachment.getMessageId())
                 .filter(m -> !m.isRecalled())
-                .filter(m -> m.getSenderId().equals(caller.getUserId()) || m.getRecipientId().equals(caller.getUserId()))
+                .filter(m -> m.isParticipant(caller.getUserId()) && !m.isHiddenFor(caller.getUserId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Attachment", attachmentId));
 
         AttachmentStorage.Resolved file = attachmentStorage.load(attachment.getStoredName());
         return new AttachmentDownload(
-                file.data(), file.sizeBytes(), attachment.getOriginalName(), attachment.getContentType(), attachment.isImage());
+                file.resource(), attachment.getOriginalName(), attachment.getContentType(), attachment.isImage(), attachment.isVideo());
     }
 
     /**
@@ -285,10 +334,10 @@ public class MessageServiceImpl implements MessageService {
                 ? null
                 : new AttachmentResponse(
                         attachment.getId(), attachment.getOriginalName(), attachment.getContentType(),
-                        attachment.getSizeBytes(), attachment.isImage());
+                        attachment.getSizeBytes(), attachment.isImage(), attachment.isVideo());
         return new MessageResponse(
                 m.getId(), m.getSenderId(), m.getRecipientId(), m.getBody(), m.isRead(), m.getCreatedAt(),
-                m.isRecalled(), attachmentResponse);
+                m.isRecalled(), m.isForwarded(), attachmentResponse);
     }
 
     private String avatarUrl(UserEntity user) {

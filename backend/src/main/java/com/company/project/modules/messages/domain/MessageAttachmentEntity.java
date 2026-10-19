@@ -36,6 +36,9 @@ public class MessageAttachmentEntity {
     @Column(name = "is_image", nullable = false)
     private boolean image;
 
+    @Column(name = "is_video", nullable = false)
+    private boolean video;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -44,14 +47,20 @@ public class MessageAttachmentEntity {
     }
 
     public MessageAttachmentEntity(
-            Long messageId, String storedName, String originalName, String contentType, long sizeBytes, boolean image) {
+            Long messageId, String storedName, String originalName, String contentType, long sizeBytes, boolean image, boolean video) {
         this.messageId = messageId;
         this.storedName = storedName;
         this.originalName = originalName;
         this.contentType = contentType;
         this.sizeBytes = sizeBytes;
         this.image = image;
+        this.video = video;
         this.createdAt = Instant.now();
+    }
+
+    /** The same file attached to another message (a forwarded copy); the file itself is shared, not duplicated. */
+    public MessageAttachmentEntity copyFor(Long otherMessageId) {
+        return new MessageAttachmentEntity(otherMessageId, storedName, originalName, contentType, sizeBytes, image, video);
     }
 
     public Long getId() {
@@ -80,5 +89,9 @@ public class MessageAttachmentEntity {
 
     public boolean isImage() {
         return image;
+    }
+
+    public boolean isVideo() {
+        return video;
     }
 }

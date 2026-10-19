@@ -1,11 +1,13 @@
 package com.company.project.modules.tasks.service;
 
 import com.company.project.modules.tasks.dto.request.CreateTaskRequest;
+import com.company.project.modules.tasks.dto.request.TaskIdsRequest;
+import com.company.project.modules.tasks.dto.response.HiddenTasksResponse;
 import com.company.project.modules.tasks.dto.response.TaskResponse;
 import com.company.project.security.UserPrincipal;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.InputStream;
+import org.springframework.core.io.Resource;
 
 import java.util.List;
 
@@ -34,6 +36,16 @@ public interface TaskService {
      * permanently destroyed. */
     void deleteTask(Long taskId, UserPrincipal caller);
 
+    /**
+     * "Clear all" under Completed / Cancelled: hides these tasks from the caller's own lists only (the task, other
+     * people's lists and the KPI are untouched). Ids that are not finished or not visible to the caller are skipped
+     * without saying which, so the call reveals nothing about other tasks. Returns the ids now hidden.
+     */
+    HiddenTasksResponse hideFinishedTasks(TaskIdsRequest request, UserPrincipal caller);
+
+    /** Undo of {@link #hideFinishedTasks}: shows these tasks in the caller's lists again. */
+    void unhideTasks(TaskIdsRequest request, UserPrincipal caller);
+
     /** Adds one file; allowed for the assigner, the assignee, an executive, or the head of the assigned department. */
     TaskResponse addAttachment(Long taskId, MultipartFile file, UserPrincipal caller);
 
@@ -53,6 +65,6 @@ public interface TaskService {
 
     TaskResponse removeChecklistItem(Long taskId, Long itemId, UserPrincipal caller);
 
-    record AttachmentDownload(InputStream data, long sizeBytes, String fileName, String contentType, boolean image) {
+    record AttachmentDownload(Resource data, String fileName, String contentType, boolean image) {
     }
 }

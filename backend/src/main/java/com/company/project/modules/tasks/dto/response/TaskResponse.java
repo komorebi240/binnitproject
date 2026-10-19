@@ -31,6 +31,8 @@ public record TaskResponse(
         /** The project this task belongs to, or null. */
         Long projectId,
         /** Whether the caller may add/remove files and change the Drive link (UI hint; the server re-checks). */
-        boolean canManage
+        boolean canManage,
+        /** The caller cleared this finished task from their own lists ("Clear all"); statistics still count it. */
+        boolean hidden
 ) {
 }

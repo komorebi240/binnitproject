@@ -64,7 +64,10 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                .csrf(AbstractHttpConfigurer::disable) // SameSite=Strict on the auth cookie is the CSRF defense - see AuthController
+                // No CSRF token: the session cookies are SameSite=Lax, so another site's POST/PUT/PATCH/DELETE never carries
+                // them, and the CORS check below rejects (403) any request whose Origin is not an allowed one - which is what
+                // stops a page on a sibling subdomain (same site, so Lax lets the cookies through). See CorsCsrfDefenseTest.
+                .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(authenticationEntryPoint) // -> 401 envelope, not the default blank 403

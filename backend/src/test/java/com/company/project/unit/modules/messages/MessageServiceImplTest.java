@@ -185,7 +185,7 @@ class MessageServiceImplTest {
     }
 
     private MessageAttachmentEntity attachmentOf(Long id, Long messageId) {
-        MessageAttachmentEntity a = new MessageAttachmentEntity(messageId, "stored.png", "pic.png", "image/png", 10L, true);
+        MessageAttachmentEntity a = new MessageAttachmentEntity(messageId, "stored.png", "pic.png", "image/png", 10L, true, false);
         setId(a, id);
         return a;
     }
@@ -211,6 +211,168 @@ class MessageServiceImplTest {
         assertThat(message.getBody()).isEmpty();
         verify(attachmentStorage).delete("stored.png");
         verify(attachmentRepository).deleteAll(any());
+    }
+
+    @Test
+    void recallMessage_keepsAFileThatAForwardedCopyStillUses() {
+        MessageEntity message = messageFrom(5L, 1L, 2L, "secret");
+        when(messageRepository.findById(5L)).thenReturn(Optional.of(message));
+        when(attachmentRepository.findAllByMessageId(5L)).thenReturn(List.of(attachmentOf(7L, 5L)));
+        when(attachmentRepository.existsByStoredName("stored.png")).thenReturn(true);
+
+        service.recallMessage(5L, principal(1L));
+
+        assertThat(message.isRecalled()).isTrue();
+        verify(attachmentRepository).deleteAll(any());
+        verify(attachmentStorage, never()).delete(any());
+    }
+
+    // ---- forward (Phase 41)
+
+    private void colleagues(Long... ids) {
+        for (Long id : ids) {
+            UserEntity user = new UserEntity(COMPANY_A, "user" + id, "hash", "User " + id, null);
+            setId(user, id);
+            when(userRepository.findActiveById(id)).thenReturn(Optional.of(user));
+        }
+    }
+
+    private void savesGetIds() {
+        long[] next = {100L};
+        when(messageRepository.save(any())).thenAnswer(inv -> {
+            MessageEntity m = inv.getArgument(0);
+            setId(m, next[0]++);
+            return m;
+        });
+    }
+
+    @Test
+    void forwardMessage_sendsAForwardedCopyToEachRecipientSharingTheFile() {
+        MessageEntity original = messageFrom(5L, 2L, 1L, "see this");
+        when(messageRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(original));
+        when(attachmentRepository.findAllByMessageId(5L)).thenReturn(List.of(attachmentOf(7L, 5L)));
+        colleagues(3L, 4L);
+        savesGetIds();
+
+        int sent = service.forwardMessage(5L, List.of(3L, 4L, 3L), principal(1L));
+
+        assertThat(sent).as("duplicates are sent once").isEqualTo(2);
+        org.mockito.ArgumentCaptor<MessageEntity> copies = org.mockito.ArgumentCaptor.forClass(MessageEntity.class);
+        verify(messageRepository, times(2)).save(copies.capture());
+        assertThat(copies.getAllValues()).allSatisfy(copy -> {
+            assertThat(copy.isForwarded()).isTrue();
+            assertThat(copy.getSenderId()).isEqualTo(1L);
+            assertThat(copy.getBody()).isEqualTo("see this");
+        });
+        assertThat(copies.getAllValues()).extracting(MessageEntity::getRecipientId).containsExactly(3L, 4L);
+        org.mockito.ArgumentCaptor<MessageAttachmentEntity> files = org.mockito.ArgumentCaptor.forClass(MessageAttachmentEntity.class);
+        verify(attachmentRepository, times(2)).save(files.capture());
+        assertThat(files.getAllValues()).extracting(MessageAttachmentEntity::getStoredName).containsOnly("stored.png");
+        verify(attachmentStorage, never()).store(any());
+        verify(notificationService, times(2)).notify(any(), any(), any(), any(), any(), any(), any());
+        verify(archiveRepository).deleteByPair(3L, 1L);
+        verify(archiveRepository).deleteByPair(4L, 1L);
+    }
+
+    @Test
+    void forwardMessage_aRecalledMessageCannotBeForwarded() {
+        MessageEntity original = messageFrom(5L, 2L, 1L, "gone");
+        original.recall();
+        when(messageRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(original));
+
+        assertThatThrownBy(() -> service.forwardMessage(5L, List.of(3L), principal(1L)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("recalled");
+        verify(messageRepository, never()).save(any());
+    }
+
+    @Test
+    void forwardMessage_someoneElsesMessageIsNotFound() {
+        when(messageRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(messageFrom(5L, 2L, 3L, "private")));
+
+        assertThatThrownBy(() -> service.forwardMessage(5L, List.of(4L), principal(1L)))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verify(messageRepository, never()).save(any());
+    }
+
+    @Test
+    void forwardMessage_aMessageTheCallerDeletedForThemselvesIsNotFound() {
+        MessageEntity original = messageFrom(5L, 2L, 1L, "hidden");
+        original.hideFor(1L);
+        when(messageRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(original));
+
+        assertThatThrownBy(() -> service.forwardMessage(5L, List.of(3L), principal(1L)))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void forwardMessage_oneRecipientInAnotherCompanyStopsTheWholeForward() {
+        when(messageRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(messageFrom(5L, 2L, 1L, "hi")));
+        colleagues(3L);
+        UserEntity outsider = new UserEntity(999L, "outsider", "hash", "Outsider", null);
+        setId(outsider, 9L);
+        when(userRepository.findActiveById(9L)).thenReturn(Optional.of(outsider));
+
+        assertThatThrownBy(() -> service.forwardMessage(5L, List.of(3L, 9L), principal(1L)))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verify(messageRepository, never()).save(any());
+        verify(notificationService, never()).notify(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void forwardMessage_atMostTenPeopleAndNeverToOneself() {
+        List<Long> eleven = java.util.stream.LongStream.rangeClosed(10, 20).boxed().toList();
+
+        assertThatThrownBy(() -> service.forwardMessage(5L, eleven, principal(1L))).isInstanceOf(BusinessException.class);
+
+        when(messageRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(messageFrom(5L, 2L, 1L, "hi")));
+        assertThatThrownBy(() -> service.forwardMessage(5L, List.of(1L), principal(1L)))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("yourself");
+    }
+
+    // ---- delete for me (Phase 41)
+
+    @Test
+    void hideMessage_hidesOnlyForTheCaller() {
+        MessageEntity message = messageFrom(5L, 1L, 2L, "hello");
+        when(messageRepository.findById(5L)).thenReturn(Optional.of(message));
+
+        service.hideMessage(5L, principal(2L));
+
+        assertThat(message.isHiddenFor(2L)).isTrue();
+        assertThat(message.isHiddenFor(1L)).as("the sender still sees it").isFalse();
+        assertThat(message.isRead()).as("a hidden incoming message no longer counts as unread").isTrue();
+        assertThat(message.isRecalled()).isFalse();
+    }
+
+    @Test
+    void hideMessage_theSenderCanHideTheirOwnToo() {
+        MessageEntity message = messageFrom(5L, 1L, 2L, "hello");
+        when(messageRepository.findById(5L)).thenReturn(Optional.of(message));
+
+        service.hideMessage(5L, principal(1L));
+
+        assertThat(message.isHiddenFor(1L)).isTrue();
+        assertThat(message.isHiddenFor(2L)).isFalse();
+        assertThat(message.isRead()).as("the recipient has not read it").isFalse();
+    }
+
+    @Test
+    void hideMessage_someoneElsesMessageIsNotFound() {
+        when(messageRepository.findById(5L)).thenReturn(Optional.of(messageFrom(5L, 1L, 2L, "hello")));
+
+        assertThatThrownBy(() -> service.hideMessage(5L, principal(3L))).isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void loadAttachment_notAfterTheCallerDeletedTheMessageForThemselves() {
+        MessageEntity message = messageFrom(5L, 1L, 2L, "");
+        message.hideFor(2L);
+        when(attachmentRepository.findById(7L)).thenReturn(Optional.of(attachmentOf(7L, 5L)));
+        when(messageRepository.findById(5L)).thenReturn(Optional.of(message));
+
+        assertThatThrownBy(() -> service.loadAttachment(7L, principal(2L))).isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
@@ -276,7 +438,7 @@ class MessageServiceImplTest {
         when(attachmentRepository.findById(7L)).thenReturn(Optional.of(attachmentOf(7L, 5L)));
         when(messageRepository.findById(5L)).thenReturn(Optional.of(messageFrom(5L, 1L, 2L, "")));
         when(attachmentStorage.load("stored.png"))
-                .thenReturn(new AttachmentStorage.Resolved(new java.io.ByteArrayInputStream(new byte[0]), 10L));
+                .thenReturn(new AttachmentStorage.Resolved(new org.springframework.core.io.ByteArrayResource(new byte[10]), 10L));
 
         var download = service.loadAttachment(7L, principal(2L));
 

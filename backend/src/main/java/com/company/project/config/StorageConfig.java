@@ -9,9 +9,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class StorageConfig {
 
+    /** Chat also takes videos, up to app.uploads.chat-max-video-mb; tasks do not. */
     @Bean("chatAttachmentStorage")
-    public AttachmentStorage chatAttachmentStorage(@Value("${app.uploads.chat-dir}") String directory) {
-        return new AttachmentStorage(directory);
+    public AttachmentStorage chatAttachmentStorage(
+            @Value("${app.uploads.chat-dir}") String directory, @Value("${app.uploads.chat-max-video-mb}") long maxVideoMb) {
+        return new AttachmentStorage(directory, maxVideoMb * 1024 * 1024);
     }
 
     @Bean("taskAttachmentStorage")

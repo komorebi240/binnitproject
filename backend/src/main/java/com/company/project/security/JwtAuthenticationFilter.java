@@ -24,7 +24,8 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    public static final String ACCESS_TOKEN_COOKIE = "access_token";
+    /** {@code __Host-}: only this exact host, over HTTPS, may set it - a sibling subdomain cannot plant or overwrite it. */
+    public static final String ACCESS_TOKEN_COOKIE = "__Host-access_token";
 
     private final JwtService jwtService;
     private final SessionService sessionService;

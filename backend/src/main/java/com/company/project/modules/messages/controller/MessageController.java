@@ -5,13 +5,14 @@ import com.company.project.common.RateLimiter;
 import com.company.project.common.exception.BusinessException;
 import com.company.project.common.storage.AttachmentDownloads;
 import com.company.project.modules.messages.dto.request.BroadcastMessageRequest;
+import com.company.project.modules.messages.dto.request.ForwardMessageRequest;
 import com.company.project.modules.messages.dto.request.SendMessageRequest;
 import com.company.project.modules.messages.dto.response.ConversationResponse;
 import com.company.project.modules.messages.dto.response.MessageResponse;
 import com.company.project.modules.messages.service.MessageService;
 import com.company.project.security.UserPrincipal;
 import jakarta.validation.Valid;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -79,11 +80,36 @@ public class MessageController {
         return ApiResponse.success(messageService.sendAttachment(recipientUserId, body, file, caller));
     }
 
+    /**
+     * Images and videos are shown in the conversation ({@code download=false}, the default); {@code download=true} saves
+     * any attachment as a file. Range requests are answered with 206, which a video player needs to seek.
+     */
     @GetMapping("/attachments/{id}")
-    public ResponseEntity<InputStreamResource> downloadAttachment(
-            @PathVariable Long id, @AuthenticationPrincipal UserPrincipal caller) {
+    public ResponseEntity<Resource> downloadAttachment(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "false") boolean download,
+            @AuthenticationPrincipal UserPrincipal caller) {
         MessageService.AttachmentDownload file = messageService.loadAttachment(id, caller);
-        return AttachmentDownloads.respond(file.data(), file.sizeBytes(), file.fileName(), file.contentType(), file.image());
+        boolean inline = !download && (file.image() || file.video());
+        return AttachmentDownloads.respond(file.data(), file.fileName(), file.contentType(), inline);
+    }
+
+    /** Sends a copy to up to 10 colleagues; returns how many copies were sent. Shares the per-user send allowance with uploads. */
+    @PostMapping("/{id}/forward")
+    public ApiResponse<Integer> forward(
+            @PathVariable Long id, @Valid @RequestBody ForwardMessageRequest request, @AuthenticationPrincipal UserPrincipal caller) {
+        if (!rateLimiter.tryConsume("chat-forward:" + caller.getUserId(), MAX_UPLOADS_PER_MINUTE, Duration.ofMinutes(1))) {
+            throw new BusinessException(
+                    "TOO_MANY_REQUESTS", "Too many messages forwarded. Please try again shortly.", HttpStatus.TOO_MANY_REQUESTS);
+        }
+        return ApiResponse.success(messageService.forwardMessage(id, request.recipientUserIds(), caller));
+    }
+
+    /** "Delete for me": only the caller stops seeing the message. Recall (DELETE /{id}) removes it for both. */
+    @DeleteMapping("/{id}/for-me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void hide(@PathVariable Long id, @AuthenticationPrincipal UserPrincipal caller) {
+        messageService.hideMessage(id, caller);
     }
 
     /** Recall: only the sender; the message stays in the thread as a "recalled" placeholder. */

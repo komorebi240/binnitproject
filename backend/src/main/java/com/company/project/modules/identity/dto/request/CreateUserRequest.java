@@ -1,5 +1,6 @@
 package com.company.project.modules.identity.dto.request;
 
+import com.company.project.common.validation.MaxUtf8Bytes;
 import com.company.project.common.AuthorityLevel;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -22,6 +23,7 @@ public record CreateUserRequest(
 
         @NotBlank(message = "password is required")
         @Size(min = 8, message = "password must be at least 8 characters")
+        @MaxUtf8Bytes(value = 72, message = "password must be at most 72 bytes (BCrypt's limit; accented letters take 2-3 bytes)")
         String password,
 
         @NotBlank(message = "fullName is required")
