@@ -34,6 +34,8 @@ Every code change requires proportionate test consideration. First inspect packa
 
 While modifying an area, inspect for duplicate, unused, unreachable, overwritten, debug, obsolete, or commented-out legacy code. Check references before removing it; do not retain obsolete implementations "just in case." Update the relevant documentation when behavior, interfaces, configuration, architecture, data, security, or operations change.
 
+The product specification [docs/SPECIFICATION.md](../docs/SPECIFICATION.md) (English) describes what the product does today. Any change to behavior, roles, limits, data, or endpoints updates its matching section and its change log in the same change; refactors with no visible effect do not.
+
 ## Git and release safety
 
 Before Git operations, inspect status, branch, and recent history. Never discard user changes, force-push a protected branch, bypass checks, commit, or push automatically. After the user has approved an implementation, ask exactly: **"Code đã được duyệt. Bạn có muốn tôi commit và push lên GitHub không?"**

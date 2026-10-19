@@ -2,6 +2,10 @@
 
 Enterprise web application - Spring Boot backend, Next.js frontend, SQL Server database.
 
+**What the product does today** - roles, rules, limits, data and API - is specified in
+[docs/SPECIFICATION.md](docs/SPECIFICATION.md), kept current with every change. The phase notes below and in the
+backend/frontend READMEs record how it got there.
+
 This started as a scaffold and now has real functionality:
 
 * **Phase 1** - login, multi-tenant companies, a 3-level org structure (company/department/team),
@@ -99,7 +103,7 @@ see [CLAUDE.md § 30](CLAUDE.md#30-secrets-and-configuration).
 
 ## Running and publishing
 
-* **Local, one click:** `powershell -ExecutionPolicy Bypass -File .un-local.ps1` starts the backend and the frontend in two windows. The backend reads
+* **Local, one click:** `powershell -ExecutionPolicy Bypass -File .\run-local.ps1` starts the backend and the frontend in two windows. The backend reads
   `backend/.env.local` (git-ignored; template `backend/.env.example`).
 * **Publish for free (one VM + Azure SQL free offer):** [docs/deploy-free.md](docs/deploy-free.md). The files it uses: `backend/Dockerfile`, `frontend/Dockerfile`,
   `deploy/docker-compose.yml`, `deploy/Caddyfile`, `deploy/.env.example`.
