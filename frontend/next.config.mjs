@@ -1,6 +1,20 @@
 /** Where the Spring Boot backend listens, as seen from the machine running this Next.js server. */
 const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN ?? "http://localhost:8080";
 
+/**
+ * Sent with every page and file this server answers itself (not /api, whose answers come from the backend with Spring
+ * Security's own headers). No other site may show the app inside a frame (clickjacking); the app's own frames - the Word
+ * preview (srcdoc) and the PDF viewer (a blob: URL) - are same-origin and stay allowed. No MIME sniffing, a trimmed
+ * Referer, HTTPS only (ignored by browsers on plain-http localhost).
+ */
+const SECURITY_HEADERS = [
+  { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -25,6 +39,9 @@ const nextConfig = {
   // a single public address (run-public.ps1) enough. Behind Caddy (docker) /api never reaches this rule.
   async rewrites() {
     return [{ source: "/api/v1/:path*", destination: `${BACKEND_ORIGIN}/api/v1/:path*` }];
+  },
+  async headers() {
+    return [{ source: "/:path((?!api/).*)", headers: SECURITY_HEADERS }];
   },
 };
 

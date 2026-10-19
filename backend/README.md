@@ -1079,3 +1079,11 @@ Four findings, each checked against the code and live on the dev stack before fi
 * **Not verified**: the public site (not deployed; V35 and V36 pending).
 
 The rest of Phase 44 (whiteboard text in Smart select, "Save as a note", the file viewer, the open-source licences page) is frontend only - see frontend/README Phase 44. The product as a whole is now specified in [docs/SPECIFICATION.md](../docs/SPECIFICATION.md).
+
+## Phase 46 - public backend on loopback only
+
+* **What was wrong** (found while deploying Phases 41-45 on 2026-10-20): `run-public.ps1` bound the frontend to `localhost` but left the backend on every interface (`::`), and Windows Firewall had allowed `java.exe` in on Public and Private networks. Anyone on the same network could call `http://<this PC>:8080` directly - plain HTTP, past Cloudflare.
+* **Fix**: `run-public.ps1` sets `SERVER_ADDRESS=localhost` (Spring Boot's `server.address`) for the backend it starts. Its only caller is the frontend on the same PC through the `/api` rewrite to `localhost:8080` (Node 24 tries `::1` then `127.0.0.1`, so the IPv4-only listener is reached). The dev scripts are unchanged.
+* **Checked**: first on the parallel dev stack (backend on 127.0.0.1:8081, the `/api` proxy answering 401, the LAN address refused), then on the public site after the redeploy: 8080 listens on `127.0.0.1` and 3000 on `::1` only, both refused from the LAN address, health UP on loopback, `https://app.stayorbit.cloud/login` 200 and the API 401 through the tunnel.
+* **Deploy of Phases 41-45** (same day, before the fix): `orbit` backed up first (`BACKUP DATABASE ... COPY_ONLY`, verified with `RESTORE VERIFYONLY`), then `run-public.ps1`; Flyway applied V35 and V36 (V34 was already there).
+* **Left to the owner**: the Windows Firewall rules allowing `java.exe` in (Windows Defender Firewall -> Allowed apps -> "Java(TM) Platform SE binary"). They no longer expose the public backend, but they still let the LAN reach a dev backend started with `run-local.ps1`.

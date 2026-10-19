@@ -9,7 +9,7 @@
 > section here **in the same change**, and adds a line to the [change log](#25-change-log). A refactor with no visible
 > effect needs no edit. When this document and the code disagree, the code is right and this document has a bug.
 >
-> **Version:** 1.2 - 2026-10-20, covering Phases 1-45.
+> **Version:** 1.3 - 2026-10-20, covering Phases 1-46.
 
 ## Contents
 
@@ -440,6 +440,12 @@ or a head of the department a department task was assigned to.
   prefix (only this exact host can set them).
 * **CSRF**: requests carrying a foreign `Origin` are refused (403) by the CORS filter; SameSite keeps cookies off other
   sites' requests.
+* **Pages cannot be framed by other sites** (clickjacking): every page carries `Content-Security-Policy:
+  frame-ancestors 'self'` and `X-Frame-Options: SAMEORIGIN` (the app's own Word and PDF previews are same-origin), plus
+  `nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and HSTS; API answers carry Spring Security's own
+  (`X-Frame-Options: DENY`, `nosniff`, HSTS).
+* **Public site on one PC**: the frontend and the backend listen on this PC's loopback address only; the Cloudflare
+  tunnel on the same PC is the only way in from outside, always over HTTPS.
 * **Client address**: taken from the connection, or from `X-Forwarded-For` only when the request comes through a
   configured trusted proxy.
 * **Rate limits** on every public endpoint and on costly actions (see section 20); the limiter bounds its own memory
@@ -549,6 +555,7 @@ The interactive API documentation (Swagger UI) is available on the backend in de
 
 | Date | Version | Change |
 | --- | --- | --- |
+| 2026-10-20 | 1.3 | Security: pages refuse to be framed by other sites and send nosniff, Referrer-Policy and HSTS; the public site's backend listens on loopback only, like its frontend. |
 | 2026-10-20 | 1.2 | Whiteboards: Excalidraw's labels in Vietnamese where its translation has them; clicking the selected tool again hides or shows its options; right button + drag moves the page; one toolbar row (name, saving status, expand and share at its end, board actions in its menu); expanding the board over the whole app; Excalidraw's shape library is no longer offered. Windows take the keyboard focus when they open and give it back when they close. |
 | 2026-10-19 | 1.1 | File viewer: resizable sheet columns, "Wrap text", the selected-cell bar; Word documents fit the frame width with zoom controls (a page was cut off on the left in a narrow pane); windows opened from a page stay inside their pane in split screen. |
 | 2026-10-19 | 1.0 | First full specification, covering Phases 1-44: organization, accounts and sessions, tasks and KPI, projects, chat, notifications, calendar, notes, Drive, CRM, terms of service, whiteboards, Smart select, plus Phase 44 (clearing finished tasks from one's own list, whiteboard text in Smart select and "Save as a note", the read-only file viewer, the open-source licences page). |

@@ -157,6 +157,11 @@ if (-not $SkipBuild) {
 $jar = Get-ChildItem (Join-Path $BackendDir "target\project-*.jar") | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if (-not $jar) { throw "No backend jar found; run without -SkipBuild" }
 
+# Loopback only, like the frontend below: its one caller is the frontend on this PC (the /api rewrite to localhost:8080).
+# Listening on every interface, it was reachable from the LAN over plain HTTP past Cloudflare, and Windows Firewall had
+# allowed java.exe in (seen on 2026-10-20). Spring Boot reads SERVER_ADDRESS as server.address.
+$env:SERVER_ADDRESS = "localhost"
+
 Start-Process -FilePath "powershell.exe" -ArgumentList @(
     "-NoExit", "-Command",
     "`$Host.UI.RawUI.WindowTitle = 'Orbit backend (public, prod profile)'; Set-Location '$BackendDir'; java -jar '$($jar.FullName)'")
