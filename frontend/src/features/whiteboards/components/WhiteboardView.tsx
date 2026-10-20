@@ -191,6 +191,7 @@ export function WhiteboardView({ boardId, currentUser, onBack, onGone }: Whitebo
   // As much as fits beside Excalidraw's toolbar (see ToolbarFit); everything is also in the menu. The saving status is an
   // icon of fixed width, so the row does not shift on every save (its words are in the tooltip, and shown on an error).
   function renderToolbarEnd(fit: ToolbarFit) {
+    if (fit === "problem" && !failed) return null;
     return (
       <div className="flex min-w-0 items-center gap-0.5 rounded-[var(--border-radius-lg)] bg-[var(--color-surface-low)] p-0.5 shadow-[0_0_0_1px_var(--color-surface-lowest)]">
         <div className="flex min-w-0 items-center gap-1.5 px-2" title={statusDetail}>
@@ -205,7 +206,7 @@ export function WhiteboardView({ boardId, currentUser, onBack, onGone }: Whitebo
             <span className={failed ? "" : "sr-only"}>{statusText}</span>
           </span>
         </div>
-        {fit !== "status" && (
+        {(fit === "name" || fit === "buttons") && (
           <>
             <button
               type="button"
@@ -277,14 +278,18 @@ export function WhiteboardView({ boardId, currentUser, onBack, onGone }: Whitebo
       )}
       <section
         ref={setRoot}
+        // On a phone the board takes the whole width of the screen, undoing the pane's px-4 (TabContentRenderer):
+        // Excalidraw's own toolbar needs about 300 px, more than a 320 px phone leaves inside that padding.
         className={
           expanded
             ? "fixed inset-2 z-30 flex flex-col sm:inset-6"
-            : "flex h-full min-h-[480px] flex-col"
+            : "flex h-full min-h-[480px] flex-col max-sm:-mx-4"
         }
       >
         <PaneContext.Provider value={boardPane}>
-          <div className="glass-card relative min-h-0 flex-1 overflow-hidden rounded">
+          <div
+            className={`glass-card relative min-h-0 flex-1 overflow-hidden rounded ${expanded ? "" : "max-sm:rounded-none"}`}
+          >
             <WhiteboardCanvas
               board={board}
               shown={shown}

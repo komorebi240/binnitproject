@@ -9,7 +9,7 @@
 > section here **in the same change**, and adds a line to the [change log](#25-change-log). A refactor with no visible
 > effect needs no edit. When this document and the code disagree, the code is right and this document has a bug.
 >
-> **Version:** 1.3 - 2026-10-20, covering Phases 1-46.
+> **Version:** 1.4 - 2026-10-20, covering Phases 1-47.
 
 ## Contents
 
@@ -348,7 +348,8 @@ or a head of the department a department task was assigned to.
 * **One toolbar row**: the board has no header of its own. The end of Excalidraw's toolbar row shows the board's name,
   its saving status (an icon; its words in the tooltip, and shown on an error), **expand** and **share**, as far as the
   board's width allows (the name first goes, then the buttons); the board's menu (≡) always lists every board action:
-  all whiteboards, share, expand, rename and delete (owner) or leave (member).
+  all whiteboards, share, expand, rename and delete (owner) or leave (member). In the phone layout only a saving
+  problem is added to the toolbar row, and on a phone the board uses the whole width of the screen.
 * **No shape library**: Excalidraw's library (its "Library" button, the library tab beside "Find on canvas", "Add to
   library" in the context menu) is not offered. Orbit does not store it, so shapes put in it were gone on the next
   visit, and its catalogue lives on Excalidraw's own site.
@@ -555,6 +556,7 @@ The interactive API documentation (Swagger UI) is available on the backend in de
 
 | Date | Version | Change |
 | --- | --- | --- |
+| 2026-10-20 | 1.4 | Whiteboards on phones: the toolbar row no longer gets the saving status (only a saving problem) and the board uses the whole screen width, so Excalidraw's toolbar is not cut off. |
 | 2026-10-20 | 1.3 | Security: pages refuse to be framed by other sites and send nosniff, Referrer-Policy and HSTS; the public site's backend listens on loopback only, like its frontend. |
 | 2026-10-20 | 1.2 | Whiteboards: Excalidraw's labels in Vietnamese where its translation has them; clicking the selected tool again hides or shows its options; right button + drag moves the page; one toolbar row (name, saving status, expand and share at its end, board actions in its menu); expanding the board over the whole app; Excalidraw's shape library is no longer offered. Windows take the keyboard focus when they open and give it back when they close. |
 | 2026-10-19 | 1.1 | File viewer: resizable sheet columns, "Wrap text", the selected-cell bar; Word documents fit the frame width with zoom controls (a page was cut off on the left in a narrow pane); windows opened from a page stay inside their pane in split screen. |

@@ -44,9 +44,11 @@ if (!languages.some((language) => language.code === VIETNAMESE.code)) languages.
 
 /**
  * How much of the board view's own controls fits at the end of the toolbar row, beside Excalidraw's menu and its tools
- * (510 px in 0.18): the board's name too, the buttons, or only the saving status.
+ * (510 px in 0.18): the board's name too, the buttons, or only the saving status. In Excalidraw's phone layout its
+ * tools fill the row and its side buttons (lock, hand) hang on the right edge, so only a saving problem is shown there
+ * ("problem"); anything more squeezed the row against both edges.
  */
-export type ToolbarFit = "name" | "buttons" | "status";
+export type ToolbarFit = "name" | "buttons" | "status" | "problem";
 /** Board widths (px) from which each fits, measured on the rendered row. */
 const NAME_FITS_PX = 880;
 const BUTTONS_FIT_PX = 770;
@@ -96,7 +98,7 @@ interface WhiteboardCanvasProps {
   /** Listed first in the board's menu: going back, renaming, deleting or leaving. */
   menuActions: readonly BoardMenuAction[];
   /** The end of the board's toolbar row: the board's name, saving status and buttons, as far as they fit. */
-  renderToolbarEnd: (fit: ToolbarFit) => ReactElement;
+  renderToolbarEnd: (fit: ToolbarFit) => ReactElement | null;
 }
 
 /**
@@ -366,7 +368,7 @@ export default function WhiteboardCanvas({
           handleToolChange(appState.activeTool.type);
           handleChangeAndDropUnsupported(elements as unknown as readonly StoredElement[]);
         }}
-        renderTopRightUI={(isMobile) => renderToolbarEnd(isMobile ? "status" : fit)}
+        renderTopRightUI={(isMobile) => renderToolbarEnd(isMobile ? "problem" : fit)}
         onPaste={handlePaste}
         viewModeEnabled={!editable}
         theme={theme === "dark" ? "dark" : "light"}
