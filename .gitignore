@@ -1,3 +1,7 @@
 # Deployment secrets
 deploy/.env
 .tunnel/
+
+# Local research and editor session history
+/research/
+/.obsidian/workspace.json

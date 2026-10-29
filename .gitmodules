@@ -1,0 +1,6 @@
+[submodule ".claude/skills/ui"]
+	path = .claude/skills/ui
+	url = https://github.com/shadcn-ui/ui
+[submodule ".claude/skills/gsap-skills"]
+	path = .claude/skills/gsap-skills
+	url = https://github.com/greensock/gsap-skills
