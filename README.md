@@ -1,116 +1,109 @@
-# PROJECT 0.0.1
+# Orbit
 
-Enterprise web application - Spring Boot backend, Next.js frontend, SQL Server database.
+An enterprise workspace for people, tasks and cross-department collaboration.
 
-**What the product does today** - roles, rules, limits, data and API - is specified in
-[docs/SPECIFICATION.md](docs/SPECIFICATION.md), kept current with every change. The phase notes below and in the
-backend/frontend READMEs record how it got there.
+**[Open Orbit](https://app.stayorbit.cloud/)** · **[Sign in](https://app.stayorbit.cloud/login)** · **[English landing page](https://app.stayorbit.cloud/en)**
 
-This started as a scaffold and now has real functionality:
+## What is in Orbit
 
-* **Phase 1** - login, multi-tenant companies, a 3-level org structure (company/department/team),
-  role-based staff management.
-* **Phase 2** - task assignment: managers assign work to a specific employee or to a whole
-  department; employees accept/decline/complete it, all under the same authorization rules as
-  Phase 1.
-* **Phase 3** - Google Drive: each user connects their own Drive via OAuth, departments expose
-  folders in a company-wide catalog, and other departments request access - approved by that
-  folder's department head or an executive, same authorization pattern as Phases 1-2.
-* **Phase 4** - multi-theme UI (light/dark/gray/pink) with a Settings page (theme, change
-  password, recovery email, company rename); a public "forgot password" flow that emails a
-  one-time code via Gmail SMTP; and employee/company scalability additions identified during
-  this phase - transferring an existing employee's position/department, suspending an account
-  without permanently deleting it, and basic HR fields (phone/employee code/start date).
-* **Phase 5** - an employee Home page with a monthly KPI score (company-wide, EXECUTIVE-editable
-  formula + a descriptive, non-monetary incentive-tier table), a workload chart, and a
-  Notion-style priority panel grouping the caller's own tasks by `TaskPriority`.
-* **Phase 6** - a header icon redesign (priority panel, a task-board view, notifications, and
-  settings all moved into header icons instead of a floating button / Sidebar entry); a private
-  per-user Calendar (self-service, or a manager proposes an event a subordinate must
-  accept/decline - the manager never gets to read the subordinate's actual calendar); fully
-  private per-user Notes; and a durable, per-user Notifications system with an unread badge.
-* **Phase 7** - self-service task creation (anyone can give themselves a task; assigning to
-  someone else is still authority-gated) with a manager-facing duplicate check; Phòng ban
-  redesigned as tiles with a per-department staff directory and public-info popover; simple 1-1
-  internal messaging; and note pinning (a pinned note floats on every `/dashboard` page).
+- Company, department and team structure, with executive, department-head, team-lead and employee roles.
+- Task assignment, acceptance, checklists, attachments, deadlines, priorities and monthly KPI reporting.
+- Cross-department projects, customer datasets, whiteboards and internal messaging.
+- Personal calendars, notes, notifications, a focus timer and Google Drive access requests.
+- Vietnamese and English interfaces, themes, workspace tabs and a first-run guide.
 
-Phases 1-2 and 5-7 are verified end to end on this machine (real SQL Server, real browser
-session). Phase 3 is verified as far as possible **without your own Google OAuth credentials**
-(still pending - see [backend/README.md](backend/README.md#still-needs-your-action) for the one
-manual step left). Phase 4's Gmail App Password step has since been completed and verified for
-real (a real OTP email was sent and received). See
-[backend/README.md](backend/README.md#what-exists-now) and
-[frontend/README.md](frontend/README.md#what-exists-now) for what exists, and each file's
-"Verified" sections for exactly what was checked. The reference `sample` module from the
-initial scaffold has been deleted now that real modules exist to copy patterns from instead.
+The [product specification](docs/SPECIFICATION.md) is the detailed reference for behavior, roles, limits and API contracts. Historical phase notes in the component READMEs describe earlier implementation and verification; they are not a current release checklist.
 
-This is being built in phases (foundation → task assignment → shared-folder access requests →
-theme/settings/scalability → KPI/Home → calendar/notes/notifications → self-service tasks/
-directory/messaging); phases 1-7 are done (Phase 3 still pending your Google OAuth credentials).
-See "Getting started" below to run it yourself.
+## Latest landing-page update
+
+The public landing page includes a task-board demonstration, a three-step setup sequence, feature flashcards, an interactive role-scope map, security layers and a registration call to action. On mobile, features and comparisons use a straightforward reading layout without desktop overlays or pinned sequences.
+
+The orbit background stays fixed and becomes softly blurred below the opening section. Scroll-state updates, step rendering and redundant blur layers were optimized; measurements and their limits are recorded in the [landing performance report](docs/engineering/landing-performance-2026-11-01.md).
 
 ## Repository layout
 
-This workspace holds two independently-versioned projects side by side. They are meant to
-become two separate Git repositories (`backend-repo`, `frontend-repo`); until that split
-happens, each subfolder is self-contained (its own `.gitignore`, its own dependencies) so the
-split is a copy, not a rewrite.
+Backend and frontend live in **one application repository**. Each has its own dependency manifest and runtime configuration.
 
 ```text
 .
-├── CLAUDE.md          Engineering standards & philosophy (read this first)
-├── AGENTS.md          Pointer to CLAUDE.md (for tools that look for this filename)
-├── .claude/
-│   ├── CLAUDE.md      Session operating procedure (when to ask, commit/push approval)
-│   └── skills/        Task-specific review/workflow skills
-├── backend/           Spring Boot API - see backend/README.md
-├── frontend/          Next.js app - see frontend/README.md
-└── docs/
-    ├── architecture-decision-records/   ADR template + how to write one
-    └── api/                              API versioning notes, link to Swagger UI
+├── backend/                 Java API, migrations and backend tests
+├── frontend/                Next.js application and frontend tests
+├── deploy/                  Docker Compose and reverse-proxy examples
+├── docs/
+│   ├── SPECIFICATION.md     Product behavior and contracts
+│   ├── api/                 API documentation
+│   ├── engineering/         Engineering and release records
+│   └── architecture-decision-records/
+├── run-local.ps1            Local stack
+├── run-dev-parallel.ps1     Development alongside the public stack
+└── run-public.ps1           Production stack and Cloudflare tunnel
 ```
 
-Full stack conventions (package structure, naming, API envelope, migrations, testing) are in
-[CLAUDE.md § 46 - Tech Stack and Project Structure](https://github.com/komorebi240/My-Agents/blob/main/CLAUDE.md#project-map).
+Agent instructions and skills are maintained separately in **[My-Agents](https://github.com/komorebi240/My-Agents)**. Local `.claude/`, `.agents/`, `.codex/`, `AGENTS.md` and `CLAUDE.md` are ignored by the application repository. Existing Git history is preserved. See the [separation record](docs/engineering/agent-repository-separation.md) and [engineering guidance](https://github.com/komorebi240/My-Agents/blob/main/CLAUDE.md).
 
-## Getting started
+## Requirements
 
-Neither project has been built or had dependencies installed yet. To go from scaffold to a
-running app:
+- Java 17 and Maven for the Spring Boot API.
+- Node.js 20+ and npm for Next.js 15, React 18 and TypeScript.
+- Microsoft SQL Server with separate development and production configuration.
+- Google OAuth credentials for Drive integration; SMTP configuration for email flows.
 
-```bash
-# Backend - requires JDK 17+ and Maven installed
-cd backend
-mvn -v          # confirm toolchain
-mvn compile     # first real compile
+Environment templates contain placeholders. Keep credentials, encryption keys, tokens and real environment files out of Git.
+
+## Run locally
+
+1. Follow the database and environment setup in [backend/README.md](backend/README.md). Copy `backend/.env.example` to `backend/.env.local` and supply your own settings.
+2. Install the frontend dependencies:
+
+   ```powershell
+   cd frontend
+   npm ci
+   ```
+
+3. From the repository root, launch the local stack:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\run-local.ps1
+   ```
+
+The normal frontend is at `http://localhost:3000`; the API is on port `8080`.
+
+**While this machine serves the public site, use the parallel development launcher** to keep development on separate ports and configuration:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run-dev-parallel.ps1
 ```
 
-(On this machine Maven wasn't on PATH, so it was extracted to `%USERPROFILE%\tools\apache-maven-3.9.16`
-and invoked by full path - see [backend/README.md](backend/README.md#running-locally) if you're
-in the same situation.)
+The parallel frontend is at `http://localhost:3001`, with the development API on `8081`. This launcher uses the development database and logs email instead of sending it. Stop that stack with `-Stop`.
 
-```bash
-# Frontend - requires Node.js 20+ installed
-cd frontend
-node -v         # confirm toolchain
-npm install     # first real dependency install
-npm run dev
+## Verify changes
+
+Run frontend checks from `frontend/`:
+
+```powershell
+npm run typecheck
+npm run lint
+npm test -- --runInBand
+npm run build
 ```
 
-Before either will run against a real database, copy `backend/src/main/resources/application-prod.yml.example`
-and fill in real (non-committed) SQL Server connection details via environment variables -
-see [CLAUDE.md § 30](https://github.com/komorebi240/My-Agents/blob/main/CLAUDE.md#security-and-configuration).
+Browser tests use Playwright. [frontend/playwright.config.ts](frontend/playwright.config.ts) expects a separate production build in `.next-e2e` and starts its own server on port `3100`. Do not reuse the live public server for fixture-based tests.
 
-## Running and publishing
+Run backend tests from `backend/` with `mvn test`. Database-backed integration tests have additional SQL Server requirements; see [backend/README.md](backend/README.md).
 
-* **Local, one click:** `powershell -ExecutionPolicy Bypass -File .\run-local.ps1` starts the backend and the frontend in two windows. The backend reads
-  `backend/.env.local` (git-ignored; template `backend/.env.example`).
-* **Publish for free (one VM + Azure SQL free offer):** [docs/deploy-free.md](docs/deploy-free.md). The files it uses: `backend/Dockerfile`, `frontend/Dockerfile`,
-  `deploy/docker-compose.yml`, `deploy/Caddyfile`, `deploy/.env.example`.
-* **Publish from your own PC (no cloud account, free):** `powershell -ExecutionPolicy Bypass -File .\run-public.ps1` builds and runs the production backend (profile `prod`, empty database `orbit`)
-  and frontend and opens the named Cloudflare tunnel `orbit`, so the site is at https://app.stayorbit.cloud while this PC is on and online (the root of that address is the marketing page, the app's door is `/login`); `-Stop` closes it. Settings live in the
-  git-ignored `backend/prod.env.local` (production overrides and fresh secrets) plus `backend/.env.local` (database login, SMTP); the tunnel config is `%USERPROFILE%\.cloudflared\orbit.yml`.
-  The dev servers (`run-local.ps1`, database `project_dev`, seed users) are separate and are stopped while the public site runs.
+A dependency audit is not a security sign-off. The [dependency baseline](docs/engineering/dependency-baseline.md) records known findings; the [Next.js hotfix report](docs/engineering/security-hotfix-2026-10-29.md) explains the framework upgrade.
 
+## Publish
 
-Agent instructions and skills are maintained separately in [My-Agents](https://github.com/komorebi240/My-Agents). Local agent files are ignored by this application repository.
+[Deployment options](docs/deploy-free.md) cover a VM with SQL Server connectivity and the files under `deploy/`.
+
+The existing PC-hosted setup uses `run-public.ps1`, the production environment in ignored `backend/prod.env.local`, and the named Cloudflare tunnel `orbit`. It serves [app.stayorbit.cloud](https://app.stayorbit.cloud/) while the host remains online. This is a real production database, not an empty development database. The launcher rebuilds and restarts services; `-Stop` closes the public stack.
+
+Before a release, verify the build, applicable tests, environment and rollback path. Keep development settings and seed data separate from production. A README-only update is published through GitHub and does not require restarting the running application.
+
+## More detail
+
+- [Product specification](docs/SPECIFICATION.md)
+- [Backend setup and API](backend/README.md)
+- [Frontend implementation](frontend/README.md)
+- [Agent instructions and skills](https://github.com/komorebi240/My-Agents)
