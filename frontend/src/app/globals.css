@@ -511,3 +511,10 @@ h3 {
   50% { opacity: 0.45; }
 }
 
+
+/* Keep touch form text above Safari's focus-zoom threshold, including utility overrides. */
+@media (max-width: 1023px), (any-pointer: coarse) {
+  input, textarea, select, [contenteditable="true"], [contenteditable="plaintext-only"] {
+    font-size: max(16px, 1em) !important;
+  }
+}
