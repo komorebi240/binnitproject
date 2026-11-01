@@ -34,6 +34,10 @@ export const EN: MarketingCopy = {
     signIn: "Sign in",
   },
   glimpse: {
+    eyebrow: "See the progress. Find your rhythm.",
+    title: "Know where every task stands.",
+    text: "From to do to done: every task has a place, and everyone knows what comes next.",
+
     windowTitle: "My tasks",
     caption: "An illustration of Orbit's task board with sample data.",
     priority: { high: "High", medium: "Medium", low: "Low" },
@@ -83,7 +87,7 @@ export const EN: MarketingCopy = {
   features: {
     eyebrow: "Features",
     title: "Everything a business needs to run, in one place",
-    text: "From everyday assignments to cross-department projects and month-end KPIs.",
+    text: "From tasks and customers to meetings, attendance, leave and finance with access controls.",
     items: [
       {
         title: "Assign and track work",
@@ -121,6 +125,22 @@ export const EN: MarketingCopy = {
         title: "Company page",
         text: "One shared page for the whole company: a cover image, a description and the departments with their own icons and colours, so newcomers know where they are.",
       },
+      {
+        title: "Meet with colleagues",
+        text: "Schedule meetings, invite colleagues or whole departments and teams, receive invitations in Orbit, then open Google Meet. You supply the meeting link; Orbit does not create a room.",
+      },
+      {
+        title: "Attendance and leave",
+        text: "Record check-in and check-out times and review monthly attendance. Submit leave requests, check allowances and approval results; approved leave appears on your calendar.",
+      },
+      {
+        title: "Finance with access controls",
+        text: "Prepare payslips, record income and expenses, and review cash flow reports with finance access. Payslips go to the CEO for approval before payment.",
+      },
+      {
+        title: "Customers and whiteboards",
+        text: "Organize customer data in CRM and use whiteboards to sketch ideas alongside your team’s tasks and projects.",
+      },
     ],
   },
   steps: {
@@ -142,6 +162,8 @@ export const EN: MarketingCopy = {
     ],
   },
   roles: {
+    explore: "Choose a role to explore its workspace.",
+    scope: ["The whole company", "Your department", "Your team", "Your own work"],
     eyebrow: "For the whole organization",
     title: "Everyone has a place, all in the same orbit",
     text: "What people can see and do follows their position, so everyone has what they need for their part of the work, and no more.",
@@ -165,6 +187,7 @@ export const EN: MarketingCopy = {
     ],
   },
   security: {
+    labels: ["Your own workspace", "The right access", "Protected sign-ins", "Recover your access"],
     eyebrow: "Security",
     title: "Your company's data belongs only to you",
     text: "Orbit is built security-first: permissions are checked on the server and every company is its own data boundary.",
@@ -176,8 +199,8 @@ export const EN: MarketingCopy = {
     ],
   },
   finalCta: {
-    title: "Ready to bring your business back into orbit?",
-    text: "Create your company's workspace and invite everyone in.",
+    title: "What’s next?\nBring your team into orbit.",
+    text: "You have seen how Orbit works. Now create a workspace for your company and start your first task.",
     primary: "Get started with Orbit",
     secondary: "I already have an account",
   },

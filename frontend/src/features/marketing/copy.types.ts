@@ -37,6 +37,9 @@ export interface MarketingCopy {
     signIn: string;
   };
   glimpse: {
+    eyebrow: string;
+    title: string;
+    text: string;
     windowTitle: string;
     caption: string;
     priority: Record<TaskPriority, string>;
@@ -45,7 +48,7 @@ export interface MarketingCopy {
   problem: { eyebrow: string; title: string; text: string; offTitle: string; off: string[]; inTitle: string; in: string[] };
   features: { eyebrow: string; title: string; text: string; items: TitledText[] };
   steps: { eyebrow: string; title: string; items: TitledText[] };
-  roles: { eyebrow: string; title: string; text: string; items: { name: string; text: string }[] };
-  security: { eyebrow: string; title: string; text: string; items: string[] };
+  roles: { explore: string; scope: string[]; eyebrow: string; title: string; text: string; items: { name: string; text: string }[] };
+  security: { labels: string[]; eyebrow: string; title: string; text: string; items: string[] };
   finalCta: { title: string; text: string; primary: string; secondary: string };
 }

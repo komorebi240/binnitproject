@@ -34,6 +34,10 @@ export const VI: MarketingCopy = {
     signIn: "Đăng nhập",
   },
   glimpse: {
+    eyebrow: "Nhìn thấy tiến độ. Nắm được nhịp làm việc.",
+    title: "Việc đi đến đâu, bạn thấy đến đó.",
+    text: "Từ cần làm đến hoàn thành: mỗi việc có một chỗ, mỗi người biết bước tiếp theo.",
+
     windowTitle: "Công việc của tôi",
     caption: "Minh hoạ bảng việc của Orbit với dữ liệu mẫu.",
     priority: { high: "Cao", medium: "Vừa", low: "Thấp" },
@@ -83,7 +87,7 @@ export const VI: MarketingCopy = {
   features: {
     eyebrow: "Tính năng",
     title: "Mọi thứ doanh nghiệp cần để vận hành, trong một nơi",
-    text: "Từ giao việc hằng ngày đến dự án liên phòng ban và KPI cuối tháng.",
+    text: "Từ công việc và khách hàng đến lịch họp, chấm công, nghỉ phép và tài chính theo phân quyền.",
     items: [
       {
         title: "Giao việc và theo dõi",
@@ -121,6 +125,22 @@ export const VI: MarketingCopy = {
         title: "Trang giới thiệu công ty",
         text: "Một trang chung cho cả công ty: ảnh bìa, mô tả và các phòng ban với biểu tượng, màu sắc riêng, để người mới hiểu ngay mình đang ở đâu.",
       },
+      {
+        title: "Họp cùng đồng nghiệp",
+        text: "Lên lịch, mời đồng nghiệp hoặc cả phòng ban và nhóm, nhận lời mời trong Orbit rồi mở liên kết Google Meet. Bạn cung cấp link phòng họp; Orbit không tự tạo phòng.",
+      },
+      {
+        title: "Chấm công và nghỉ phép",
+        text: "Ghi nhận giờ vào, giờ ra; theo dõi chấm công theo tháng. Gửi đơn nghỉ, xem hạn mức và kết quả duyệt; ngày nghỉ được duyệt xuất hiện trên lịch.",
+      },
+      {
+        title: "Tài chính theo phân quyền",
+        text: "Lập phiếu lương, ghi thu chi và xem báo cáo dòng tiền dành cho người được cấp quyền tài chính. Phiếu lương được gửi CEO duyệt trước khi thanh toán.",
+      },
+      {
+        title: "Khách hàng và bảng trắng",
+        text: "Quản lý dữ liệu khách hàng trong CRM, dùng bảng trắng để phác thảo ý tưởng cùng công việc và dự án của nhóm.",
+      },
     ],
   },
   steps: {
@@ -142,6 +162,8 @@ export const VI: MarketingCopy = {
     ],
   },
   roles: {
+    explore: "Chọn một vai trò để xem phạm vi làm việc.",
+    scope: ["Toàn doanh nghiệp", "Phòng ban của mình", "Nhóm của mình", "Công việc của mình"],
     eyebrow: "Cho cả tổ chức",
     title: "Mỗi người một vị trí, cùng một quỹ đạo",
     text: "Quyền xem và quyền làm đi theo chức vụ, nên ai cũng có đủ thông tin cho phần việc của mình, và không hơn.",
@@ -165,6 +187,7 @@ export const VI: MarketingCopy = {
     ],
   },
   security: {
+    labels: ["Không gian riêng", "Đúng người, đúng quyền", "Bảo vệ phiên đăng nhập", "Lấy lại quyền truy cập"],
     eyebrow: "Bảo mật",
     title: "Dữ liệu của doanh nghiệp bạn chỉ thuộc về bạn",
     text: "Orbit được xây theo nguyên tắc bảo mật từ thiết kế: quyền được kiểm tra ở máy chủ và mỗi công ty là một ranh giới dữ liệu riêng.",
@@ -176,8 +199,8 @@ export const VI: MarketingCopy = {
     ],
   },
   finalCta: {
-    title: "Sẵn sàng đưa doanh nghiệp về quỹ đạo?",
-    text: "Tạo không gian làm việc của doanh nghiệp bạn và mời mọi người cùng vào.",
+    title: "Việc tiếp theo?\nĐưa cả đội vào quỹ đạo.",
+    text: "Bạn đã thấy cách Orbit vận hành. Giờ là lúc tạo không gian cho doanh nghiệp của bạn và bắt đầu công việc đầu tiên.",
     primary: "Bắt đầu cùng Orbit",
     secondary: "Tôi đã có tài khoản",
   },

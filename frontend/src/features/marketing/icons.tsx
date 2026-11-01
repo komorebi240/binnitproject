@@ -40,6 +40,10 @@ export const FEATURE_ICONS: Icon[] = [
   Timer, // notes and focus
   Palette, // work your way
   Buildings, // company page
+  UsersThree, // meetings
+  CalendarBlank, // attendance and leave
+  Wallet, // finance
+  ClipboardText, // CRM and whiteboards
 ];
 
 /** One per column of the task-board illustration, in the order of `glimpse.columns`. */

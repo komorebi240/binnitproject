@@ -30,9 +30,19 @@ const GLIDE_SECONDS = 0.45;
 /** The visible element a step points at, or null (missing, hidden, collapsed menu, other screen size...). */
 function findTarget(step: TourStep): HTMLElement | null {
   if (!step.target) return null;
-  const el = document.querySelector<HTMLElement>(`[data-tour="${step.target}"]`);
-  if (!el || el.getClientRects().length === 0) return null;
-  return el;
+  const candidates = Array.from(document.querySelectorAll<HTMLElement>(`[data-tour="${step.target}"]`));
+  const visible = candidates.find(element => element.getClientRects().length > 0);
+  if (visible) return visible;
+  // A destination can be inside a closed navigation group; point at its disclosure first.
+  if (step.target.startsWith("nav:")) {
+    for (const element of candidates) {
+      const toggle = element.closest("[data-nav-group]")?.querySelector<HTMLElement>("[data-nav-toggle]");
+      if (toggle && toggle.getClientRects().length > 0) return toggle;
+    }
+    const menu = document.querySelector<HTMLElement>(".app-menu-trigger");
+    if (menu && menu.getClientRects().length > 0) return menu;
+  }
+  return null;
 }
 
 function TourOverlay({

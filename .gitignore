@@ -5,3 +5,14 @@ deploy/.env
 # Local research and editor session history
 /research/
 /.obsidian/workspace.json
+/.artifacts/
+
+# Agent configuration is maintained separately in komorebi240/My-Agents.
+/.claude/
+/.agents/
+/.codex/
+/AGENTS.md
+/CLAUDE.md
+
+# Agent-only upstream submodule metadata is kept in My-Agents.
+/.gitmodules

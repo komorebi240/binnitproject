@@ -3,13 +3,11 @@
 import { AuthPageShell } from "@/components/layout/AuthPageShell";
 import { OrbitWordmark } from "@/components/brand/OrbitWordmark";
 import { AcceptInvitationForm } from "@/features/onboarding/components/AcceptInvitationForm";
+import { useParams } from "next/navigation";
 
 import { useI18n } from "@/lib/i18n/useI18n";
-interface InvitePageProps {
-  params: { token: string };
-}
-
-export default function InvitePage({ params }: InvitePageProps) {
+export default function InvitePage() {
+  const { token } = useParams<{ token: string }>();
   const { t } = useI18n();
   return (
     <AuthPageShell>
@@ -20,7 +18,7 @@ export default function InvitePage({ params }: InvitePageProps) {
           <p className="text-sm text-fg-muted">{t("app.page.createAnAccountToStartWorking")}</p>
         </div>
       </div>
-      <AcceptInvitationForm token={params.token} />
+      <AcceptInvitationForm token={token} />
     </AuthPageShell>
   );
 }

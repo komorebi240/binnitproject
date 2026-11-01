@@ -9,7 +9,7 @@ const PRIORITY_CLASS: Record<TaskPriority, string> = {
 
 /**
  * An illustration of the task board, built from the same glass surfaces as the real one, with made-up sample tasks (it
- * says so in its caption). Static HTML: no script, no image to download. The sample text comes from the page's copy, so
+ * says so in its caption). The surrounding scroll story progressively reveals the columns without image downloads. The sample text comes from the page's copy, so
  * it reads naturally in every language.
  */
 export function ProductGlimpse({ copy }: { copy: MarketingCopy["glimpse"] }) {
@@ -26,7 +26,7 @@ export function ProductGlimpse({ copy }: { copy: MarketingCopy["glimpse"] }) {
           {copy.columns.map(({ name, tasks }, index) => {
             const Icon = COLUMN_ICONS[index]!;
             return (
-              <div key={name} className="rounded-xl bg-surface-muted/60 p-3">
+              <div key={name} data-demo-column={index} className="mk-demo-column rounded-xl bg-surface-muted/60 p-3">
                 <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-fg-soft">
                   <Icon size={14} weight="bold" />
                   {name}

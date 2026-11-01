@@ -44,6 +44,12 @@ const CALENDAR: TourStep = {
   bodyKey: "onboarding.tourSteps.seeTheMonthSCalendarAnd",
 };
 
+const MEETINGS: TourStep = { id: "meetings", target: nav("/dashboard/meetings"), titleKey: "meetings.nav", bodyKey: "onboarding.tourSteps.meetings" };
+const ATTENDANCE: TourStep = { id: "attendance", target: nav("/dashboard/attendance"), titleKey: "workforce.attendance", bodyKey: "onboarding.tourSteps.attendance" };
+const LEAVE: TourStep = { id: "leave", target: nav("/dashboard/leave"), titleKey: "workforce.leave", bodyKey: "onboarding.tourSteps.leave" };
+// A centered explanation also helps users who have not been granted finance access.
+const FINANCE: TourStep = { id: "finance", titleKey: "finance.nav", bodyKey: "onboarding.tourSteps.finance" };
+
 const SEARCH: TourStep = {
   id: "search",
   target: "search",
@@ -102,7 +108,7 @@ const NOTIFICATIONS: TourStep = {
 
 const BOARD_VIEW: TourStep = {
   id: "board-view",
-  target: "board-view",
+  target: nav("/dashboard"),
   titleKey: "onboarding.tourSteps.viewTasksAsColumns",
   bodyKey: "onboarding.tourSteps.switchTheHomePageBetweenThe",
 };
@@ -161,6 +167,10 @@ const ADMIN_STEPS: TourStep[] = [
   CRM,
   MESSAGES,
   CALENDAR,
+  MEETINGS,
+  ATTENDANCE,
+  LEAVE,
+  FINANCE,
   NOTES,
   WHITEBOARDS,
   {
@@ -197,6 +207,10 @@ const MANAGER_STEPS: TourStep[] = [
   CRM,
   MESSAGES,
   CALENDAR,
+  MEETINGS,
+  ATTENDANCE,
+  LEAVE,
+  FINANCE,
   NOTES,
   WHITEBOARDS,
   SEARCH,
@@ -221,6 +235,10 @@ const EMPLOYEE_STEPS: TourStep[] = [
   CRM,
   MESSAGES,
   CALENDAR,
+  MEETINGS,
+  ATTENDANCE,
+  LEAVE,
+  FINANCE,
   NOTES,
   WHITEBOARDS,
   SEARCH,
@@ -231,7 +249,7 @@ const EMPLOYEE_STEPS: TourStep[] = [
   SPLIT_SCREEN,
   {
     id: "priority",
-    target: "priority",
+    target: nav("/dashboard"),
     titleKey: "common.prioritySuggestions",
     bodyKey: "onboarding.tourSteps.yourToDoListGroupedBy",
   },

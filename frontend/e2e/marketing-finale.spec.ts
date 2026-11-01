@@ -1,0 +1,32 @@
+import {test,expect} from '@playwright/test';
+
+test('landing narrative, role scopes, security and finale',async({page})=>{
+ await page.goto('/');
+ await expect(page.getByRole('heading',{name:'Việc đi đến đâu, bạn thấy đến đó.'})).toBeVisible();
+ expect(await page.locator('main > section').evaluateAll(nodes=>nodes.map(n=>n.id||n.getAttribute('data-story-board')!==null&&'demo'))).toEqual(expect.arrayContaining(['demo','how-it-works','roles','security']));
+ const order=await page.locator('main > section').evaluateAll(nodes=>nodes.map(n=>n.id|| (n.hasAttribute('data-story-board')?'demo':'')));
+ expect(order.indexOf('how-it-works')).toBe(order.indexOf('demo')+1);
+ await page.locator('#features').screenshot({path:test.info().outputPath('features.png')});
+ await page.locator('#roles').evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));
+ await page.getByRole('button',{name:/Nhân viên/}).click();
+ await expect(page.locator('.mk-role-detail h3')).toHaveText('Nhân viên');
+ await expect(page.locator('.mk-role-scope')).toHaveText('Công việc của mình');
+ await expect(page.locator('.mk-role-scope-art .is-in-scope')).toHaveCount(1);
+ await page.getByRole('button',{name:/Ban điều hành/}).click();
+ await expect(page.locator('.mk-role-scope-art .is-in-scope')).toHaveCount(4);
+ await page.locator('#roles').screenshot({path:test.info().outputPath('roles.png')});
+ await expect(page.locator('.mk-security-layers li')).toHaveCount(4);
+ await page.locator('#security').screenshot({path:test.info().outputPath('security.png')});
+ await page.locator('.mk-launch-section').evaluate(el=>el.scrollIntoView({block:'center',behavior:'instant'}));
+ await expect(page.locator('#cta-title')).toContainText('Việc tiếp theo?');
+ await expect(page.locator('.mk-launch-section').getByRole('link',{name:'Bắt đầu cùng Orbit'})).toHaveAttribute('href','/login');
+ await page.locator('.mk-launch-section').screenshot({path:test.info().outputPath('finale.png')});
+ await page.locator('footer').evaluate(el=>el.scrollIntoView({block:'end',behavior:'instant'}));
+ await expect(page.getByRole('contentinfo')).toBeInViewport();
+ await expect(page.locator('footer').getByRole('link',{name:'Về đầu trang ↑'})).toBeVisible();
+ await page.locator('footer').screenshot({path:test.info().outputPath('footer.png')});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.goto('/en#roles');
+ await page.getByRole('button',{name:/Employees/}).click();
+ await expect(page.locator('.mk-role-scope')).toHaveText('Your own work');
+});

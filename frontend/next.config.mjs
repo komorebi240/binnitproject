@@ -25,9 +25,8 @@ const nextConfig = {
     // uploaded over a slow connection.
     proxyTimeout: 120_000,
   },
-  // The app never uses next/image, so the image optimizer (/_next/image) is switched off: it then answers 404 before
-  // decoding anything. Security review: Next.js < 15.5.24 has an RCE in AVIF optimisation (GHSA-2xp9-vwfh-vxw4, via
-  // sharp/libheif); with the optimizer off there is nothing to reach until the planned Next.js upgrade.
+  // The app serves images directly and does not need the image optimizer. Keep this surface disabled
+  // in addition to using a patched Next.js version; this setting alone does not fix framework RCEs.
   images: { unoptimized: true },
   // A second dev server can run next to the production one by building into its own folder (run-dev-parallel.ps1).
   distDir: process.env.NEXT_DIST_DIR || ".next",

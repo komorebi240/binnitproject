@@ -71,7 +71,7 @@ split is a copy, not a rewrite.
 ```
 
 Full stack conventions (package structure, naming, API envelope, migrations, testing) are in
-[CLAUDE.md § 46 - Tech Stack and Project Structure](CLAUDE.md#46-tech-stack-and-project-structure).
+[CLAUDE.md § 46 - Tech Stack and Project Structure](https://github.com/komorebi240/My-Agents/blob/main/CLAUDE.md#project-map).
 
 ## Getting started
 
@@ -99,7 +99,7 @@ npm run dev
 
 Before either will run against a real database, copy `backend/src/main/resources/application-prod.yml.example`
 and fill in real (non-committed) SQL Server connection details via environment variables -
-see [CLAUDE.md § 30](CLAUDE.md#30-secrets-and-configuration).
+see [CLAUDE.md § 30](https://github.com/komorebi240/My-Agents/blob/main/CLAUDE.md#security-and-configuration).
 
 ## Running and publishing
 
@@ -111,3 +111,6 @@ see [CLAUDE.md § 30](CLAUDE.md#30-secrets-and-configuration).
   and frontend and opens the named Cloudflare tunnel `orbit`, so the site is at https://app.stayorbit.cloud while this PC is on and online (the root of that address is the marketing page, the app's door is `/login`); `-Stop` closes it. Settings live in the
   git-ignored `backend/prod.env.local` (production overrides and fresh secrets) plus `backend/.env.local` (database login, SMTP); the tunnel config is `%USERPROFILE%\.cloudflared\orbit.yml`.
   The dev servers (`run-local.ps1`, database `project_dev`, seed users) are separate and are stopped while the public site runs.
+
+
+Agent instructions and skills are maintained separately in [My-Agents](https://github.com/komorebi240/My-Agents). Local agent files are ignored by this application repository.

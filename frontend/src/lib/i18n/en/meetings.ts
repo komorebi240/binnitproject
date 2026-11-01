@@ -1,0 +1,61 @@
+export const meetings = {
+  "meetings.groups": "Invite a department / team",
+  "meetings.groupHint":
+    "Current members are added on submission; duplicates receive one invitation. At most 50 people including you.",
+  "meetings.team": "Team",
+  "meetings.department": "Department",
+
+  "meetings.nav": "Meet",
+  "meetings.intro":
+    "Schedule with colleagues, respond to invitations and join Google Meet in one place.",
+  "meetings.now": "Meet now",
+  "meetings.schedule": "Schedule meeting",
+  "meetings.title": "Meeting title",
+  "meetings.description": "Agenda",
+  "meetings.url": "Google Meet link",
+  "meetings.urlHint":
+    "Paste a link such as https://meet.google.com/abc-defg-hij. Orbit does not create rooms or send Google emails.",
+  "meetings.openGoogle": "Open Google Meet to create a link",
+  "meetings.people": "Participants",
+  "meetings.search": "Find colleagues",
+  "meetings.selected": "{count}/49 people selected · you are the organizer",
+  "meetings.peopleHint":
+    "Search within your company. Up to 30 results; invitees receive an Orbit calendar entry and notification.",
+  "meetings.emptyPeople": "No colleagues found.",
+  "meetings.submit": "Send invitations",
+  "meetings.saveSolo": "Create meeting",
+  "meetings.month": "Month",
+  "meetings.start": "Starts (Vietnam time)",
+  "meetings.end": "Ends (Vietnam time)",
+  "meetings.nowHint": "Starts on submission, with a default duration of one hour.",
+  "meetings.join": "Join Google Meet",
+  "meetings.pending": "Awaiting response",
+  "meetings.accepted": "Accepted",
+  "meetings.declined": "Declined",
+  "meetings.cancelled": "Cancelled",
+  "meetings.accept": "Accept",
+  "meetings.decline": "Decline",
+  "meetings.cancel": "Cancel meeting",
+  "meetings.cancelTitle": "Cancel this meeting?",
+  "meetings.cancelHint":
+    "Calendar entries will be removed and invitees notified. The Google Meet room remains managed by Google.",
+  "meetings.host": "Organizer: {name}",
+  "meetings.members": "{count} participants",
+  "meetings.empty": "No meetings this month",
+  "meetings.emptyHint": "Create a meeting or wait for a colleague to invite you.",
+  "meetings.error": "The action failed. Please try again.",
+  "meetings.invalidUrl":
+    "Use a valid https://meet.google.com/xxx-xxxx-xxx link without query parameters.",
+  "meetings.invalidRange":
+    "Start now or within the next 366 days. Meetings must end after they start and last at most 24 hours.",
+  "meetings.invalidPeople":
+    "Some participants are unavailable or the 49-invitee limit was exceeded.",
+  "meetings.noLongerPending": "This invitation has already been handled. Refresh the list.",
+  "meetings.countLimit": "Showing at most 100 meetings overlapping the selected month.",
+  "meetings.inviteTitle": "Meeting invitation",
+  "meetings.inviteBody": "{actor} invited you to “{title}”.",
+  "meetings.cancelNotifyTitle": "Meeting cancelled",
+  "meetings.cancelNotifyBody": "{actor} cancelled “{title}”.",
+  "meetings.laterHint": "Join opens Google Meet in a separate tab or app.",
+  "meetings.remove": "Remove {name}",
+};

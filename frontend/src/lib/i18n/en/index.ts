@@ -1,3 +1,7 @@
+import { workspace } from "./workspace";
+import { finance } from "./finance";
+import { meetings } from "./meetings";
+import { workforce } from "./workforce";
 import type { Dictionary } from "../dictionary";
 import { app } from "./app";
 import { auth } from "./auth";
@@ -23,4 +27,32 @@ import { timer } from "./timer";
 import { ui } from "./ui";
 import { whiteboards } from "./whiteboards";
 
-export const EN: Dictionary = { ...app, ...auth, ...calendar, ...common, ...crm, ...drive, ...fileViewer, ...kpi, ...legal, ...layout, ...lib, ...messages, ...notes, ...notifications, ...onboarding, ...organization, ...projects, ...settings, ...smartSelect, ...tasks, ...timer, ...ui, ...whiteboards };
+export const EN: Dictionary = {
+  ...app,
+  ...auth,
+  ...calendar,
+  ...common,
+  ...crm,
+  ...drive,
+  ...fileViewer,
+  ...kpi,
+  ...legal,
+  ...layout,
+  ...lib,
+  ...messages,
+  ...notes,
+  ...notifications,
+  ...onboarding,
+  ...organization,
+  ...projects,
+  ...settings,
+  ...smartSelect,
+  ...tasks,
+  ...timer,
+  ...ui,
+  ...whiteboards,
+  ...workforce,
+  ...meetings,
+  ...finance,
+  ...workspace,
+};

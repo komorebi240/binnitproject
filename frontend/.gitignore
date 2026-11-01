@@ -4,6 +4,8 @@
 # next.js
 /.next/
 /.next-dev/
+/.next-verify/
+/.next-e2e/
 /out/
 
 # production
@@ -34,3 +36,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/.next-test-cache/
+
+/.next-perf/

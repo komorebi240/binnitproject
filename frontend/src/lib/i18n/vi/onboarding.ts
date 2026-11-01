@@ -1,6 +1,13 @@
 export const onboarding = {
-  "onboarding.acceptInvitationForm.3100CharactersLettersDigitsDots": "3-100 ký tự: chữ, số, dấu chấm, gạch dưới hoặc gạch ngang",
-  "onboarding.acceptInvitationForm.askThePersonWhoInvitedYou": "Hãy nhờ người mời gửi lại lời mời mới.",
+  "onboarding.tourSteps.meetings": "Trong Lịch & thời gian, mở Meet để lên lịch, mời người hoặc phòng ban/nhóm và nhận lời mời. Dán link Google Meet bạn đã tạo để mọi người tham gia; Orbit không tự tạo phòng họp.",
+  "onboarding.tourSteps.attendance": "Trong Lịch & thời gian, mở Chấm công, bấm Vào ca khi bắt đầu và Ra ca khi kết thúc. Xem giờ vào, giờ ra và lịch sử theo tháng.",
+  "onboarding.tourSteps.leave": "Mở Nghỉ phép để gửi đơn, kiểm tra hạn mức và theo dõi kết quả duyệt. Ngày nghỉ được duyệt tự thêm vào lịch; người quản lý xử lý đơn trong phạm vi quyền của mình.",
+  "onboarding.tourSteps.finance": "Khi được cấp quyền tài chính, nhóm Tài chính có Phiếu lương, Thu chi và Báo cáo dòng tiền. Lập phiếu lương rồi gửi CEO duyệt trước khi thanh toán. Nếu chưa thấy nhóm này, liên hệ CEO để kiểm tra quyền.",
+
+  "onboarding.acceptInvitationForm.3100CharactersLettersDigitsDots":
+    "3-100 ký tự: chữ, số, dấu chấm, gạch dưới hoặc gạch ngang",
+  "onboarding.acceptInvitationForm.askThePersonWhoInvitedYou":
+    "Hãy nhờ người mời gửi lại lời mời mới.",
   "onboarding.acceptInvitationForm.couldnTCreateTheAccount": "Không tạo được tài khoản",
   "onboarding.acceptInvitationForm.createAccountAndEnterOrbit": "Tạo tài khoản và vào Orbit",
   "onboarding.acceptInvitationForm.goToTheSignInPage": "Đến trang đăng nhập",
@@ -9,9 +16,11 @@ export const onboarding = {
   "onboarding.acceptInvitationForm.reEnterThePassword": "Nhập lại mật khẩu",
   "onboarding.acceptInvitationForm.role": "Vai trò:",
   "onboarding.acceptInvitationForm.signOutAndContinue": "Đăng xuất và tiếp tục",
-  "onboarding.acceptInvitationForm.signOutToCreateANew": "Hãy đăng xuất để tạo tài khoản mới từ lời mời này.",
+  "onboarding.acceptInvitationForm.signOutToCreateANew":
+    "Hãy đăng xuất để tạo tài khoản mới từ lời mời này.",
   "onboarding.acceptInvitationForm.thePasswordsDonTMatch": "Mật khẩu nhập lại không khớp",
-  "onboarding.acceptInvitationForm.thisInvitationIsInvalidOrHas": "Lời mời này không hợp lệ hoặc đã hết hạn.",
+  "onboarding.acceptInvitationForm.thisInvitationIsInvalidOrHas":
+    "Lời mời này không hợp lệ hoặc đã hết hạn.",
   "onboarding.acceptInvitationForm.youReSignedInAs": "Bạn đang đăng nhập bằng tài khoản",
   "onboarding.companyBadge.aboutName": "Giới thiệu {name}",
   "onboarding.companyEditDialog.companyDetails": "Thông tin công ty",
@@ -34,19 +43,28 @@ export const onboarding = {
   "onboarding.companyImageButton.uploadLogo": "Tải logo lên",
   "onboarding.companyOverview.editDetails": "Sửa thông tin",
   "onboarding.companyOverview.manageDepartments": "Quản lý phòng ban",
-  "onboarding.companyOverview.noDescriptionYetClickEditDetails": "Chưa có phần giới thiệu. Bấm \"Sửa thông tin\" để thêm.",
+  "onboarding.companyOverview.noDescriptionYetClickEditDetails":
+    'Chưa có phần giới thiệu. Bấm "Sửa thông tin" để thêm.',
   "onboarding.companyOverview.quickSettings": "Cài đặt nhanh",
   "onboarding.companyOverview.theCompanyHasNoDepartmentsYet": "Công ty chưa có phòng ban nào",
   "onboarding.companyOverview.theCompanyHasNoDescriptionYet": "Công ty chưa có phần giới thiệu.",
   "onboarding.companyProfileForm.pngJpegWebp2mbAtMost": "PNG, JPEG, WebP · tối đa 2MB",
-  "onboarding.errors.emailAlreadyInUse": "Email này đã thuộc một tài khoản khác nên không thể dùng cho lời mời.",
-  "onboarding.errors.theCodeIsWrongHasExpired": "Mã không đúng, đã hết hạn hoặc đã nhập sai quá nhiều lần. Hãy gửi lại mã mới.",
-  "onboarding.errors.theDepartmentOrTeamOfThis": "Phòng ban hoặc nhóm của lời mời không còn tồn tại. Hãy nhờ người mời gửi lời mời mới.",
-  "onboarding.errors.theEmailServiceIsnTReady": "Dịch vụ gửi email chưa sẵn sàng. Vui lòng thử lại sau.",
-  "onboarding.errors.theEmailVerificationExpiredOrWas": "Phiên xác minh email đã hết hạn hoặc đã được dùng. Vui lòng xác minh lại email.",
-  "onboarding.errors.thisEmailAlreadyBelongsToAn": "Email này đã thuộc một tài khoản. Hãy đăng nhập, hoặc dùng \"Quên mật khẩu\" nếu bạn không nhớ mật khẩu.",
-  "onboarding.errors.thisUsernameIsAlreadyTakenChoose": "Tên đăng nhập này đã được sử dụng, hãy chọn tên khác.",
-  "onboarding.errors.youReGoingTooFastPlease": "Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.",
+  "onboarding.errors.emailAlreadyInUse":
+    "Email này đã thuộc một tài khoản khác nên không thể dùng cho lời mời.",
+  "onboarding.errors.theCodeIsWrongHasExpired":
+    "Mã không đúng, đã hết hạn hoặc đã nhập sai quá nhiều lần. Hãy gửi lại mã mới.",
+  "onboarding.errors.theDepartmentOrTeamOfThis":
+    "Phòng ban hoặc nhóm của lời mời không còn tồn tại. Hãy nhờ người mời gửi lời mời mới.",
+  "onboarding.errors.theEmailServiceIsnTReady":
+    "Dịch vụ gửi email chưa sẵn sàng. Vui lòng thử lại sau.",
+  "onboarding.errors.theEmailVerificationExpiredOrWas":
+    "Phiên xác minh email đã hết hạn hoặc đã được dùng. Vui lòng xác minh lại email.",
+  "onboarding.errors.thisEmailAlreadyBelongsToAn":
+    'Email này đã thuộc một tài khoản. Hãy đăng nhập, hoặc dùng "Quên mật khẩu" nếu bạn không nhớ mật khẩu.',
+  "onboarding.errors.thisUsernameIsAlreadyTakenChoose":
+    "Tên đăng nhập này đã được sử dụng, hãy chọn tên khác.",
+  "onboarding.errors.youReGoingTooFastPlease":
+    "Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.",
   "onboarding.inviteStaffButton.chooseATeam": "-- Chọn nhóm --",
   "onboarding.inviteStaffButton.couldnTResendIt": "Không gửi lại được",
   "onboarding.inviteStaffButton.couldnTSendTheInvitation": "Không gửi được lời mời",
@@ -64,13 +82,15 @@ export const onboarding = {
   "onboarding.inviteStaffButton.resend": "Gửi lại",
   "onboarding.inviteStaffButton.teamOptional": "Nhóm (tuỳ chọn)",
   "onboarding.inviteStaffButton.teamRequiredForATeamLead": "Nhóm (bắt buộc cho trưởng nhóm)",
-  "onboarding.inviteStaffButton.theRecipientOpensTheLinkIn": "Người nhận mở liên kết trong email (hiệu lực 7 ngày) để tự đặt tên đăng nhập và mật khẩu.",
+  "onboarding.inviteStaffButton.theRecipientOpensTheLinkIn":
+    "Người nhận mở liên kết trong email (hiệu lực 7 ngày) để tự đặt tên đăng nhập và mật khẩu.",
   "onboarding.onboardingTour.back": "Quay lại",
   "onboarding.onboardingTour.next": "Tiếp theo",
   "onboarding.onboardingTour.skip": "Bỏ qua",
   "onboarding.onboardingTour.stepOf": "Bước {current}/{total}",
   "onboarding.registerWizard.6DigitCodeSentToEmail": "Mã gồm 6 chữ số gửi tới {email}",
-  "onboarding.registerWizard.aVerificationCodeHasBeenSent": "Mã xác minh đã được gửi tới email của bạn (hiệu lực 10 phút).",
+  "onboarding.registerWizard.aVerificationCodeHasBeenSent":
+    "Mã xác minh đã được gửi tới email của bạn (hiệu lực 10 phút).",
   "onboarding.registerWizard.administrator": "Quản trị viên",
   "onboarding.registerWizard.administratorEmail": "Email quản trị viên",
   "onboarding.registerWizard.changeEmail": "Đổi email",
@@ -85,7 +105,8 @@ export const onboarding = {
   "onboarding.registerWizard.couldnTSendTheVerificationCode": "Không gửi được mã xác minh",
   "onboarding.registerWizard.createCompany": "Tạo doanh nghiệp",
   "onboarding.registerWizard.email": "Email",
-  "onboarding.registerWizard.enterTheEmailOfThePerson": "Nhập email của người sẽ là quản trị viên. Chúng tôi gửi mã xác minh tới địa chỉ này trước khi tạo doanh nghiệp.",
+  "onboarding.registerWizard.enterTheEmailOfThePerson":
+    "Nhập email của người sẽ là quản trị viên. Chúng tôi gửi mã xác minh tới địa chỉ này trước khi tạo doanh nghiệp.",
   "onboarding.registerWizard.logoPreview": "Xem trước logo",
   "onboarding.registerWizard.registrationSteps": "Các bước đăng ký",
   "onboarding.registerWizard.removeImage": "Bỏ ảnh",
@@ -96,36 +117,59 @@ export const onboarding = {
   "onboarding.registerWizard.theVerificationCodeIsIncorrect": "Mã xác minh không đúng",
   "onboarding.registerWizard.verify": "Xác minh",
   "onboarding.registerWizard.yourCompanyIsReady": "Doanh nghiệp đã sẵn sàng!",
-  "onboarding.tourSteps.aFewQuickStepsToGet": "Vài bước nhanh để bạn làm quen và thiết lập doanh nghiệp. Bạn có thể bỏ qua bất cứ lúc nào và xem lại trong Cài đặt.",
-  "onboarding.tourSteps.aPomodoroTimerFocusedWorkIn": "Đồng hồ Pomodoro: làm việc tập trung theo từng phiên, nghỉ ngắn giữa các phiên. Đồng hồ vẫn chạy khi bạn đóng cửa sổ hoặc chuyển trang.",
-  "onboarding.tourSteps.aShortTourOfThePlaces": "Một vòng làm quen ngắn với những nơi bạn sẽ dùng hằng ngày. Bạn có thể bỏ qua và xem lại trong Cài đặt.",
-  "onboarding.tourSteps.acceptOrDeclineTheTasksYou": "Nhận hoặc từ chối việc được giao, theo dõi và hoàn thành việc của bạn. Bấm vào một việc để xem chi tiết, tệp đính kèm và link Google Drive. Việc có checklist tự hoàn thành khi bạn tick đủ các dòng; dấu + để tự thêm việc cho mình (không cần ai duyệt). Người giao việc được báo khi bạn nhận, từ chối hoặc hoàn thành.",
-  "onboarding.tourSteps.buildTheStructureFirstClickCreate": "Tạo cơ cấu tổ chức trước: bấm 'Tạo phòng ban', chọn màu và biểu tượng riêng cho từng phòng, rồi thêm nhóm. Trong một phòng ban có nút + để thêm nhanh nhân sự vào đúng phòng đó.",
-  "onboarding.tourSteps.clickOrPressCtrlKThen": "Bấm hoặc nhấn Ctrl+K rồi gõ tên một trang hoặc một tính năng nhỏ bên trong (ví dụ 'checklist', 'đổi mật khẩu'): kết quả hiện trang chứa nó, bên dưới là tính năng đó, từ khoá được tô sáng và không cần gõ dấu.",
-  "onboarding.tourSteps.clickTheLogoOrTheCompany": "Bấm logo hoặc tên công ty ở góc trên để xem giới thiệu, ảnh bìa và các phòng ban. Quản trị viên có sẵn nút cài đặt nhanh ngay trên trang: sửa thông tin, đổi logo, đổi ảnh bìa.",
-  "onboarding.tourSteps.clickYourProfilePhotoSettingsOr": "Bấm ảnh đại diện > Cài đặt (hoặc nút cài đặt nhanh ở trang công ty) để tải logo và ảnh bìa, đổi tên, email và giới thiệu doanh nghiệp, chọn giao diện. Cũng ở menu này: đổi trạng thái, đổi ảnh đại diện, đăng xuất.",
-  "onboarding.tourSteps.clickYourProfilePhotoToSwitch": "Bấm ảnh đại diện để đổi nhanh trạng thái (trực tuyến / hạn chế / không làm phiền), mở Cài đặt (giao diện, mật khẩu, email khôi phục), đổi ảnh đại diện hoặc đăng xuất.",
+  "onboarding.tourSteps.aFewQuickStepsToGet":
+    "Vài bước nhanh để bạn làm quen và thiết lập doanh nghiệp. Bạn có thể bỏ qua bất cứ lúc nào và xem lại trong Cài đặt.",
+  "onboarding.tourSteps.aPomodoroTimerFocusedWorkIn":
+    "Đồng hồ Pomodoro: làm việc tập trung theo từng phiên, nghỉ ngắn giữa các phiên. Đồng hồ vẫn chạy khi bạn đóng cửa sổ hoặc chuyển trang.",
+  "onboarding.tourSteps.aShortTourOfThePlaces":
+    "Một vòng làm quen ngắn với những nơi bạn sẽ dùng hằng ngày. Bạn có thể bỏ qua và xem lại trong Cài đặt.",
+  "onboarding.tourSteps.acceptOrDeclineTheTasksYou":
+    "Nhận hoặc từ chối việc được giao, theo dõi và hoàn thành việc của bạn. Bấm vào một việc để xem chi tiết, tệp đính kèm và link Google Drive. Việc có checklist tự hoàn thành khi bạn tick đủ các dòng; dấu + để tự thêm việc cho mình (không cần ai duyệt). Người giao việc được báo khi bạn nhận, từ chối hoặc hoàn thành.",
+  "onboarding.tourSteps.buildTheStructureFirstClickCreate":
+    "Tạo cơ cấu tổ chức trước: bấm 'Tạo phòng ban', chọn màu và biểu tượng riêng cho từng phòng, rồi thêm nhóm. Trong một phòng ban có nút + để thêm nhanh nhân sự vào đúng phòng đó.",
+  "onboarding.tourSteps.clickOrPressCtrlKThen":
+    "Bấm hoặc nhấn Ctrl+K rồi gõ tên một trang hoặc một tính năng nhỏ bên trong (ví dụ 'checklist', 'đổi mật khẩu'): kết quả hiện trang chứa nó, bên dưới là tính năng đó, từ khoá được tô sáng và không cần gõ dấu.",
+  "onboarding.tourSteps.clickTheLogoOrTheCompany":
+    "Bấm logo hoặc tên công ty ở góc trên để xem giới thiệu, ảnh bìa và các phòng ban. Quản trị viên có sẵn nút cài đặt nhanh ngay trên trang: sửa thông tin, đổi logo, đổi ảnh bìa.",
+  "onboarding.tourSteps.clickYourProfilePhotoSettingsOr":
+    "Bấm ảnh đại diện > Cài đặt (hoặc nút cài đặt nhanh ở trang công ty) để tải logo và ảnh bìa, đổi tên, email và giới thiệu doanh nghiệp, chọn giao diện. Cũng ở menu này: đổi trạng thái, đổi ảnh đại diện, đăng xuất.",
+  "onboarding.tourSteps.clickYourProfilePhotoToSwitch":
+    "Bấm ảnh đại diện để đổi nhanh trạng thái (trực tuyến / hạn chế / không làm phiền), mở Cài đặt (giao diện, mật khẩu, email khôi phục), đổi ảnh đại diện hoặc đăng xuất.",
   "onboarding.tourSteps.companyPage": "Trang giới thiệu công ty",
-  "onboarding.tourSteps.connectDriveAndManageFolderAccess": "Kết nối Drive và quản lý quyền truy cập thư mục theo phòng ban.",
+  "onboarding.tourSteps.connectDriveAndManageFolderAccess":
+    "Kết nối Drive và quản lý quyền truy cập thư mục theo phòng ban.",
   "onboarding.tourSteps.crossDepartmentProjects": "Dự án chung nhiều phòng ban",
   "onboarding.tourSteps.departmentsTeams": "Phòng ban & nhóm",
-  "onboarding.tourSteps.firstThingsToDoCreateA": "Việc nên làm đầu tiên: tạo phòng ban, rồi mời nhân sự vào đúng phòng ban. Xem lại hướng dẫn này bất cứ lúc nào trong Cài đặt.",
-  "onboarding.tourSteps.inStaffClickInviteByEmail": "Trong Nhân sự, bấm 'Mời qua email': người nhận mở liên kết và tự đặt tên đăng nhập, mật khẩu. Dấu + để tự tạo tài khoản. Bấm tên một nhân sự để mở cửa sổ quản lý: phòng ban và chức vụ, KPI, lịch, đặt lại mật khẩu, đổi email.",
+  "onboarding.tourSteps.firstThingsToDoCreateA":
+    "Việc nên làm đầu tiên: tạo phòng ban, rồi mời nhân sự vào đúng phòng ban. Xem lại hướng dẫn này bất cứ lúc nào trong Cài đặt.",
+  "onboarding.tourSteps.inStaffClickInviteByEmail":
+    "Trong Nhân sự, bấm 'Mời qua email': người nhận mở liên kết và tự đặt tên đăng nhập, mật khẩu. Dấu + để tự tạo tài khoản. Bấm tên một nhân sự để mở cửa sổ quản lý: phòng ban và chức vụ, KPI, lịch, đặt lại mật khẩu, đổi email.",
   "onboarding.tourSteps.inviteStaff": "Mời nhân sự",
-  "onboarding.tourSteps.newTasksPeopleAcceptingOrCompleting": "Việc mới được giao, người nhận hoặc hoàn thành việc bạn giao, tin nhắn, lịch cần xác nhận và yêu cầu Drive. Bấm vào thông báo để tới đúng chỗ.",
-  "onboarding.tourSteps.oneToOneChatWithColleagues": "Chat 1-1 với đồng nghiệp: gõ vào ô tìm kiếm để thấy ngay người cùng phòng ban và bắt đầu trò chuyện, gửi ảnh (bấm để xem lớn) và tệp, thu hồi tin đã gửi, lưu trữ hội thoại không cần đến.",
-  "onboarding.tourSteps.openTwoPagesSideBySide": "Mở hai trang cạnh nhau. Mỗi tab thuộc một nửa; kéo tab sang nửa kia để chuyển, kéo thanh giữa để chỉnh độ rộng. Bấm logo Orbit bất cứ lúc nào để về trang chủ.",
-  "onboarding.tourSteps.seeTheDepartmentsAndEachDepartment": "Xem các phòng ban và danh bạ nhân sự từng phòng; bấm tên một người để nhắn tin riêng hoặc gửi yêu cầu Drive.",
-  "onboarding.tourSteps.seeTheMonthSCalendarAnd": "Xem lịch tháng và bấm vào một ngày để xem sự kiện của ngày đó. Phía dưới là các sự kiện sắp tới. Thêm sự kiện bằng dấu +; loại 'Công tác' cho chọn từ ngày nào đến ngày nào. Xác nhận hoặc từ chối sự kiện người khác thêm cho bạn.",
-  "onboarding.tourSteps.seeTheStaffYouManageClick": "Xem nhân sự trong phạm vi quản lý, bấm tên để mở cửa sổ quản lý, và bấm 'Mời qua email' để mời thêm người vào đúng phòng ban/nhóm của bạn.",
+  "onboarding.tourSteps.newTasksPeopleAcceptingOrCompleting":
+    "Việc mới được giao, người nhận hoặc hoàn thành việc bạn giao, tin nhắn, lịch cần xác nhận và yêu cầu Drive. Bấm vào thông báo để tới đúng chỗ.",
+  "onboarding.tourSteps.oneToOneChatWithColleagues":
+    "Chat 1-1 với đồng nghiệp: gõ vào ô tìm kiếm để thấy ngay người cùng phòng ban và bắt đầu trò chuyện, gửi ảnh (bấm để xem lớn) và tệp, thu hồi tin đã gửi, lưu trữ hội thoại không cần đến.",
+  "onboarding.tourSteps.openTwoPagesSideBySide":
+    "Mở hai trang cạnh nhau. Mỗi tab thuộc một nửa; kéo tab sang nửa kia để chuyển, kéo thanh giữa để chỉnh độ rộng. Bấm logo Orbit bất cứ lúc nào để về trang chủ.",
+  "onboarding.tourSteps.seeTheDepartmentsAndEachDepartment":
+    "Xem các phòng ban và danh bạ nhân sự từng phòng; bấm tên một người để nhắn tin riêng hoặc gửi yêu cầu Drive.",
+  "onboarding.tourSteps.seeTheMonthSCalendarAnd":
+    "Xem lịch tháng và bấm vào một ngày để xem sự kiện của ngày đó. Phía dưới là các sự kiện sắp tới. Thêm sự kiện bằng dấu +; loại 'Công tác' cho chọn từ ngày nào đến ngày nào. Xác nhận hoặc từ chối sự kiện người khác thêm cho bạn.",
+  "onboarding.tourSteps.seeTheStaffYouManageClick":
+    "Xem nhân sự trong phạm vi quản lý, bấm tên để mở cửa sổ quản lý, và bấm 'Mời qua email' để mời thêm người vào đúng phòng ban/nhóm của bạn.",
   "onboarding.tourSteps.setUpYourCompany": "Thiết lập doanh nghiệp",
-  "onboarding.tourSteps.switchTheHomePageBetweenThe": "Chuyển trang chủ giữa tổng quan KPI và bảng việc Cần làm / Đang làm / Hoàn thành.",
+  "onboarding.tourSteps.switchTheHomePageBetweenThe":
+    "Trong Trang chủ, dùng Hiển thị trang chủ để chọn Tổng quan hoặc Bảng công việc.",
   "onboarding.tourSteps.viewTasksAsColumns": "Xem việc dạng cột",
   "onboarding.tourSteps.welcomeToOrbit": "Chào mừng đến Orbit!",
-  "onboarding.tourSteps.whenAJobNeedsSeveralDepartments": "Khi một việc cần nhiều phòng cùng làm: phòng chủ trì tạo dự án và mời phòng khác hỗ trợ. Trưởng phòng được mời nhận lời rồi chọn người của mình; cả hai phòng cùng có công việc, trao đổi nhóm, thư mục Drive chung và danh bạ thành viên.",
-  "onboarding.tourSteps.youCanWatchThisGuideAgain": "Bạn có thể xem lại hướng dẫn này bất cứ lúc nào trong Cài đặt.",
+  "onboarding.tourSteps.whenAJobNeedsSeveralDepartments":
+    "Khi một việc cần nhiều phòng cùng làm: phòng chủ trì tạo dự án và mời phòng khác hỗ trợ. Trưởng phòng được mời nhận lời rồi chọn người của mình; cả hai phòng cùng có công việc, trao đổi nhóm, thư mục Drive chung và danh bạ thành viên.",
+  "onboarding.tourSteps.youCanWatchThisGuideAgain":
+    "Bạn có thể xem lại hướng dẫn này bất cứ lúc nào trong Cài đặt.",
   "onboarding.tourSteps.youReReady": "Sẵn sàng!",
-  "onboarding.tourSteps.yourPrivateNotesShownAsCards": "Ghi chú riêng của bạn, hiện dạng thẻ và tìm được theo từ khoá. Bấm một thẻ để mở rộng và sửa; ghim để note nổi ở mọi trang cho tới khi bỏ ghim.",
+  "onboarding.tourSteps.yourPrivateNotesShownAsCards":
+    "Ghi chú riêng của bạn, hiện dạng thẻ và tìm được theo từ khoá. Bấm một thẻ để mở rộng và sửa; ghim để note nổi ở mọi trang cho tới khi bỏ ghim.",
   "onboarding.tourSteps.yourStaff": "Nhân sự của bạn",
-  "onboarding.tourSteps.yourToDoListGroupedBy": "Danh sách việc cần làm của bạn, gom theo mức ưu tiên cao / trung bình / thấp.",
+  "onboarding.tourSteps.yourToDoListGroupedBy":
+    "Trong Trang chủ, chọn Gợi ý ưu tiên ở Hiển thị trang chủ để xem việc theo mức cao / trung bình / thấp.",
 };
